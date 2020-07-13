@@ -356,7 +356,7 @@ def get_pcp_dictionary_by_year(file_path):
     with open('daily_lookup_file_TEMP.json', 'w') as fp:
         json.dump(date_dictionary, fp)
         
-  def get_daily_lat_lon(file_path):
+def get_daily_lat_lon(file_path):
     '''Get the latitude and longitude of the daily stations and store in a json file in the directory
     Parameters
         file_path (str): file path to the daily csv files provided by Environment & Climate Change
@@ -415,7 +415,7 @@ def get_pcp_dictionary_by_year(file_path):
     with open('daily_lat_lon_TEMP.json', 'w') as fp:
         json.dump(latlon_dictionary, fp)
         
-  def get_pcp(input_date,file_path,date_dictionary):
+def get_pcp(input_date,file_path,date_dictionary):
     '''Get a dictionary of the precipitation data from the feather files of the daily stations 
     Parameters
         input_date (str): input date for the day of interest, in the format YYYY:MM:DD 
