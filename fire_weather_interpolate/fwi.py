@@ -352,7 +352,7 @@ def end_date_calendar(file_path_hourly,year):
     #Return the dates for each station
     return date_dict, latlon_dictionary
 
-def end_date_calendar_csv(str file_path_hourly,str year):
+def end_date_calendar_csv(file_path_hourly,year):
     '''Returns a dictionary of where each station meets the end criteria see 
     Wotton & Flannigan 1993, plus a reference dictionary for the lat lon of the stations
     Parameters
@@ -1246,7 +1246,7 @@ def DC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dc_yesterday,inde
 
     return dc1
 
-def DMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dmc_yesterday,int index,bint show,str shapefile,
+def DMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dmc_yesterday,index,show,shapefile,
         mask,endMask):
     '''Calculate the DMC. See cffdrs R code
     Parameters
@@ -1366,7 +1366,7 @@ def DMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dmc_yesterday,in
     return dmc 
 
 
-def FFMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,ffmc_yesterday,int index,bint show,str shapefile,
+def FFMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,ffmc_yesterday,index,bint show,shapefile,
          mask,endMask):
     '''Calculate the FFMC. See cffdrs R code
     Parameters
@@ -1386,7 +1386,7 @@ def FFMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,ffmc_yesterday,
     Returns 
         ffmc1 (np_array): array of ffmc values on the date on interest for the study area
     '''
-    cdef int yesterday_index = index-1
+    yesterday_index = index-1
 
     if yesterday_index == -1:
         rain_shape = rain_grid.shape
