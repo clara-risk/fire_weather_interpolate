@@ -52,7 +52,7 @@ def get_col_num_list(file_path,col_name):
 
     return idx_list
     
- def finding_data_frm_lookup(projected_coordinates_list,file_path,idx_list):
+def finding_data_frm_lookup(projected_coordinates_list,file_path,idx_list):
     '''Get the dictionary of values for each input point frm lookup file
     Parameters
         projected_coordinates_list (list of tuples): list of coordinates that you want to find data
