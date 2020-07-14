@@ -705,10 +705,10 @@ def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_inter
         if interpolation_method == 'IDW-1': 
 
         
-            rain_grid, maxmin = IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
-            temp_grid, maxmin = IDW(latlon_dict,temp,hourly,var_name,shapefile,False,1)
-            rh_grid, maxmin = IDW(latlon_dict,rh,hourly,var_name,shapefile,False,1)
-            wind_grid, maxmin = IDW(latlon_dict,wind,hourly,var_name,shapefile,False,1)
+            rain_grid, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+            temp_grid, maxmin = idw.IDW(latlon_dict,temp,hourly,var_name,shapefile,False,1)
+            rh_grid, maxmin = idw.IDW(latlon_dict,rh,hourly,var_name,shapefile,False,1)
+            wind_grid, maxmin = idw.IDW(latlon_dict,wind,hourly,var_name,shapefile,False,1)
 
         if interpolation_method == 'IDW-2': 
 
@@ -720,24 +720,24 @@ def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_inter
 
         if interpolation_method == 'IDEW-1':
 
-            rain_grid, maxmin, elev_array= IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,1)
-            temp_grid, maxmin, elev_array= IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            rh_grid, maxmin, elev_array = IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            wind_grid, maxmin, elev_array= IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
+            rain_grid, maxmin, elev_array= idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,1)
+            temp_grid, maxmin, elev_array= idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
+            rh_grid, maxmin, elev_array = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
+            wind_grid, maxmin, elev_array= idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
             
         if interpolation_method == 'IDEW-2':
 
-            rain_grid, maxmin, elev_array = IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,2)
-            temp_grid, maxmin, elev_array = IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            rh_grid, maxmin, elev_array = IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            wind_grid, maxmin, elev_array = IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            rain_grid, maxmin, elev_array = idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,2)
+            temp_grid, maxmin, elev_array = idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            rh_grid, maxmin, elev_array = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            wind_grid, maxmin, elev_array = idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
 
         if interpolation_method == 'TPS':
 
-            rain_grid, maxmin = TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,0)
-            temp_grid, maxmin = TPS(latlon_dict,temp,hourly,var_name,shapefile,False,0)
-            rh_grid, maxmin = TPS(latlon_dict,rh,hourly,var_name,shapefile,False,0)
-            wind_grid, maxmin = TPS(latlon_dict,wind,hourly,var_name,shapefile,False,0)
+            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,0)
+            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,0)
+            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,0)
+            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,0)
 
         if interpolation_method == 'TPSS':
 
@@ -751,18 +751,18 @@ def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_inter
             smoothing_parameterRH = int(num_stations_rh)-(math.sqrt(2*num_stations_rh))
             smoothing_parameterW = int(num_stations_w)-(math.sqrt(2*num_stations_w))
             
-            rain_grid, maxmin = TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,smoothing_parameterR)
-            temp_grid, maxmin = TPS(latlon_dict,temp,hourly,var_name,shapefile,False,smoothing_parameterT)
-            rh_grid, maxmin = TPS(latlon_dict,rh,hourly,var_name,shapefile,False,smoothing_parameterRH)
-            wind_grid, maxmin = TPS(latlon_dict,wind,hourly,var_name,shapefile,False,smoothing_parameterW)
+            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,smoothing_parameterR)
+            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,smoothing_parameterT)
+            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,smoothing_parameterRH)
+            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,smoothing_parameterW)
 
 
         if interpolation_method == 'OK':
 
-            rain_grid, maxmin = OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,False)
-            temp_grid, maxmin = OKriging(latlon_dict,temp,hourly,var_name,shapefile,False)
-            rh_grid, maxmin = OKriging(latlon_dict,rh,hourly,var_name,shapefile,False)
-            wind_grid, maxmin = OKriging(latlon_dict,wind,hourly,var_name,shapefile,False)
+            rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,False)
+            temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,False)
+            rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,False)
+            wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,False)
 
         if (interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
@@ -918,39 +918,39 @@ end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,lat
         if interpolation_method == 'IDW-1': 
 
         
-            rain_grid, maxmin = IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
-            temp_grid, maxmin = IDW(latlon_dict,temp,hourly,var_name,shapefile,False,1)
-            rh_grid, maxmin = IDW(latlon_dict,rh,hourly,var_name,shapefile,False,1)
-            wind_grid, maxmin = IDW(latlon_dict,wind,hourly,var_name,shapefile,False,1)
+            rain_grid, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+            temp_grid, maxmin = idw.IDW(latlon_dict,temp,hourly,var_name,shapefile,False,1)
+            rh_grid, maxmin = idw.IDW(latlon_dict,rh,hourly,var_name,shapefile,False,1)
+            wind_grid, maxmin = idw.IDW(latlon_dict,wind,hourly,var_name,shapefile,False,1)
 
         if interpolation_method == 'IDW-2': 
 
         
-            rain_grid, maxmin = IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,2)
-            temp_grid, maxmin = IDW(latlon_dict,temp,hourly,var_name,shapefile,False,2)
-            rh_grid, maxmin = IDW(latlon_dict,rh,hourly,var_name,shapefile,False,2)
-            wind_grid, maxmin = IDW(latlon_dict,wind,hourly,var_name,shapefile,False,2)
+            rain_grid, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,2)
+            temp_grid, maxmin = idw.IDW(latlon_dict,temp,hourly,var_name,shapefile,False,2)
+            rh_grid, maxmin = idw.IDW(latlon_dict,rh,hourly,var_name,shapefile,False,2)
+            wind_grid, maxmin = idw.IDW(latlon_dict,wind,hourly,var_name,shapefile,False,2)
 
         if interpolation_method == 'IDEW-1':
 
-            rain_grid, maxmin, elev_array  = IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,1)
-            temp_grid, maxmin, elev_array  = IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            rh_grid, maxmin, elev_array  = IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            wind_grid, maxmin, elev_array  = IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
+            rain_grid, maxmin, elev_array  = idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,1)
+            temp_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
+            rh_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
+            wind_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
             
         if interpolation_method == 'IDEW-2':
 
-            rain_grid, maxmin, elev_array  = IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,2)
-            temp_grid, maxmin, elev_array  = IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            rh_grid, maxmin, elev_array  = IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            wind_grid, maxmin, elev_array  = IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            rain_grid, maxmin, elev_array  = idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,2)
+            temp_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            rh_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            wind_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
 
         if interpolation_method == 'TPS':
 
-            rain_grid, maxmin = TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,0)
-            temp_grid, maxmin = TPS(latlon_dict,temp,hourly,var_name,shapefile,False,0)
-            rh_grid, maxmin = TPS(latlon_dict,rh,hourly,var_name,shapefile,False,0)
-            wind_grid, maxmin = TPS(latlon_dict,wind,hourly,var_name,shapefile,False,0)
+            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,0)
+            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,0)
+            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,0)
+            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,0)
 
         if interpolation_method == 'TPSS':
 
@@ -964,18 +964,18 @@ end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,lat
             smoothing_parameterRH = int(num_stations_rh)-(math.sqrt(2*num_stations_rh))
             smoothing_parameterW = int(num_stations_w)-(math.sqrt(2*num_stations_w))
             
-            rain_grid, maxmin = TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,smoothing_parameterR)
-            temp_grid, maxmin = TPS(latlon_dict,temp,hourly,var_name,shapefile,False,smoothing_parameterT)
-            rh_grid, maxmin = TPS(latlon_dict,rh,hourly,var_name,shapefile,False,smoothing_parameterRH)
-            wind_grid, maxmin = TPS(latlon_dict,wind,hourly,var_name,shapefile,False,smoothing_parameterW)
+            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,smoothing_parameterR)
+            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,smoothing_parameterT)
+            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,smoothing_parameterRH)
+            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,smoothing_parameterW)
 
 
         if interpolation_method == 'OK':
 
-            rain_grid, maxmin = OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,False)
-            temp_grid, maxmin = OKriging(latlon_dict,temp,hourly,var_name,shapefile,False)
-            rh_grid, maxmin = OKriging(latlon_dict,rh,hourly,var_name,shapefile,False)
-            wind_grid, maxmin = OKriging(latlon_dict,wind,hourly,var_name,shapefile,False)
+            rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,False)
+            temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,False)
+            rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,False)
+            wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,False)
 
         if (interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
@@ -1053,39 +1053,39 @@ def ffmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_int
         if interpolation_method == 'IDW-1': 
 
         
-            rain_grid, maxmin = IDW(latlon_dictionary,rainfall,str(dat),var_name,shapefile,False,1)
-            temp_grid, maxmin = IDW(latlon_dict,temp,hourly,var_name,shapefile,False,1)
-            rh_grid, maxmin = IDW(latlon_dict,rh,hourly,var_name,shapefile,False,1)
-            wind_grid, maxmin = IDW(latlon_dict,wind,hourly,var_name,shapefile,False,1)
+            rain_grid, maxmin = idw.IDW(latlon_dictionary,rainfall,str(dat),var_name,shapefile,False,1)
+            temp_grid, maxmin = idw.IDW(latlon_dict,temp,hourly,var_name,shapefile,False,1)
+            rh_grid, maxmin = idw.IDW(latlon_dict,rh,hourly,var_name,shapefile,False,1)
+            wind_grid, maxmin = idw.IDW(latlon_dict,wind,hourly,var_name,shapefile,False,1)
 
         if interpolation_method == 'IDW-2': 
 
         
-            rain_grid, maxmin = IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,2)
-            temp_grid, maxmin = IDW(latlon_dict,temp,hourly,var_name,shapefile,False,2)
-            rh_grid, maxmin = IDW(latlon_dict,rh,hourly,var_name,shapefile,False,2)
-            wind_grid, maxmin = IDW(latlon_dict,wind,hourly,var_name,shapefile,False,2)
+            rain_grid, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,2)
+            temp_grid, maxmin = idw.IDW(latlon_dict,temp,hourly,var_name,shapefile,False,2)
+            rh_grid, maxmin = idw.IDW(latlon_dict,rh,hourly,var_name,shapefile,False,2)
+            wind_grid, maxmin = idw.IDW(latlon_dict,wind,hourly,var_name,shapefile,False,2)
 
         if interpolation_method == 'IDEW-1':
 
-            rain_grid, maxmin, elev_array = IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,1)
-            temp_grid, maxmin, elev_array = IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            rh_grid, maxmin, elev_array = IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            wind_grid, maxmin, elev_array = IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
+            rain_grid, maxmin, elev_array = idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,1)
+            temp_grid, maxmin, elev_array = idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
+            rh_grid, maxmin, elev_array = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
+            wind_grid, maxmin, elev_array = idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
             
         if interpolation_method == 'IDEW-2':
 
-            rain_grid, maxmin, elev_array = IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,2)
-            temp_grid, maxmin, elev_array = IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            rh_grid, maxmin, elev_array = IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            wind_grid, maxmin, elev_array = IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            rain_grid, maxmin, elev_array = idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,2)
+            temp_grid, maxmin, elev_array = idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            rh_grid, maxmin, elev_array = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            wind_grid, maxmin, elev_array = idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
 
         if interpolation_method == 'TPS':
 
-            rain_grid, maxmin = TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,0)
-            temp_grid, maxmin = TPS(latlon_dict,temp,hourly,var_name,shapefile,False,0)
-            rh_grid, maxmin = TPS(latlon_dict,rh,hourly,var_name,shapefile,False,0)
-            wind_grid, maxmin = TPS(latlon_dict,wind,hourly,var_name,shapefile,False,0)
+            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,0)
+            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,0)
+            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,0)
+            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,0)
 
         if interpolation_method == 'TPSS':
 
@@ -1099,17 +1099,17 @@ def ffmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_int
             smoothing_parameterRH = int(num_stations_rh)-(math.sqrt(2*num_stations_rh))
             smoothing_parameterW = int(num_stations_w)-(math.sqrt(2*num_stations_w))
             
-            rain_grid, maxmin = TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,smoothing_parameterR)
-            temp_grid, maxmin = TPS(latlon_dict,temp,hourly,var_name,shapefile,False,smoothing_parameterT)
-            rh_grid, maxmin = TPS(latlon_dict,rh,hourly,var_name,shapefile,False,smoothing_parameterRH)
-            wind_grid, maxmin = TPS(latlon_dict,wind,hourly,var_name,shapefile,False,smoothing_parameterW)
+            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,smoothing_parameterR)
+            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,smoothing_parameterT)
+            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,smoothing_parameterRH)
+            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,smoothing_parameterW)
 
         if interpolation_method == 'OK':
 
-            rain_grid, maxmin = OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,False)
-            temp_grid, maxmin = OKriging(latlon_dict,temp,hourly,var_name,shapefile,False)
-            rh_grid, maxmin = OKriging(latlon_dict,rh,hourly,var_name,shapefile,False)
-            wind_grid, maxmin = OKriging(latlon_dict,wind,hourly,var_name,shapefile,False)
+            rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,False)
+            temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,False)
+            rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,False)
+            wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,False)
 
         if (interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
