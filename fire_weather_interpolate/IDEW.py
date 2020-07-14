@@ -3,8 +3,14 @@
 """
 Summary
 -------
+Code for inverse distance elevation weighting with a weight of 0.8 for distance (Euclidean) and 0.2 for distance (vertical). 
+
 References
 ----------
+For weights: 
+
+Daly, C., Gibson, W. P., Taylor, G. H., Johnson, G. L., & Pasteris, P. (2002). 
+A knowledge-based approach to the statistical mapping of climate. Climate Research, 22(2), 99–113. https://doi.org/10.3354/cr022099
 """
     
 #import
@@ -17,7 +23,7 @@ import warnings
 warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the /0 warning
 
 
-import GET_DATA as GD
+import get_data as GD
 
 #functions 
 def IDEW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,file_path_elev,idx_list,d):
