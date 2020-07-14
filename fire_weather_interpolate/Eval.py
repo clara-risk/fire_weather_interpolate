@@ -143,7 +143,7 @@ def get_interpolated_val_in_fire(fire_shapefile,shapefile,latlon_dict,interpolat
         return float(max_ival)
 
 def highest_value_first_four_days(fire_shapefile,shapefile,latlon_dict,interpolated_surface_d1,interpolated_surface_d2,interpolated_surface_d3,interpolated_surface_d4):
-        '''Function to return the highest FWI values in a fire for four input arrays  
+    '''Function to return the highest FWI values in a fire for four input arrays  
     Parameters
         fire_shapefile (str): path to the fire shapefile 
         shapefile (str): path to the study area shapefile
