@@ -33,12 +33,11 @@ import os, sys
 import gc
 import feather 
 
-import GET_DATA as GD
-import IDW as idw
-import IDEW as idew
-import OK as ok
-import TPS as tps
-import EVAL as Eval  
+import get_data as GD
+import idw as idw
+import idew as idew
+import ok as ok
+import tps as tps
 
 
 #functions 
