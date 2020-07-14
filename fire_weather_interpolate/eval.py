@@ -3,8 +3,13 @@
 """
 Summary
 -------
+Functions to evaluate the outputs of the FWI metrics functions, such as ridge regression for relating the metrics to area burned. 
+
 References
 ----------
+See: 
+https://en.wikipedia.org/wiki/Tikhonov_regularization
+https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeCV.html
 """
     
 #import
