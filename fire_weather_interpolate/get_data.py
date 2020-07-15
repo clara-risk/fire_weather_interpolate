@@ -224,6 +224,9 @@ def get_wind_speed(input_date,file_path):
 
                             #Put the value into the dictionary. 
                             ws_dictionary[station_name] = df.loc[df['Date/Time'] == input_date, 'Wind Spd (km/h)'].item()
+                            
+                            if float(df.loc[df['Date/Time'] == input_date, 'Wind Spd (km/h)'].item()) >= 315: 
+                                print('The wind speed for %s corresponds to the most severe class of Tornado for the Enhanced Fujita Scale - Canada'%(station_name))
 
                         else: 
                             pass
@@ -261,6 +264,11 @@ def get_noon_temp(input_date,file_path):
 
 
                             temp_dictionary[station_name] = df.loc[df['Date/Time'] == input_date, 'Temp (Â°C)'].item()
+                            
+                            if float(df.loc[df['Date/Time'] == input_date, 'Temp (Â°C)'].item()) > 42.2 or \
+                            float(df.loc[df['Date/Time'] == input_date, 'Temp (Â°C)'].item()) < -58.3: 
+                                print('The temperature for %s is either greater than the record high temperature recorded in Ontario \
+                                or Québec or lower than the record lowest temperature'%(station_name))
 
                         else: 
                             pass
@@ -298,6 +306,9 @@ def get_relative_humidity(input_date,file_path):
 
 
                             RH_dictionary[station_name] = df.loc[df['Date/Time'] == input_date, 'Rel Hum (%)'].item()
+                            
+                            if float(df.loc[df['Date/Time'] == input_date, 'Rel Hum (%)'].item()) > 100: 
+                                print('The relative humidity for %s is greater than 100%'%(station_name))
 
                         else: 
                             pass
@@ -444,6 +455,9 @@ def get_pcp(input_date,file_path,date_dictionary):
 
 
                     rain_dictionary[station_name[:-8]] = df.loc[df['date'] == input_date, 'total_precip'].item()
+                    
+                    if float(df.loc[df['date'] == input_date, 'total_precip'].item()) > 264: 
+                        print('The amount of 24hr precipitation for %s exceeds the record recorded in Ontario or Québec'%(station_name)) 
 
                 else: 
                     pass
