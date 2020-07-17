@@ -12,7 +12,8 @@ evaluation of accuracy (cross-validation).
 get_data: contains functions to extract the weather data (and data from
 lookup files, such as for slope) from the files provided with the code.
 
-idw: has functions to interpolate using IDW interpolation and to cross-validate for each weather station.
+idw: has functions to interpolate using IDW interpolation and to cross-validate 
+for each weather station.
 
 tps: has functions to interpolate using thin plate (smoothing) splines and
 to cross-validate. 
@@ -22,8 +23,15 @@ cross-validate.
 
 ok: has functions to interpolate using ordinary kriging and to cross-validate.
 
+rf: has functions to interpolate using random forest and to cross-validate. 
+
 fwi: has functions to calculate the FWI metrics and do procedures such as
 calculating the station start-up date and overwintering the drought code.
+
+Eval: has functions for evaluating the strength of the relationship with 
+area burned and also for evaluating the leave-one-out cross validation 
+(i.e., RMSE calculation). 
+
 
 References
 ----------
@@ -50,6 +58,7 @@ from . import idw as idw
 from . import idew as idew
 from . import ok as ok
 from . import tps as tps
+from . import rf as rf 
 from . import fwi as fwi
 from . import Eval as Eval  
 #Check import 
