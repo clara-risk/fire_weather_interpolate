@@ -1366,7 +1366,7 @@ def DMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dmc_yesterday,in
     return dmc 
 
 
-def FFMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,ffmc_yesterday,index,bint show,shapefile,
+def FFMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,ffmc_yesterday,index,show,shapefile,
          mask,endMask):
     '''Calculate the FFMC. See cffdrs R code
     Parameters
