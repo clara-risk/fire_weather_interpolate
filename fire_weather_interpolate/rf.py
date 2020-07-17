@@ -18,6 +18,7 @@ import warnings
 warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the /0 warning
 
 from sklearn.ensemble import RandomForestRegressor
+import get_data as GD
 
 def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,file_path_elev,idx_list): 
     lat = []
@@ -78,7 +79,7 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
     Xi1_grd=[]
     Yi1_grd=[]
     elev_grd = []
-    elev_grd_dict = finding_data_frm_lookup(send_to_tuple,file_path_elev,idx_list) #Get the elevations from the lookup file 
+    elev_grd_dict = GD.finding_data_frm_lookup(send_to_tuple,file_path_elev,idx_list) #Get the elevations from the lookup file 
 
     for keys in elev_grd_dict.keys(): #The keys are each lat lon pair 
         x= keys[0]
@@ -91,7 +92,7 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
 
     
 
-    elev_dict= finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list) #Get the elevations for the stations 
+    elev_dict= GD.finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list) #Get the elevations for the stations 
 
     xProj_input=[]
     yProj_input=[]
@@ -253,7 +254,7 @@ def cross_validate_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
         Xi1_grd=[]
         Yi1_grd=[]
         elev_grd = []
-        elev_grd_dict = finding_data_frm_lookup(send_to_tuple,file_path_elev,idx_list) #Get the elevations from the lookup file 
+        elev_grd_dict = GD.finding_data_frm_lookup(send_to_tuple,file_path_elev,idx_list) #Get the elevations from the lookup file 
 
         for keys in elev_grd_dict.keys(): #The keys are each lat lon pair 
             x= keys[0]
@@ -266,7 +267,7 @@ def cross_validate_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
 
     
 
-        elev_dict= finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list) #Get the elevations for the stations 
+        elev_dict= GD.finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list) #Get the elevations for the stations 
 
         xProj_input=[]
         yProj_input=[]
