@@ -11,9 +11,6 @@ References
 ----------
 get_b relies on information from Lawson & Armitage (2008) 
 
-Lawson, B.D. & Armitage, O.B. (2008). Weather Guide for the Canadian Forest Fire 
-Danger Rating System (pp. 1-84). Natural Resources Canada, Canadian Forest Service, 
-Northern Forestry Centre. 
 """
 
 #import
@@ -258,6 +255,7 @@ def get_noon_temp(input_date,file_path):
                     file = file_path+station_name+'/'+file_name
 
                     df = feather.read_dataframe(file)
+                    
 
                     try: 
                         if pd.notnull(df.loc[df['Date/Time'] == input_date, 'Temp (Â°C)'].item()):
@@ -268,7 +266,7 @@ def get_noon_temp(input_date,file_path):
                             if float(df.loc[df['Date/Time'] == input_date, 'Temp (Â°C)'].item()) > 42.2 or \
                             float(df.loc[df['Date/Time'] == input_date, 'Temp (Â°C)'].item()) < -58.3: 
                                 print('The temperature for %s is either greater than the record high temperature recorded in Ontario \
-                                or Québec or lower than the record lowest temperature'%(station_name))
+                                or QuÃ©bec or lower than the record lowest temperature'%(station_name))
 
                         else: 
                             pass
@@ -457,7 +455,7 @@ def get_pcp(input_date,file_path,date_dictionary):
                     rain_dictionary[station_name[:-8]] = df.loc[df['date'] == input_date, 'total_precip'].item()
                     
                     if float(df.loc[df['date'] == input_date, 'total_precip'].item()) > 264: 
-                        print('The amount of 24hr precipitation for %s exceeds the record recorded in Ontario or Québec'%(station_name)) 
+                        print('The amount of 24hr precipitation for %s exceeds the record recorded in Ontario or QuÃ©bec'%(station_name)) 
 
                 else: 
                     pass
