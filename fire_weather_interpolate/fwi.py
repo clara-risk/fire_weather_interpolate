@@ -596,8 +596,8 @@ def get_overwinter_pcp(overwinter_dates, file_path_daily,start_surface,end_surfa
             invertMask[np.where(np.isnan(mask))] = 1 #If the station is still closed, keep counting
             mask = invertMask
 
-        rainfall = get_pcp(str(o_dat)[0:10],file_path_daily,date_dictionary)
-        rain_grid,maxmin = IDW(latlon_dictionary,rainfall,o_dat,'Precipitation',shapefile,False,1)
+        rainfall = GD.get_pcp(str(o_dat)[0:10],file_path_daily,date_dictionary)
+        rain_grid,maxmin = idw.IDW(latlon_dictionary,rainfall,o_dat,'Precipitation',shapefile,False,1)
 
         masked = rain_grid * mask * endMask
 
@@ -695,10 +695,10 @@ def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_inter
 
         hourly = str(dat)[0:10]+' 13:00'
         
-        rainfall = get_pcp(str(dat)[0:10],file_path_daily,date_dictionary)
-        wind = get_wind_speed(hourly,file_path_hourly) #Using the list, get the data for wind speed for those stations on the input date
-        temp = get_noon_temp(hourly,file_path_hourly) #Using the list, get the data for temperature for those stations on the input date
-        rh =get_relative_humidity(hourly,file_path_hourly) #Using the list, get the data for rh% for those stations on the input date
+        rainfall = GD.get_pcp(str(dat)[0:10],file_path_daily,date_dictionary)
+        wind = GD.get_wind_speed(hourly,file_path_hourly) #Using the list, get the data for wind speed for those stations on the input date
+        temp = GD.get_noon_temp(hourly,file_path_hourly) #Using the list, get the data for temperature for those stations on the input date
+        rh =GD.get_relative_humidity(hourly,file_path_hourly) #Using the list, get the data for rh% for those stations on the input date
 
         #what type of interpolation are we using here?
 
@@ -908,10 +908,10 @@ end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,lat
     
         hourly = str(dat)[0:10]+' 13:00'
         
-        rainfall = get_pcp(str(dat)[0:10],file_path_daily,date_dictionary)
-        wind = get_wind_speed(hourly,file_path_hourly) #Using the list, get the data for wind speed for those stations on the input date
-        temp = get_noon_temp(hourly,file_path_hourly) #Using the list, get the data for temperature for those stations on the input date
-        rh = get_relative_humidity(hourly,file_path_hourly) #Using the list, get the data for rh% for those stations on the input date
+        rainfall = GD.get_pcp(str(dat)[0:10],file_path_daily,date_dictionary)
+        wind = GD.get_wind_speed(hourly,file_path_hourly) #Using the list, get the data for wind speed for those stations on the input date
+        temp = GD.get_noon_temp(hourly,file_path_hourly) #Using the list, get the data for temperature for those stations on the input date
+        rh = GD.get_relative_humidity(hourly,file_path_hourly) #Using the list, get the data for rh% for those stations on the input date
         
         #what type of interpolation are we using here?
 
@@ -1043,10 +1043,10 @@ def ffmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_int
             endMask = make_end_date_mask(eDay_index,end_interpolated_surface)
 
         hourly = str(dat)[0:10]+' 13:00'
-        rainfall = get_pcp(str(dat)[0:10],file_path_daily,date_dictionary)
-        wind = get_wind_speed(hourly,file_path_hourly) #Using the list, get the data for wind speed for those stations on the input date
-        temp = get_noon_temp(hourly,file_path_hourly) #Using the list, get the data for temperature for those stations on the input date
-        rh = get_relative_humidity(hourly,file_path_hourly) #Using the list, get the data for rh% for those stations on the input date
+        rainfall = GD.get_pcp(str(dat)[0:10],file_path_daily,date_dictionary)
+        wind = GD.get_wind_speed(hourly,file_path_hourly) #Using the list, get the data for wind speed for those stations on the input date
+        temp = GD.get_noon_temp(hourly,file_path_hourly) #Using the list, get the data for temperature for those stations on the input date
+        rh = GD.get_relative_humidity(hourly,file_path_hourly) #Using the list, get the data for rh% for those stations on the input date
         
         #what type of interpolation are we using here?
 
