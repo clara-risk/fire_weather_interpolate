@@ -316,3 +316,132 @@ def get_MAE(absolute_error_dictionary):
     MAE_max = max(absolute_error_dictionary.values()) 
     return MAE,MAE_max    
     
+def is_it_in_zone(file_path,file_path_zones,Zone1,Zone2,Zone3,Zone4):
+    '''Check if a fire is inside a zone (ecozone, intensively managed zone, etc.) 
+    Parameters
+        file_path (str): path to the location where the fire shapefiles are stored by year
+        file_path_zones (str): path to where the shapefiles for the zones are located
+        Zone1-4 (str): names of the zones, Zone1 is required, the rest are optional, takes up to 4
+        Note: if you are not using the other three zones, input "None"
+    Returns
+        Prints out the fires plus what zone it is in
+    '''
+    dirname = file_path_zones
+    fire_dates = []
+    for year in os.listdir(file_path):
+        fires = []
+        if int(year) >= 1956: 
+            for fire_shp in os.listdir(file_path+year+'/'):
+                if fire_shp.endswith('.shp'):
+                    shpfile = file_path+year+'/'+fire_shp
+                    fire_map1 = gpd.read_file(shpfile)
+                    fireDF = gpd.GeoDataFrame(fire_map1)
+
+                    try:
+                        DF = fireDF.geometry.unary_union
+                        fire_map = DF.convex_hull
+                        approx_centre_point = Point(fire_map.centroid.coords)
+                        
+
+                    except: #There's only one fire polygon
+                        fire_map = fireDF.geometry.unary_union
+                        approx_centre_point = Point(fire_map.centroid.coords)
+
+                    pointDF = pd.DataFrame([approx_centre_point])
+                    gdf = gpd.GeoDataFrame(pointDF, geometry=[approx_centre_point])
+
+
+                    shpfile_zone1 = os.path.join(dirname, Zone1+'.shp')
+                    zone1_map = gpd.read_file(shpfile_zone1)
+                    Zone1_gdf = gpd.GeoDataFrame(zone1_map)
+                    
+                    if Zone2 is not None: 
+                    
+                        shpfile_zone2 = os.path.join(dirname, Zone2+'.shp')
+                        zone2_map = gpd.read_file(shpfile_zone2)
+                        Zone2_gdf = gpd.GeoDataFrame(zone2_map)
+                    else: 
+                        Zone2 = None 
+                        
+                        
+                    if Zone3 is not None: 
+                    
+                        shpfile_zone3 = os.path.join(dirname, Zone3+'.shp')
+                        zone3_map = gpd.read_file(shpfile_zone3)
+                        Zone3_gdf = gpd.GeoDataFrame(zone3_map)
+                    else: 
+                        Zone3 = None
+                        
+                        
+                    if Zone4 is not None: 
+                    
+                        shpfile_zone4 = os.path.join(dirname, Zone4+'.shp')
+                        zone4_map = gpd.read_file(shpfile_zone4)
+                        Zone4_gdf = gpd.GeoDataFrame(zone4_map)
+                    else: 
+                        Zone4 = None 
+                        
+
+
+
+                    #Find if the convex hull of the fire is INTERSECTING the zone
+                    df = pd.DataFrame({'geometry': [fireDF.geometry.unary_union.convex_hull]})
+                    geodf = gpd.GeoDataFrame(df)
+
+                    rep_date = pd.to_datetime(fireDF['REP_DATE'].to_list()[0])
+                    fire_id = fireDF['FIRE_ID'].to_list()[0]
+                    calc_ha = fireDF['CALC_HA'].to_list()[0]
+                    cause = fireDF['CAUSE'].to_list()[0]
+
+
+                    if str(rep_date)[0:4] != 'None' and int(str(rep_date)[0:4]) >= 1956:
+                        
+                        
+
+                    
+                        if len(gpd.overlay(gdf,zone1_map,how='intersection')) > 0: 
+                            if len(fireDF['REP_DATE'].to_list()) > 0:
+                                #if float(calc_ha) >= 200: 
+                                if fire_shp[:-4] not in fires:
+                                    print(fire_id + ',' + str(rep_date)[0:10]+ ',' + str(calc_ha)+','+'1')
+                                    fires.append(fire_shp[:-4]) 
+                                    
+
+                                        
+                        elif Zone2 != None: 
+                            if len(gpd.overlay(gdf,zone2_map,how='intersection')) > 0: 
+                                if len(fireDF['REP_DATE'].to_list()) > 0:
+                            #if float(calc_ha) >= 200: 
+                                    if fire_shp[:-4] not in fires:
+                                        print(fire_id + ',' + str(rep_date)[0:10]+ ',' + str(calc_ha)+',' +Zone2)
+                                        fires.append(fire_shp[:-4])
+
+                                        
+                        elif Zone3 != None: 
+                            
+                            if len(gpd.overlay(gdf,zone3_map,how='intersection')) > 0: 
+                                if len(fireDF['REP_DATE'].to_list()) > 0:
+                                #if float(calc_ha) >= 200: 
+                                    if fire_shp[:-4] not in fires:
+                                        print(fire_id + ',' + str(rep_date)[0:10]+ ',' + str(calc_ha)+',' +Zone3) 
+                                        fires.append(fire_shp[:-4])
+                        
+
+                        elif Zone4 != None:                 
+                            if len(gpd.overlay(gdf,zone4_map,how='intersection')) > 0: 
+                                if len(fireDF['REP_DATE'].to_list()) > 0:
+                                #if float(calc_ha) >= 200: 
+                                    if fire_shp[:-4] not in fires:
+                                        print(fire_id + ',' + str(rep_date)[0:10]+ ',' + str(calc_ha)+',' +Zone4)   
+                                        fires.append(fire_shp[:-4])
+
+                        
+                        else: 
+                            #if float(calc_ha) >= 200: 
+                            print(fire_id + ',' + str(rep_date)[0:10]+ ',' + str(calc_ha)+',' +'0')
+                            fires.append(fire_shp[:-4])
+                
+
+
+                    fires.append(fire_shp[:-4])
+                    fire_dates.append(str(rep_date)[0:10])
