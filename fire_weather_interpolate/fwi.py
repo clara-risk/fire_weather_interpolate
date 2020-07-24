@@ -73,7 +73,12 @@ def start_date_calendar(file_path_hourly,year):
                 for index, row in df.iterrows():
                     if count == 0:
                         
-                        latlon_dictionary[station_name] = (row['Latitude (y)'], row['ï»¿"Longitude (x)"']) #unicode characters at beginning, not sure why 
+                        try: 
+                        
+                            latlon_dictionary[station_name] = (row['Latitude (y)'], row['ï»¿"Longitude (x)"']) #unicode characters at beginning, not sure why 
+                            
+                        except KeyError: 
+                            latlon_dictionary[station_name] = (row['Latitude (y)'], row[0]) #The start unicode problem changes based on the computer... lon should always be in place 0 anyways
                     if str(row['Year']) == year:
 
                         if str(row['Month']) == '3' or str(row['Month']) == '4' or str(row['Month']) == '5' or \
@@ -300,7 +305,11 @@ def end_date_calendar(file_path_hourly,year):
                 for index, row in df.iterrows():
                     if count == 0:
                         
-                        latlon_dictionary[station_name] = (row['Latitude (y)'], row['ï»¿"Longitude (x)"']) #unicode characters at beginning, not sure why 
+                        try: 
+                        
+                            latlon_dictionary[station_name] = (row['Latitude (y)'], row['ï»¿"Longitude (x)"']) #unicode characters at beginning, not sure why 
+                        except KeyError: 
+                            latlon_dictionary[station_name] = (row['Latitude (y)'], row[0]) #to allow the code to be moved computers 
                     if str(row['Year']) == year:
 
                         if str(row['Month']) == '10' or str(row['Month']) == '11' or str(row['Month']) == '12':
