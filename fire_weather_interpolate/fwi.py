@@ -776,10 +776,10 @@ def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_inter
             
         if interpolation_method == 'RF':
 
-            rain_grid, maxmin = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
-            temp_grid, maxmin = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            rh_grid, maxmin = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            wind_grid, maxmin = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rain_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
+            temp_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rh_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            wind_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
 
         if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
@@ -996,10 +996,10 @@ end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,lat
             
         if interpolation_method == 'RF':
 
-            rain_grid, maxmin = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
-            temp_grid, maxmin = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            rh_grid, maxmin = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            wind_grid, maxmin = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rain_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
+            temp_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rh_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            wind_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
 
         if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
@@ -1137,10 +1137,10 @@ def ffmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_int
             
         if interpolation_method == 'RF':
 
-            rain_grid, maxmin = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
-            temp_grid, maxmin = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            rh_grid, maxmin = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            wind_grid, maxmin = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rain_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
+            temp_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rh_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            wind_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
 
         if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
