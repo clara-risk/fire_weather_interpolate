@@ -679,7 +679,7 @@ def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_inter
         latlon_dictionary (dict, loaded from .json): lat lons of the daily stations
         json (bool): if True, convert the array to a flat list so it can be written as a .json file
         interpolation_method (str): the interpolation method to use to get the continuous DC surface, 
-        there are seven options - IDW-1, IDW-2, IDEW-1, IDEW-2, TPS, TPSS, OK 
+        there are eight options - IDW-1, IDW-2, IDEW-1, IDEW-2, TPS, TPSS, OK, RF
     Returns 
         dc_list (list of np_array): a list of the interpolated surfaces for the drought code for 
         each day in the fire season 
@@ -773,8 +773,15 @@ def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_inter
             temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,False)
             rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,False)
             wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,False)
+            
+        if interpolation_method == 'RF':
 
-        if (interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
+            rain_grid, maxmin = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
+            temp_grid, maxmin = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rh_grid, maxmin = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            wind_grid, maxmin = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+
+        if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
 
             print('The entered interpolation method is not recognized')
@@ -895,7 +902,7 @@ end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,lat
         latlon_dictionary (dict, loaded from .json): lat lons of the daily stations
         json (bool): if True, convert the array to a flat list so it can be written as a .json file
         interpolation_method (str): the interpolation method to use to get the continuous DMC surface, 
-        there are seven options - IDW-1, IDW-2, IDEW-1, IDEW-2, TPS, TPSS, OK 
+        there are eight options - IDW-1, IDW-2, IDEW-1, IDEW-2, TPS, TPSS, OK, RF
     Returns 
         dmc_list (list of np_array): a list of the interpolated surfaces for the duff moisture code for 
         each day in the fire season 
@@ -986,8 +993,15 @@ end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,lat
             temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,False)
             rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,False)
             wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,False)
+            
+        if interpolation_method == 'RF':
 
-        if (interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
+            rain_grid, maxmin = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
+            temp_grid, maxmin = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rh_grid, maxmin = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            wind_grid, maxmin = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+
+        if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
 
             print('The entered interpolation method is not recognized')
@@ -1031,7 +1045,7 @@ def ffmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_int
         latlon_dictionary (dict, loaded from .json): lat lons of the daily stations
         json (bool): if True, convert the array to a flat list so it can be written as a .json file
         interpolation_method (str): the interpolation method to use to get the continuous DMC surface, 
-        there are seven options - IDW-1, IDW-2, IDEW-1, IDEW-2, TPS, TPSS, OK 
+        there are eight options - IDW-1, IDW-2, IDEW-1, IDEW-2, TPS, TPSS, OK, RF
     Returns 
         ffmc_list (list of np_array): a list of the interpolated surfaces for the fine fuel moisture code for 
         each day in the fire season 
@@ -1120,8 +1134,15 @@ def ffmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_int
             temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,False)
             rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,False)
             wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,False)
+            
+        if interpolation_method == 'RF':
 
-        if (interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
+            rain_grid, maxmin = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
+            temp_grid, maxmin = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rh_grid, maxmin = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            wind_grid, maxmin = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+
+        if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
 
             print('The entered interpolation method is not recognized')
