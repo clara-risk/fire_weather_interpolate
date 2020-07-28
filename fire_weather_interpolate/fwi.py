@@ -669,7 +669,8 @@ def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_inter
         day_interpolated_surface (np_array): array of start-up days (since Mar 1) for the study area
         end_interpolated_surface (np_array): array of end days (since Oct 1) for the study area
         last_DC_val_before_shutdown (np_array): the last DC value in each cell before that cell shut down
-        for the winter; only need to input this if overwinter = True otherwise you can just input None 
+        for the winter (WITH THE OVERWINTER PROCEDURE APPLIED); only need to input this if overwinter 
+        = True otherwise you can just input None 
         overwinter (bool): if True, the program overwinters the DC where it needs to be
         file_path_elev (str): file path to the elevation lookup file 
         idx_list (list): the index of the elevation data column in the lookup file 
