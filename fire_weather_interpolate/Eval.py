@@ -330,7 +330,7 @@ def is_it_in_zone(file_path,file_path_zones,Zone1,Zone2,Zone3,Zone4):
     fire_dates = []
     for year in os.listdir(file_path):
         fires = []
-        if int(year) >= 1956: 
+        if int(year) >= 1956: #Can change this if you only want to run a certain year 
             for fire_shp in os.listdir(file_path+year+'/'):
                 if fire_shp.endswith('.shp'):
                     shpfile = file_path+year+'/'+fire_shp
@@ -355,31 +355,24 @@ def is_it_in_zone(file_path,file_path_zones,Zone1,Zone2,Zone3,Zone4):
                     zone1_map = gpd.read_file(shpfile_zone1)
                     Zone1_gdf = gpd.GeoDataFrame(zone1_map)
                     
-                    if Zone2 is not None: 
+
                     
-                        shpfile_zone2 = os.path.join(dirname, Zone2+'.shp')
-                        zone2_map = gpd.read_file(shpfile_zone2)
-                        Zone2_gdf = gpd.GeoDataFrame(zone2_map)
-                    else: 
-                        Zone2 = None 
+                    shpfile_zone2 = os.path.join(dirname, Zone2+'.shp')
+                    zone2_map = gpd.read_file(shpfile_zone2)
+                    Zone2_gdf = gpd.GeoDataFrame(zone2_map)
+                    Zone2 = None 
                         
-                        
-                    if Zone3 is not None: 
                     
-                        shpfile_zone3 = os.path.join(dirname, Zone3+'.shp')
-                        zone3_map = gpd.read_file(shpfile_zone3)
-                        Zone3_gdf = gpd.GeoDataFrame(zone3_map)
-                    else: 
-                        Zone3 = None
+                    shpfile_zone3 = os.path.join(dirname, Zone3+'.shp')
+                    zone3_map = gpd.read_file(shpfile_zone3)
+                    Zone3_gdf = gpd.GeoDataFrame(zone3_map)
+                    Zone3 = None
                         
-                        
-                    if Zone4 is not None: 
                     
-                        shpfile_zone4 = os.path.join(dirname, Zone4+'.shp')
-                        zone4_map = gpd.read_file(shpfile_zone4)
-                        Zone4_gdf = gpd.GeoDataFrame(zone4_map)
-                    else: 
-                        Zone4 = None 
+                    shpfile_zone4 = os.path.join(dirname, Zone4+'.shp')
+                    zone4_map = gpd.read_file(shpfile_zone4)
+                    Zone4_gdf = gpd.GeoDataFrame(zone4_map) 
+                    Zone4 = None 
                         
 
 
@@ -401,14 +394,13 @@ def is_it_in_zone(file_path,file_path_zones,Zone1,Zone2,Zone3,Zone4):
                     
                         if len(gpd.overlay(gdf,zone1_map,how='intersection')) > 0: 
                             if len(fireDF['REP_DATE'].to_list()) > 0:
-                                #if float(calc_ha) >= 200: 
+                                #if float(calc_ha) >= 200: # Uncomment if you only want the fires > 200 ha 
                                 if fire_shp[:-4] not in fires:
                                     print(fire_id + ',' + str(rep_date)[0:10]+ ',' + str(calc_ha)+','+'1')
                                     fires.append(fire_shp[:-4]) 
                                     
 
-                                        
-                        elif Zone2 != None: 
+                                  
                             if len(gpd.overlay(gdf,zone2_map,how='intersection')) > 0: 
                                 if len(fireDF['REP_DATE'].to_list()) > 0:
                             #if float(calc_ha) >= 200: 
@@ -416,8 +408,6 @@ def is_it_in_zone(file_path,file_path_zones,Zone1,Zone2,Zone3,Zone4):
                                         print(fire_id + ',' + str(rep_date)[0:10]+ ',' + str(calc_ha)+',' +Zone2)
                                         fires.append(fire_shp[:-4])
 
-                                        
-                        elif Zone3 != None: 
                             
                             if len(gpd.overlay(gdf,zone3_map,how='intersection')) > 0: 
                                 if len(fireDF['REP_DATE'].to_list()) > 0:
@@ -426,8 +416,7 @@ def is_it_in_zone(file_path,file_path_zones,Zone1,Zone2,Zone3,Zone4):
                                         print(fire_id + ',' + str(rep_date)[0:10]+ ',' + str(calc_ha)+',' +Zone3) 
                                         fires.append(fire_shp[:-4])
                         
-
-                        elif Zone4 != None:                 
+        
                             if len(gpd.overlay(gdf,zone4_map,how='intersection')) > 0: 
                                 if len(fireDF['REP_DATE'].to_list()) > 0:
                                 #if float(calc_ha) >= 200: 
