@@ -396,7 +396,7 @@ def is_it_in_zone(file_path,file_path_zones,Zone1,Zone2,Zone3,Zone4):
                             if len(fireDF['REP_DATE'].to_list()) > 0:
                                 #if float(calc_ha) >= 200: # Uncomment if you only want the fires > 200 ha 
                                 if fire_shp[:-4] not in fires:
-                                    print(fire_id + ',' + str(rep_date)[0:10]+ ',' + str(calc_ha)+','+'1')
+                                    print(fire_id + ',' + str(rep_date)[0:10]+ ',' + str(calc_ha)+','+Zone1)
                                     fires.append(fire_shp[:-4]) 
                                     
 
