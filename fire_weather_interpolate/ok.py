@@ -555,4 +555,26 @@ def leave_p_out_crossval(latlon_dict,Cvar_dict,shapefile,model,nruns,p):
     
     return MAE2 
 
-        
+def get_best_model(models,latlon_dict,Cvar_dict,shapefile,nruns,p):
+    '''Select the best semivariogram using the leave_p_out cross-validation procedure 
+    Parameters 
+        models (list): the list of models you want to test, i.e. ['gaussian','exponenital','linear']
+        latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the .json file
+        Cvar_dict (dict): dictionary of weather variable values for each station 
+        shapefile (str): path to the study area shapefile 
+        nruns (int): how many times to run the procedure, for bootstrapping, if nruns = 10 it will take the average of 10 runs
+        p (int): number of weather stations to randomly sample for cross-validation with replacement
+    Returns 
+        selected (str): the best semivariogram according to the procedure 
+    '''
+    results = {} 
+    for model in models:
+        #print(model)
+        #start = time.time() 
+        MAE = leave_p_out_crossval(latlon_dict,Cvar_dict,shapefile,model,nruns,p)
+        results[model] = MAE
+        #end = time.time()
+        #print('Time taken = %s'%(end-start))
+    selected = min(results, key=results.get)
+    
+    return selected         
