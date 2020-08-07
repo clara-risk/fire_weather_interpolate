@@ -408,6 +408,151 @@ def cross_validate_OK(latlon_dict,Cvar_dict,shapefile,model):
     return absolute_error_dictionary  
 
 
+def leave_p_out_crossval(latlon_dict,Cvar_dict,shapefile,model,nruns,p):
+    '''Cross_validate the ordinary kriging, but only with p weather stations for faster selection of the semivariogram
+    Parameters 
+        latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
+        .json file
+        Cvar_dict (dict): dictionary of weather variable values for each station 
+        shapefile (str): path to the study area shapefile 
+        model (str): semivariogram model name, ex. 'gaussian'
+        nruns (int): how many times to run the procedure, for bootstrapping, if nruns = 10 it will take the average of 10 runs
+        p (int): number of weather stations to randomly sample for cross-validation with replacement
+    Returns 
+        MAE2 (float): the MAE resulting from the cross-validation procedure, to be used to evaluate different semivariograms 
+    '''
+    MAEs = {} 
+    for n in range(0,nruns): 
+        x_origin_list = []
+        y_origin_list = [] 
+        z_origin_list = []
+        absolute_error_dictionary = {} 
+        station_name_list = []
+        projected_lat_lon = {}
 
+        for station_name in Cvar_dict.keys():
+            if station_name in latlon_dict.keys():
+                station_name_list.append(station_name)
+
+                loc = latlon_dict[station_name]
+                latitude = loc[0]
+                longitude = loc[1]
+                Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
+                Plat = float(Plat)
+                Plon = float(Plon)
+                projected_lat_lon[station_name] = [Plat,Plon]
+
+
+
+        for station_name_hold_back in station_name_list:
+
+            na_map = gpd.read_file(shapefile)
+            bounds = na_map.bounds
+
+            pixelHeight = 10000 
+            pixelWidth = 10000
+
+
+            coord_pair = projected_lat_lon[station_name_hold_back]
+
+            x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+            y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+            x_origin_list.append(x_orig)
+            y_origin_list.append(y_orig)
+            z_origin_list.append(Cvar_dict[station_name_hold_back])
+
+        #Making the groups of randomly selected, bootstrapping with replacement
+        #weather stations to be held out together
+        bootstrap_p = np.random.choice(station_name_list,p) 
+        
+        for station_name_hold_back in bootstrap_p:
+             
+            lat = []
+            lon = []
+            Cvar = []
+            for station_name in sorted(Cvar_dict.keys()):
+                if station_name in latlon_dict.keys():
+                    if station_name != station_name_hold_back:
+                        loc = latlon_dict[station_name]
+                        latitude = loc[0]
+                        longitude = loc[1]
+                        cvar_val = Cvar_dict[station_name]
+                        lat.append(float(latitude))
+                        lon.append(float(longitude))
+                        Cvar.append(cvar_val)
+                    else:
+                        #print('Skipping station!')
+                        pass
+                    
+            y = np.array(lat)
+            x = np.array(lon)
+            z = np.array(Cvar) 
+
+            na_map = gpd.read_file(shapefile)
+            bounds = na_map.bounds
+            xmax = bounds['maxx']
+            xmin= bounds['minx']
+            ymax = bounds['maxy']
+            ymin = bounds['miny']
+            pixelHeight = 10000 
+            pixelWidth = 10000
+                    
+            num_col = int((xmax - xmin) / pixelHeight)
+            num_row = int((ymax - ymin) / pixelWidth)
+
+
+            #We need to project to a projected system before making distance matrix
+            source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
+            xProj, yProj = pyproj.Proj('esri:102001')(x,y)
+
+            yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+            xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+
+            Yi1 = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
+            Xi1 = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+
+            Xi,Yi = np.meshgrid(Xi1,Yi1)
+            
+            empty_grid = np.empty((num_row,num_col,))*np.nan
+
+            for x3,y3,z3 in zip(x_origin_list,y_origin_list,z_origin_list):
+                empty_grid[y3][x3] = z3
+
+
+
+            vals = ~np.isnan(empty_grid)
+
+            OK = OrdinaryKriging(xProj,yProj,z,variogram_model=model,verbose=False,enable_plotting=False)
+            try: 
+                z1,ss1 = OK.execute('grid',Xi1,Yi1,backend='C') #n_closest_points=10
+        
+                kriging_surface = z1.reshape(num_row,num_col)
+
+            #Calc the RMSE, MAE at the pixel loc
+            #Delete at a certain point
+                coord_pair = projected_lat_lon[station_name_hold_back]
+
+                x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+                y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+                x_origin_list.append(x_orig)
+                y_origin_list.append(y_orig)
+
+                interpolated_val = kriging_surface[y_orig][x_orig] #which comes first?
+
+                original_val = Cvar_dict[station_name]
+                absolute_error = abs(interpolated_val-original_val)
+                absolute_error_dictionary[station_name_hold_back] = absolute_error
+            except:
+                pass
+        try: 
+            MAE = sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values())
+        except ZeroDivisionError:
+            MAE = 10000000000000000000 #If it fails, we dont want to use that semivariogram, so make the value large
+            
+        #print(MAE)
+        MAEs[n] = MAE
+    MAE2 = sum(MAEs.values())/len(MAEs.values()) #Sum of the results for all the runs 
+    
+    return MAE2 
 
         
