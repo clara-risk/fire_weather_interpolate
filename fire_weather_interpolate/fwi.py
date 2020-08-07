@@ -1044,10 +1044,64 @@ end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,lat
 
         if interpolation_method == 'OK':
 
-            rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,False)
-            temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,False)
-            rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,False)
-            wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,False)
+            models = ['exponential','gaussian','linear','spherical','power'] #The types of models we will test
+            model_rain = ok.get_best_model(models,latlon_dictionary,rainfall,shapefile,1,10) #run the procedure once, leaving 10 stations out for crossval
+            model_temp = ok.get_best_model(models,latlon_dict,temp,shapefile,1,10)
+            model_rh = ok.get_best_model(models,latlon_dict,rh,shapefile,1,10)
+            model_wind = ok.get_best_model(models,latlon_dict,wind,shapefile,1,10)
+            try: 
+                rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+            except:
+                try: 
+                    model_rain = 'linear'
+                    rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+                except:
+                    try: 
+                        model_rain = 'exponential'
+                        rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+                    except:
+                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rain_grid = np.zeros(rain_grid_template.shape)
+            try:
+                temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+            except:
+                try: 
+                    model_temp = 'linear'
+                    temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+                except: 
+                    try: 
+                        model_temp = 'exponential'
+                        temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+                    except:
+                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        temp_grid = np.zeros(rain_grid_template.shape)
+            try: 
+                rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,model_rh,False)
+            except:
+                try: 
+                    model_rh = 'linear'
+                    rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,model_rh,False)
+                except: 
+                    try: 
+                        model_rh = 'exponential'
+                        rh_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_rh,False)
+                    except:
+                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rh_grid = np.zeros(rain_grid_template.shape)
+                
+            try: 
+                wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,model_wind,False)
+            except:
+                try: 
+                    model_wind = 'linear'
+                    wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,model_wind,False)
+                except: 
+                    try: 
+                        model_wind = 'exponential'
+                        wind_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_wind,False)
+                    except:
+                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        wind_grid = np.zeros(rain_grid_template.shape) #If the procedure fails, just generate 0s 
             
         if interpolation_method == 'RF':
 
@@ -1185,10 +1239,64 @@ def ffmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_int
 
         if interpolation_method == 'OK':
 
-            rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,False)
-            temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,False)
-            rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,False)
-            wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,False)
+            models = ['exponential','gaussian','linear','spherical','power'] #The types of models we will test
+            model_rain = ok.get_best_model(models,latlon_dictionary,rainfall,shapefile,1,10) #run the procedure once, leaving 10 stations out for crossval
+            model_temp = ok.get_best_model(models,latlon_dict,temp,shapefile,1,10)
+            model_rh = ok.get_best_model(models,latlon_dict,rh,shapefile,1,10)
+            model_wind = ok.get_best_model(models,latlon_dict,wind,shapefile,1,10)
+            try: 
+                rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+            except:
+                try: 
+                    model_rain = 'linear'
+                    rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+                except:
+                    try: 
+                        model_rain = 'exponential'
+                        rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+                    except:
+                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rain_grid = np.zeros(rain_grid_template.shape)
+            try:
+                temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+            except:
+                try: 
+                    model_temp = 'linear'
+                    temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+                except: 
+                    try: 
+                        model_temp = 'exponential'
+                        temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+                    except:
+                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        temp_grid = np.zeros(rain_grid_template.shape)
+            try: 
+                rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,model_rh,False)
+            except:
+                try: 
+                    model_rh = 'linear'
+                    rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,model_rh,False)
+                except: 
+                    try: 
+                        model_rh = 'exponential'
+                        rh_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_rh,False)
+                    except:
+                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rh_grid = np.zeros(rain_grid_template.shape)
+                
+            try: 
+                wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,model_wind,False)
+            except:
+                try: 
+                    model_wind = 'linear'
+                    wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,model_wind,False)
+                except: 
+                    try: 
+                        model_wind = 'exponential'
+                        wind_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_wind,False)
+                    except:
+                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        wind_grid = np.zeros(rain_grid_template.shape) #If the procedure fails, just generate 0s 
             
         if interpolation_method == 'RF':
 
