@@ -519,4 +519,16 @@ def get_lat_lon(file_path):
     with open('hourly_lat_lon_TEMP.json', 'w') as fp:
         json.dump(latlon_dictionary, fp)
         
-   
+ def convert_to_feather(file_path,out_path):
+    '''Convert the Environment & Climate Change Canada csv files into feather files, to allow for faster processing
+    Parameters
+        file_path (str): file path to the csv files provided by Environment & Climate Change
+        Canada, not including the name of the file 
+        out_path (str): where you want the new feather file to be written to in the computer, not including the new file name
+    Returns 
+        The function writes a feather file to the output directory
+    '''
+    for station_name in os.listdir(file_path):
+        file = file_path+station_name
+        df = pd.read_csv(file, sep=',', engine='c', low_memory=False,encoding='latin1')
+        feather.write_dataframe(df,out_path+station_name[:-4]+'.feather')
