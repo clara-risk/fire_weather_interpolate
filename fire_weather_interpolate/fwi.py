@@ -112,19 +112,28 @@ def start_date_calendar(file_path_hourly,year):
             length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
 
 
-            index = groups.index(length[0]) #Get the index of the group
-            group_len = [len(x) for x in groups] #Get length of each group
-            length_sofar = 0 #We need to get the number of days up to where the criteria is met 
-            for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
-                length_sofar += group_len[i]
+            if len(length) > 0: 
+                index = groups.index(length[0]) #Get the index of the group
+                group_len = [len(x) for x in groups] #Get length of each group
+                length_sofar = 0 #We need to get the number of days up to where the criteria is met 
+                for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+                    length_sofar += group_len[i]
 
-            Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+2] #Go two days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+2] #Go two days ahead for the third day 
 
-            d0 = date(int(year), 3, 1) #March 1, Year 
-            d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
-            delta = d1 - d0
-            day = int(delta.days) #Convert to integer 
-            date_dict[station_name] = day #Store the integer in the dictionary 
+                d0 = date(int(year), 3, 1) #March 1, Year 
+                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
+                delta = d1 - d0
+                day = int(delta.days) #Convert to integer 
+                date_dict[station_name] = day #Store the integer in the dictionary
+
+            else:
+                d0 = date(int(year), 3, 1)
+                d1 = date(int(year), 7, 31) #July 31 is the last day we can start up on 
+                delta = d1 - d0
+                day = int(delta.days)
+                date_dict[station_name] = day
+
 
 
             #print('The start date for %s for %s is %s'%(station_name,year,Sdate))
