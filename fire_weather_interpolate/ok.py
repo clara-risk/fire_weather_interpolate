@@ -14,6 +14,7 @@ import numpy as np
 import pyproj
 from pykrige.ok import OrdinaryKriging
 from skgstat import Variogram
+import matplotlib.pyplot as plt
 
 import warnings
 warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the /0 warning
