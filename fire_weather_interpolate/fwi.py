@@ -128,11 +128,8 @@ def start_date_calendar(file_path_hourly,year):
                 date_dict[station_name] = day #Store the integer in the dictionary
 
             else:
-                d0 = date(int(year), 3, 1)
-                d1 = date(int(year), 7, 31) #July 31 is the last day we can start up on 
-                delta = d1 - d0
-                day = int(delta.days)
-                date_dict[station_name] = day
+                print('Station %s did not start up by August 1.'%station_name) 
+                pass #Do not include the station - no start up by August 1 is pretty unrealistic I think... (?) 
 
 
 
@@ -281,11 +278,15 @@ def start_date_calendar_csv(file_path_hourly,year):
                 date_dict[station_name] = day #Store the integer in the dictionary
                 
             else: 
-                d0 = date(int(year), 3, 1)
-                d1 = date(int(year), 7, 31) #July 31 is the last day we can start up on 
-                delta = d1 - d0
-                day = int(delta.days)
-                date_dict[station_name] = day #Here we are forcing the start up day to occur on July 31 
+                #Uncomment this block of code to force start up on July 31 if the conditions are not met... 
+                #d0 = date(int(year), 3, 1)
+                #d1 = date(int(year), 7, 31) #July 31 is the last day we can start up on 
+                #delta = d1 - d0
+                #day = int(delta.days)
+                #date_dict[station_name] = day #Here we are forcing the start up day to occur on July 31 
+                
+                print('Station %s did not start up by August 1.'%station_name) 
+                pass #Do not include the station
 
 
             #print('The start date for %s for %s is %s'%(station_name,year,Sdate))
