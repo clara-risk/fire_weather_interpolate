@@ -291,7 +291,177 @@ def ridge_regression(path_to_excel_spreadsheet,var1,var2,var3,var4,var5,var6,var
         f.tight_layout(rect=[0.05, 0.05, 0.95, 0.95])
         plt.show()
         
+def stratify_size(df,size_condition,all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10):
+    '''This is a sub-function that will be called to stratify the fires based on size in the ridge regression (stratify) function. 
+    ''' 
+    if size_condition == 'all': 
+        y = np.array(df['CALC_HA']).reshape(-1, 1)
+        if all_variables:
+            X = np.array(df[[var1,var2,var3,var4,var5,var6,var7,var8,var9,var10]])
+        else: 
+            X = np.array(df[[var5,var6,var7,var8,var9,var10]])
+    elif size_condition == '<200':
+        lessThan200 = df.loc[df['CALC_HA'] < 200]
+        y = np.array(lessThan200['CALC_HA']).reshape(-1, 1)
+        if all_variables:
+            X = np.array(lessThan200[[var1,var2,var3,var4,var5,var6,var7,var8,var9,var10]])
+        else: 
+            X = np.array(lessThan200[[var5,var6,var7,var8,var9,var10]]) #just fwi
+    elif size_condition == '>=200':
+        greaterThan200 = df.loc[df['CALC_HA'] >= 200]
+        y = np.array(greaterThan200['CALC_HA']).reshape(-1, 1)
+        if all_variables:
+            X = np.array(greaterThan200[[var1,var2,var3,var4,var5,var6,var7,var8,var9,var10]])
+        else: 
+            X = np.array(greaterThan200[[var5,var6,var7,var8,var9,var10]]) #just fwi
+    else:
+        print('The size condition is not in the correct format. Try again.')
+        sys.exit()
+    return X, y 
 
+def stratify_dataset(df,stratify_condition,size_condition,all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10):
+    '''This is a sub-function that will be called to stratify the fires based on different characteristics in the ridge regression (stratify) function. 
+    ''' 
+    if stratify_condition == 'none': 
+        if size_condition == 'all': 
+            X,y = stratify_size(df,'all',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        elif size_condition == '<200':
+            X,y = stratify_size(df,'<200',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        elif size_condition == '>=200':
+            X,y = stratify_size(df,'>=200',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        else:
+            print('The size condition is not in the correct format. Try again.')
+            sys.exit()
+    elif stratify_condition == 'human':
+        humanDf = df.loc[df['CAUSE'] =='H']
+        if size_condition == 'all': 
+            X,y = stratify_size(humanDf,'all',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        elif size_condition == '<200':
+            X,y = stratify_size(humanDf,'<200',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        elif size_condition == '>=200':
+            X,y = stratify_size(humanDf,'>=200',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        else:
+            print('The size condition is not in the correct format. Try again.')
+            sys.exit()
+    elif stratify_condition == 'lightning':
+        lightningDf = df.loc[df['CAUSE'] =='L']
+        if size_condition == 'all': 
+            X,y = stratify_size(lightningDf,'all',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        elif size_condition == '<200':
+            X,y = stratify_size(lightningDf,'<200',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        elif size_condition == '>=200':
+            X,y = stratify_size(lightningDf,'>=200',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        else:
+            print('The size condition is not in the correct format. Try again.')
+            sys.exit()
+    elif stratify_condition == '60conifer':
+        coniferDf = df.loc[df['NLEAF'] >= 60]
+        if size_condition == 'all': 
+            X,y = stratify_size(coniferDf,'all',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        elif size_condition == '<200':
+            X,y = stratify_size(coniferDf,'<200',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        elif size_condition == '>=200':
+            X,y = stratify_size(coniferDf,'>=200',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        else:
+            print('The size condition is not in the correct format. Try again.')
+            sys.exit()
+    elif stratify_condition == '60conifer & lightning':
+        LConiferDf = df.loc[(df['NLEAF'] >= 60) & (df['CAUSE'] == 'L')]
+        if size_condition == 'all': 
+            X,y = stratify_size(LConiferDf,'all',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        elif size_condition == '<200':
+            X,y = stratify_size(LConiferDf,'<200',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        elif size_condition == '>=200':
+            X,y = stratify_size(LConiferDf,'>=200',all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10) 
+        else:
+            print('The size condition is not in the correct format. Try again.')
+            sys.exit()
+    else:
+        print('That is not a correct stratify condition. Try again.')
+
+    return X,y 
+
+def ridge_regression_stratify(path_to_excel_spreadsheet,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10,all_variables,
+                              plot_distributions,plot_residual_histogram,stratify_condition, size_condition,ecozone_condition): 
+    '''Make a ridge regression model stratified based on different ecozones and fire characteristics
+    and print out the resulting coefficients and (if True) the histogram of residuals 
+    Parameters
+        path_to_excel_spreadsheet (str): path to the spreadsheet containing the FWI values for each fire and the other covariates,
+        Notes: No trailing 0s in speadsheet, no space after parameter name in header 
+        var1-10 (str): variable names, corresponding to the header titles 
+        all_variables (bool): if True, will use all the variables, not just the FWI metrics 
+        plot_distributions (bool): if True, will plot the correlation diagram for all the variables 
+        plot_residual_histogram (bool): if True, will plot a histogram showing the residuals to check if normally distributed
+        stratify_condition (str): can be one of 'human', 'lightning', '60conifer', '60conifer & lightning','none'
+        size_condition (str): can be one of 'all', '<200', '>=200'
+        ecozone_condition (str): can be one of 'none','taiga','boreal1' (west), 'boreal2' (east), 'hudson'
+    Returns 
+        Prints out regression coefficients, MAE, and R2 of the model 
+    '''
+
+    df = pd.read_csv(path_to_excel_spreadsheet)
+    mod = RidgeCV()
+
+    if ecozone_condition == 'none': 
+        X,y = stratify_dataset(df,stratify_condition,size_condition,all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10)
+    elif ecozone_condition == 'taiga':
+        taiga_df = df.loc[df['Ecozone'] =='Taiga']
+        X,y = stratify_dataset(taiga_df,stratify_condition,size_condition,all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10)
+    elif ecozone_condition == 'boreal1':
+        boreal1_df = df.loc[df['Ecozone'] =='Boreal 1']
+        X,y = stratify_dataset(boreal1_df,stratify_condition,size_condition,all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10)
+    elif ecozone_condition == 'boreal2':
+        boreal2_df = df.loc[df['Ecozone'] =='Boreal 2']
+        X,y = stratify_dataset(boreal2_df,stratify_condition,size_condition,all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10)
+    elif ecozone_condition == 'hudson':
+        hudson_df = df.loc[df['Ecozone'] =='Hudson']
+        X,y = stratify_dataset(hudson_df,stratify_condition,size_condition,all_variables,var1,var2,var3,var4,var5,var6,var7,var8,var9,var10)
+    else:
+        print('That is not a valid ecozone name. Try again.')
+        sys.exit() 
+    
+    mod.fit(X,y)
+    y_pred = mod.predict(X)
+    
+    if plot_distributions: 
+        
+        if all_variables: 
+
+            dataset = df[['CALC_HA',var1,var2,var3,var4,var5,var6,var7,var8,var9,var10]]
+        else: 
+            dataset = df[['CALC_HA',var1,var2,var3,var4,var5,var6,var7,var8,var9,var10]]
+
+        _ = sns.pairplot(dataset, kind='reg', diag_kind='kde') #check for correlation
+
+        _.fig.set_size_inches(15,15)
+    
+    print('Coefficients: %s'%mod.coef_)
+    print('Mean squared error: %s'% mean_absolute_error(y, y_pred))
+    print('Coefficient of determination: %s'% r2_score(y, y_pred))
+
+    f,  ax0 = plt.subplots(1, 1)
+    ax0.scatter(y, y_pred)
+    ax0.plot([0, 150000], [0, 150000], '--k')
+    ax0.set_ylabel('Target predicted')
+    ax0.set_xlabel('True Target')
+    ax0.set_title('Ridge Regression \n without target transformation')
+    ax0.set_xlim([0, 150000])
+    ax0.set_ylim([0, 150000])
+    plt.show()
+
+    if plot_residual_histogram:
+        fig, ax = plt.subplots()
+        residuals = y - mod.predict(X)
+        
+        mu = sum(residuals)/len(residuals)
+        var  = sum(pow(x-mu,2) for x in residuals) / len(residuals)
+        sigma  = math.sqrt(var)
+        n, bins, patches = ax.hist(residuals,50,density=1,align='left')
+        line = ((1 / (np.sqrt(2 * np.pi) * sigma)) *np.exp(-0.5 * (1 / sigma * (bins - mu))**2))
+        ax.plot(bins, line, '--')
+        ax.set_xlabel('Residuals')
+        ax.set_ylabel('Frequency')
+        plt.show()
 
 def get_RMSE(absolute_error_dictionary):
     '''Calc RMSE
