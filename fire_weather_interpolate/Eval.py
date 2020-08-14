@@ -471,8 +471,10 @@ def get_RMSE(absolute_error_dictionary):
         RMSE (float)
     '''
     squared = [x**2 for x in absolute_error_dictionary.values()]
-    RMSE = sum(squared)*(1/len(squared))
+    innerRMSE = sum(squared)*(1/len(squared))
+    RMSE = math.sqrt(innerRMSE) 
     return RMSE
+
 
 def get_MAE(absolute_error_dictionary):
     '''Calc mean absolute error 
