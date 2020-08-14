@@ -519,7 +519,7 @@ def get_lat_lon(file_path):
     with open('hourly_lat_lon_TEMP.json', 'w') as fp:
         json.dump(latlon_dictionary, fp)
         
- def convert_to_feather(file_path,out_path):
+def convert_to_feather(file_path,out_path):
     '''Convert the Environment & Climate Change Canada csv files into feather files, to allow for faster processing
     Parameters
         file_path (str): file path to the csv files provided by Environment & Climate Change
