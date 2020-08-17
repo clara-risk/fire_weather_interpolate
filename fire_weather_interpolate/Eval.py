@@ -619,6 +619,7 @@ def plot(shapefile,maxmin,idw1_grid,idw2_grid,idew1_grid,idew2_grid,tpss_grid,rf
     Returns
         Plots a figure with the different maps 
     '''
+    plt.rcParams["font.family"] = "Times New Roman" #Set the font to Times New Roman 
     fig, ax = plt.subplots(2,4)
     
     crs = {'init': 'esri:102001'}
