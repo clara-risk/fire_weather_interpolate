@@ -606,3 +606,90 @@ def is_it_in_zone(file_path,file_path_zones,Zone1,Zone2,Zone3,Zone4):
 
                     fires.append(fire_shp[:-4])
                     fire_dates.append(str(rep_date)[0:10])
+
+                    
+                    
+def plot(shapefile,maxmin,idw1_grid,idw2_grid,idew1_grid,idew2_grid,tpss_grid,rf_grid,ok_grid,varname): 
+    '''Plot all the maps for the different spatial interpolation methods on one figure 
+    Parameters
+        shapefile (str): math to the shapefile 
+        maxmin (list): extent of the image to plot, you can get it from any of the interpolation functions
+        idw1_grid (etc.): the grids for the different spatial interpolation methods
+        varname (str): name of the variable being shown 
+    Returns
+        Plots a figure with the different maps 
+    '''
+    fig, ax = plt.subplots(2,4)
+    
+    crs = {'init': 'esri:102001'}
+
+    na_map = gpd.read_file(shapefile)
+
+    yProj_min = maxmin[0]
+    yProj_max = maxmin[1]
+    xProj_min = maxmin[3]
+    xProj_max = maxmin[2]
+    
+    circ = PolygonPatch(na_map['geometry'][0],visible=False)
+    ax[0, 0].add_patch(circ)
+    ax[0, 0].imshow(idw1_grid,extent=(xProj_min,xProj_max,yProj_max,yProj_min),clip_path=circ, clip_on=True,origin='upper')
+    ax[0, 0].invert_yaxis()
+    ax[0,0].set_title('IDW B=1')
+
+    circ2 = PolygonPatch(na_map['geometry'][0],visible=False)
+
+    ax[0, 1].add_patch(circ2) 
+    ax[0, 1].imshow(idw2_grid,extent=(xProj_min,xProj_max,yProj_max,yProj_min),clip_path=circ2, clip_on=True,origin='upper')
+    ax[0, 1].invert_yaxis()
+    ax[0,1].set_title('IDW B=2')
+    
+
+    circ3 = PolygonPatch(na_map['geometry'][0],visible=False)
+
+    ax[0, 2].add_patch(circ3) 
+    im = ax[0, 2].imshow(idew1_grid,extent=(xProj_min,xProj_max,yProj_max,yProj_min),clip_path=circ3, clip_on=True,origin='upper') 
+    ax[0, 2].invert_yaxis()
+    ax[0,2].set_title('IDEW B=1')
+
+    circ4 = PolygonPatch(na_map['geometry'][0],visible=False)
+
+    ax[0, 3].add_patch(circ4) 
+    ax[0, 3].imshow(idew2_grid,extent=(xProj_min,xProj_max,yProj_max,yProj_min),clip_path=circ4, clip_on=True,origin='upper') 
+    ax[0, 3].invert_yaxis()
+    ax[0,3].set_title('IDEW B=2')
+
+    circ5 = PolygonPatch(na_map['geometry'][0],visible=False)
+
+    ax[1, 0].add_patch(circ5) 
+    ax[1, 0].imshow(tpss_grid,extent=(xProj_min,xProj_max,yProj_max,yProj_min),clip_path=circ5, clip_on=True,origin='upper') 
+    ax[1, 0].invert_yaxis()
+    ax[1,0].set_title('TPSS')
+
+    
+    circ6 = PolygonPatch(na_map['geometry'][0],visible=False)
+
+    ax[1, 1].add_patch(circ6) 
+    ax[1, 1].imshow(rf_grid,extent=(xProj_min,xProj_max,yProj_max,yProj_min),clip_path=circ6, clip_on=True,origin='upper') 
+    ax[1, 1].invert_yaxis()
+    ax[1,1].set_title('RF')
+
+    circ7 = PolygonPatch(na_map['geometry'][0],visible=False)
+
+    ax[1, 2].add_patch(circ7) 
+    ax[1, 2].imshow(ok_grid,extent=(xProj_min,xProj_max,yProj_max,yProj_min),clip_path=circ7, clip_on=True,origin='upper') 
+    ax[1, 2].invert_yaxis()
+    ax[1,2].set_title('OK')
+
+
+    fig.subplots_adjust(right=0.8)
+    cbar_ax = fig.add_axes([0.82, 0.15, 0.01, 0.7])
+    fig.colorbar(im, cax=cbar_ax, aspect=0.01,label=varname)
+
+
+    fig.delaxes(ax[1,3])
+
+    fig.text(0.5,0.04, "Longitude", ha="center", va="center")
+    fig.text(0.05,0.5, "Latitude", ha="center", va="center", rotation=90)
+
+
+    plt.show()
