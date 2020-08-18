@@ -880,6 +880,10 @@ def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_inter
 
     if json:
         dc_list = [i.tolist() for i in dc_list]
+        for arrayDC in dc_list: #Check for corruption before writing to json
+            is_it_corrupted = all(i >= 2000 for i in arrayDC) #the DC value should never be that high 
+            if is_it_corrupted:
+                print('There is a problem with the calculations. The DC value is too large.') 
 
     return dc_list
 
