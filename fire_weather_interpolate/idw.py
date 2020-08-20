@@ -232,7 +232,7 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d):
 
      return absolute_error_dictionary
      
-def make_fold(idw_grid,blocknum):
+def make_block(idw_grid,blocknum):
      '''Function to create an array delineating the groups. 
      '''
      if blocknum == 4:
@@ -425,7 +425,7 @@ def select_random_station(groups,blocknum,replacement,used_stations):
      return stations_selected
                
           
-def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blocknum,nruns,replacement,show):
+def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blocknum,nfolds,replacement,show):
      '''Spatially blocked k-folds cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
@@ -434,22 +434,22 @@ def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blockn
          Cvar_dict (dict): dictionary of weather variable values for each station 
          shapefile (str): path to the study area shapefile 
          d (int): the weighting function for IDW interpolation
-         nruns (int): # times to run the procedure. For 10-fold we use 10, etc. 
+         nfolds (int): # number of folds. For 10-fold we use 10, etc. 
      Returns 
-         kfold_error_dictionary (dict): a dictionary of the absolute error at each station when it
+         error_dictionary (dict): a dictionary of the absolute error at each fold when it
          was left out 
      '''
      station_list_used = [] #If not using replacement, keep a record of what we have done 
      count = 1
-     kfold_error_dictionary = {} 
-     while count <= nruns: 
+     error_dictionary = {} 
+     while count <= nfolds: 
           x_origin_list = []
           y_origin_list = [] 
 
           absolute_error_dictionary = {} 
           projected_lat_lon = {}
 
-          folds = make_fold(idw1_grid,blocknum)
+          folds = make_block(idw1_grid,blocknum)
           dictionaryGroups = sorting_stations(folds,shapefile,temp_dict)
           station_list = select_random_station(dictionaryGroups,blocknum,replacement,station_list_used).values()
           if replacement == False: 
@@ -569,39 +569,9 @@ def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blockn
                absolute_error = abs(interpolated_val-original_val)
                absolute_error_dictionary[station_name_hold_back] = absolute_error
 
-          kfold_error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
+          error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
           #print(absolute_error_dictionary)
           count+=1
-     overall_error = sum(kfold_error_dictionary.values())/nruns #average of all the runs
+     overall_error = sum(error_dictionary.values())/nfolds #average of all the runs
      print(overall_error)
      return overall_error
-
-def select_block_size(nruns):
-     block25_error = []
-     block16_error = []
-     block9_error = []
-     if nruns <= 1:
-          print('That is not enough runs to calculate the standard deviation!')
-          sys.exit() 
-     
-     for n in range(0,nruns):
-
-          block25 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,25,10,True,False)
-          block25_error.append(block25) 
-
-          block16 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,16,10,True,False)
-          block16_error.append(block16)
-          
-          block9 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,9,10,True,False)
-          block9_error.append(block9)
-
-     stdev25 = statistics.stdev(block25_error) 
-     stdev16 = statistics.stdev(block16_error)
-     stdev9 = statistics.stdev(block9_error)
-
-     list_stdev = [stdev25,stdev16,stdev9]
-     list_block_name = [25,16,9]
-     index_min = list_stdev.index(min(list_stdev))
-     lowest_stdev = list_block_name[index_min]
-
-     return lowest_stdev
