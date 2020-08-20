@@ -12,7 +12,7 @@ import numpy as np
 import pyproj
 import matplotlib.pyplot as plt
 import os,sys
-import math
+import math, statistics
 import warnings
 warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the /0 warning
 
@@ -232,41 +232,130 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d):
 
      return absolute_error_dictionary
      
-def make_fold(idw_grid):
+def make_fold(idw_grid,blocknum):
      '''Function to create an array delineating the groups. 
      '''
-     shape = idw_grid.shape
-     blocks = np.array_split(idw_grid,4) #We need to make like a quilt of values of the blocks and then search for stations that overlay a block
-     blocks[0] = np.zeros(blocks[0].shape)+1
-     blocks[1] = np.zeros(blocks[1].shape)+5
-     blocks[2] = np.zeros(blocks[2].shape)+9
-     blocks[3] = np.zeros(blocks[3].shape)+13
-     blocks[0] = [x.T for x in np.array_split(blocks[0].T, 4)] #transpose the array so we can split by column
-     blocks[0][1] = np.zeros(blocks[0][1].shape)+2
-     blocks[0][2] = np.zeros(blocks[0][2].shape)+3
-     blocks[0][3] = np.zeros(blocks[0][3].shape)+4
-     blocks[1] = [x.T for x in np.array_split(blocks[1].T, 4)]
-     blocks[1][1] = np.zeros(blocks[1][1].shape)+6
-     blocks[1][2] = np.zeros(blocks[1][2].shape)+7
-     blocks[1][3] = np.zeros(blocks[1][3].shape)+8
-     blocks[2] = [x.T for x in np.array_split(blocks[2].T, 4)]
-     blocks[2][1] = np.zeros(blocks[2][1].shape)+10
-     blocks[2][2] = np.zeros(blocks[2][2].shape)+11
-     blocks[2][3] = np.zeros(blocks[2][3].shape)+12
-     blocks[3] = [x.T for x in np.array_split(blocks[3].T, 4)]
-     blocks[3][1] = np.zeros(blocks[3][1].shape)+14
-     blocks[3][2] = np.zeros(blocks[3][2].shape)+15
-     blocks[3][3] = np.zeros(blocks[3][3].shape)+16
-     
-     #Ok now we knit it back together lengthwise
-     topBlock = np.concatenate([blocks[0][0],blocks[0][1],blocks[0][2],blocks[0][3]],axis=1)
-     secondBlock = np.concatenate([blocks[1][0],blocks[1][1],blocks[1][2],blocks[1][3]],axis=1)
-     thirdBlock = np.concatenate([blocks[2][0],blocks[2][1],blocks[2][2],blocks[2][3]],axis=1)
-     bottomBlock = np.concatenate([blocks[3][0],blocks[3][1],blocks[3][2],blocks[3][3]],axis=1)
-     #Now widthwise
-     blocks = np.concatenate([topBlock,secondBlock,thirdBlock,bottomBlock],axis=0)
+     if blocknum == 4:
+          shape = idw_grid.shape
+          blocks = np.array_split(idw_grid,2) #We need to make like a quilt of values of the blocks and then search for stations that overlay a block
+          blocks[0] = np.zeros(blocks[0].shape)+1
+          blocks[1] = np.zeros(blocks[1].shape)+3
+
+          blocks[0] = [x.T for x in np.array_split(blocks[0].T, 2)] #transpose the array so we can split by column
+          blocks[0][1] = np.zeros(blocks[0][1].shape)+2
+ 
+          blocks[1] = [x.T for x in np.array_split(blocks[1].T, 2)]
+          blocks[1][1] = np.zeros(blocks[1][1].shape)+4
+
+          #Ok now we knit it back together lengthwise
+          topBlock = np.concatenate([blocks[0][0],blocks[0][1]],axis=1)
+          bottomBlock = np.concatenate([blocks[1][0],blocks[1][1]],axis=1)
+          #Now widthwise
+          blocks = np.concatenate([topBlock,bottomBlock],axis=0)
+
+     if blocknum == 9:
+          shape = idw_grid.shape
+          blocks = np.array_split(idw_grid,3) #We need to make like a quilt of values of the blocks and then search for stations that overlay a block
+          blocks[0] = np.zeros(blocks[0].shape)+1
+          blocks[1] = np.zeros(blocks[1].shape)+4
+          blocks[2] = np.zeros(blocks[2].shape)+7
+
+          blocks[0] = [x.T for x in np.array_split(blocks[0].T, 3)] #transpose the array so we can split by column
+          blocks[0][1] = np.zeros(blocks[0][1].shape)+2
+          blocks[0][2] = np.zeros(blocks[0][2].shape)+3
+ 
+          blocks[1] = [x.T for x in np.array_split(blocks[1].T, 3)]
+          blocks[1][1] = np.zeros(blocks[1][1].shape)+5
+          blocks[1][2] = np.zeros(blocks[1][2].shape)+6
+
+          blocks[2] = [x.T for x in np.array_split(blocks[2].T, 3)]
+          blocks[2][1] = np.zeros(blocks[2][1].shape)+8
+          blocks[2][2] = np.zeros(blocks[2][2].shape)+9
+
+          
+          #Ok now we knit it back together lengthwise
+          topBlock = np.concatenate([blocks[0][0],blocks[0][1],blocks[0][2]],axis=1)
+          secondBlock = np.concatenate([blocks[1][0],blocks[1][1],blocks[1][2]],axis=1)
+          bottomBlock = np.concatenate([blocks[2][0],blocks[2][1],blocks[2][2]],axis=1)
+          #Now widthwise
+          blocks = np.concatenate([topBlock,secondBlock,bottomBlock],axis=0)
+     if blocknum == 16: 
+          shape = idw_grid.shape
+          blocks = np.array_split(idw_grid,4) #We need to make like a quilt of values of the blocks and then search for stations that overlay a block
+          blocks[0] = np.zeros(blocks[0].shape)+1
+          blocks[1] = np.zeros(blocks[1].shape)+5
+          blocks[2] = np.zeros(blocks[2].shape)+9
+          blocks[3] = np.zeros(blocks[3].shape)+13
+          blocks[0] = [x.T for x in np.array_split(blocks[0].T, 4)] #transpose the array so we can split by column
+          blocks[0][1] = np.zeros(blocks[0][1].shape)+2
+          blocks[0][2] = np.zeros(blocks[0][2].shape)+3
+          blocks[0][3] = np.zeros(blocks[0][3].shape)+4
+          blocks[1] = [x.T for x in np.array_split(blocks[1].T, 4)]
+          blocks[1][1] = np.zeros(blocks[1][1].shape)+6
+          blocks[1][2] = np.zeros(blocks[1][2].shape)+7
+          blocks[1][3] = np.zeros(blocks[1][3].shape)+8
+          blocks[2] = [x.T for x in np.array_split(blocks[2].T, 4)]
+          blocks[2][1] = np.zeros(blocks[2][1].shape)+10
+          blocks[2][2] = np.zeros(blocks[2][2].shape)+11
+          blocks[2][3] = np.zeros(blocks[2][3].shape)+12
+          blocks[3] = [x.T for x in np.array_split(blocks[3].T, 4)]
+          blocks[3][1] = np.zeros(blocks[3][1].shape)+14
+          blocks[3][2] = np.zeros(blocks[3][2].shape)+15
+          blocks[3][3] = np.zeros(blocks[3][3].shape)+16
+          
+          #Ok now we knit it back together lengthwise
+          topBlock = np.concatenate([blocks[0][0],blocks[0][1],blocks[0][2],blocks[0][3]],axis=1)
+          secondBlock = np.concatenate([blocks[1][0],blocks[1][1],blocks[1][2],blocks[1][3]],axis=1)
+          thirdBlock = np.concatenate([blocks[2][0],blocks[2][1],blocks[2][2],blocks[2][3]],axis=1)
+          bottomBlock = np.concatenate([blocks[3][0],blocks[3][1],blocks[3][2],blocks[3][3]],axis=1)
+          #Now widthwise
+          blocks = np.concatenate([topBlock,secondBlock,thirdBlock,bottomBlock],axis=0)
+     if blocknum == 25:
+          shape = idw_grid.shape
+          blocks = np.array_split(idw_grid,5) #We need to make like a quilt of values of the blocks and then search for stations that overlay a block
+          blocks[0] = np.zeros(blocks[0].shape)+1
+          blocks[1] = np.zeros(blocks[1].shape)+6
+          blocks[2] = np.zeros(blocks[2].shape)+11
+          blocks[3] = np.zeros(blocks[3].shape)+16
+          blocks[4] = np.zeros(blocks[3].shape)+21
+          blocks[0] = [x.T for x in np.array_split(blocks[0].T, 5)] #transpose the array so we can split by column
+          blocks[0][1] = np.zeros(blocks[0][1].shape)+2
+          blocks[0][2] = np.zeros(blocks[0][2].shape)+3
+          blocks[0][3] = np.zeros(blocks[0][3].shape)+4
+          blocks[0][4] = np.zeros(blocks[0][4].shape)+5
+          blocks[1] = [x.T for x in np.array_split(blocks[1].T, 5)]
+          blocks[1][1] = np.zeros(blocks[1][1].shape)+7
+          blocks[1][2] = np.zeros(blocks[1][2].shape)+8
+          blocks[1][3] = np.zeros(blocks[1][3].shape)+9
+          blocks[1][4] = np.zeros(blocks[1][4].shape)+10
+          blocks[2] = [x.T for x in np.array_split(blocks[2].T, 5)]
+          blocks[2][1] = np.zeros(blocks[2][1].shape)+11
+          blocks[2][2] = np.zeros(blocks[2][2].shape)+12
+          blocks[2][3] = np.zeros(blocks[2][3].shape)+13
+          blocks[2][4] = np.zeros(blocks[2][4].shape)+14
+          blocks[3] = [x.T for x in np.array_split(blocks[3].T, 5)]
+          blocks[3][1] = np.zeros(blocks[3][1].shape)+15
+          blocks[3][2] = np.zeros(blocks[3][2].shape)+16
+          blocks[3][3] = np.zeros(blocks[3][3].shape)+17
+          blocks[3][4] = np.zeros(blocks[3][4].shape)+18
+          blocks[4] = [x.T for x in np.array_split(blocks[4].T, 5)]
+          blocks[4][1] = np.zeros(blocks[4][1].shape)+19
+          blocks[4][2] = np.zeros(blocks[4][2].shape)+20
+          blocks[4][3] = np.zeros(blocks[4][3].shape)+21
+          blocks[4][4] = np.zeros(blocks[4][4].shape)+22
+
+          
+          #Ok now we knit it back together lengthwise
+          topBlock = np.concatenate([blocks[0][0],blocks[0][1],blocks[0][2],blocks[0][3],blocks[0][4]],axis=1)
+          secondBlock = np.concatenate([blocks[1][0],blocks[1][1],blocks[1][2],blocks[1][3],blocks[1][4]],axis=1)
+          thirdBlock = np.concatenate([blocks[2][0],blocks[2][1],blocks[2][2],blocks[2][3],blocks[2][4]],axis=1)
+          fourthBlock = np.concatenate([blocks[3][0],blocks[3][1],blocks[3][2],blocks[3][3],blocks[3][4]],axis=1)
+          bottomBlock = np.concatenate([blocks[4][0],blocks[4][1],blocks[4][2],blocks[4][3],blocks[4][4]],axis=1)
+          #Now widthwise
+          blocks = np.concatenate([topBlock,secondBlock,thirdBlock,fourthBlock,bottomBlock],axis=0)         
 
      return blocks
+
 
 def sorting_stations(blocks,shapefile,Cvar_dict):
      '''Here we are sorting the stations based on their position on the array. 
@@ -316,21 +405,27 @@ def sorting_stations(blocks,shapefile,Cvar_dict):
 
      return groups
 
-def select_random_station(groups):
-     stations_selected = {} 
-     for group in range(1,16):
+def select_random_station(groups,blocknum,replacement,used_stations):
+     stations_selected = {}
+     used_stations = [x for y in used_stations for x in y] #merge all sublists
+     for group in range(1,blocknum):
           try: 
                group1 = [k for k,v in groups.items() if v == group]
+               for station in used_stations:
+                    if station in group1: 
+                         group1.remove(station) 
                group1_selection = np.random.choice(group1,1)
+                    
                #print('Group selection %s is: %s'%(group,group1_selection[0]))
                stations_selected[group] = group1_selection[0] 
           except ValueError: #No stations in that group!
-               print('No stations in group %s'%group)
+               pass
+               #print('No stations in group %s'%group)
 
      return stations_selected
                
           
-def spatial_kfolds_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,nruns):
+def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blocknum,nruns,replacement,show):
      '''Spatially blocked k-folds cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
@@ -344,6 +439,7 @@ def spatial_kfolds_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,nruns)
          kfold_error_dictionary (dict): a dictionary of the absolute error at each station when it
          was left out 
      '''
+     station_list_used = [] #If not using replacement, keep a record of what we have done 
      count = 1
      kfold_error_dictionary = {} 
      while count <= nruns: 
@@ -353,9 +449,12 @@ def spatial_kfolds_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,nruns)
           absolute_error_dictionary = {} 
           projected_lat_lon = {}
 
-          folds = make_fold(idw1_grid)
+          folds = make_fold(idw1_grid,blocknum)
           dictionaryGroups = sorting_stations(folds,shapefile,temp_dict)
-          station_list = select_random_station(dictionaryGroups).values()
+          station_list = select_random_station(dictionaryGroups,blocknum,replacement,station_list_used).values()
+          if replacement == False: 
+               station_list_used.append(list(station_list))
+          #print(station_list_used) 
           #print(station_list) 
           
 
@@ -432,6 +531,28 @@ def spatial_kfolds_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,nruns)
 
           Zi = np.dot(weights.T, z)
           idw_grid = Zi.reshape(num_row,num_col)
+          if show and (count == 1):
+               fig, ax = plt.subplots(figsize= (15,15))
+               crs = {'init': 'esri:102001'}
+
+               na_map = gpd.read_file(shapefile)
+
+
+               im = plt.imshow(folds,extent=(xProj_extent.min()-1,xProj_extent.max()+1,yProj_extent.max()-1,yProj_extent.min()+1),cmap='tab20b') 
+               na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
+                 
+               plt.scatter(xProj,yProj,c='black',s=2)
+
+               plt.gca().invert_yaxis()
+               cbar = plt.colorbar(im,ax=ax,cmap='tab20b')
+               cbar.set_label('Block Number') 
+
+               title = 'Group selection'
+               fig.suptitle(title, fontsize=14)
+               plt.xlabel('Longitude')
+               plt.ylabel('Latitude') 
+
+               plt.show()
 
           #Compare at a certain point
           for station_name_hold_back in station_list: 
@@ -454,4 +575,33 @@ def spatial_kfolds_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,nruns)
      overall_error = sum(kfold_error_dictionary.values())/nruns #average of all the runs
      print(overall_error)
      return overall_error
+
+def select_block_size(nruns):
+     block25_error = []
+     block16_error = []
+     block9_error = []
+     if nruns <= 1:
+          print('That is not enough runs to calculate the standard deviation!')
+          sys.exit() 
      
+     for n in range(0,nruns):
+
+          block25 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,25,10,True,False)
+          block25_error.append(block25) 
+
+          block16 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,16,10,True,False)
+          block16_error.append(block16)
+          
+          block9 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,9,10,True,False)
+          block9_error.append(block9)
+
+     stdev25 = statistics.stdev(block25_error) 
+     stdev16 = statistics.stdev(block16_error)
+     stdev9 = statistics.stdev(block9_error)
+
+     list_stdev = [stdev25,stdev16,stdev9]
+     list_block_name = [25,16,9]
+     index_min = list_stdev.index(min(list_stdev))
+     lowest_stdev = list_block_name[index_min]
+
+     return lowest_stdev
