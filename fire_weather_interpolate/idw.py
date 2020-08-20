@@ -410,24 +410,37 @@ def sorting_stations(blocks,shapefile,Cvar_dict):
 
      return groups
 
-def select_random_station(groups,blocknum,replacement,used_stations):
-     stations_selected = {}
-     used_stations = [x for y in used_stations for x in y] #merge all sublists
-     for group in range(1,blocknum):
-          try: 
-               group1 = [k for k,v in groups.items() if v == group]
-               for station in used_stations:
-                    if station in group1: 
-                         group1.remove(station) 
-               group1_selection = np.random.choice(group1,1)
-                    
-               #print('Group selection %s is: %s'%(group,group1_selection[0]))
-               stations_selected[group] = group1_selection[0] 
-          except ValueError: #No stations in that group!
-               pass
-               #print('No stations in group %s'%group)
+def select_block_size(nruns,group_type):
+     block25_error = []
+     block16_error = []
+     block9_error = []
+     if nruns <= 1:
+          print('That is not enough runs to calculate the standard deviation!')
+          sys.exit() 
+     
+     for n in range(0,nruns):
 
-     return stations_selected
+          block25 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,25,5,True,False,group_type)
+          block25_error.append(block25) 
+
+          block16 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,16,8,True,False,group_type)
+          block16_error.append(block16)
+          
+          block9 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,9,14,True,False,group_type)
+          block9_error.append(block9)
+
+     stdev25 = statistics.stdev(block25_error) 
+     stdev16 = statistics.stdev(block16_error)
+     stdev9 = statistics.stdev(block9_error)
+
+     list_stdev = [stdev25,stdev16,stdev9]
+     list_block_name = [25,16,9]
+     index_min = list_stdev.index(min(list_stdev))
+     lowest_stdev = list_block_name[index_min]
+
+     print(lowest_stdev) 
+
+     return lowest_stdev
                
           
 def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blocknum,nfolds,replacement,show):
@@ -454,9 +467,18 @@ def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blockn
           absolute_error_dictionary = {} 
           projected_lat_lon = {}
 
-          folds = make_block(idw1_grid,blocknum)
-          dictionaryGroups = sorting_stations(folds,shapefile,temp_dict)
-          station_list = select_random_station(dictionaryGroups,blocknum,replacement,station_list_used).values()
+          if group_type == 'blocks': 
+               folds = make_block(idw1_grid,blocknum)
+               dictionaryGroups = sorting_stations(folds,shapefile,Cvar_dict)
+               station_list = select_random_station(dictionaryGroups,blocknum,replacement,station_list_used).values()
+          elif group_type == 'clusters':
+               cluster = spatial_cluster(latlon_dict,Cvar_dict,shapefile,blocknum,False,False)
+               station_list = select_random_station(cluster,blocknum,replacement,station_list_used).values()
+
+          else:
+               print('That is not a valid group type.')
+               sys.exit() 
+
           if replacement == False: 
                station_list_used.append(list(station_list))
           #print(station_list_used) 
