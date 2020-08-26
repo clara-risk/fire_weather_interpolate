@@ -23,6 +23,7 @@ warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the
 
 import cluster_3d as c3d 
 import make_blocks as mbk
+import Eval as Eval 
 
 def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d): 
      '''Inverse distance weighting interpolation
@@ -339,7 +340,7 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
           absolute_error_dictionary = {} 
           projected_lat_lon = {}
 
-          station_list = select_random_station(dictionary_Groups,blocknum,replacement,station_list_used).values()
+          station_list = Eval.select_random_station(dictionary_Groups,blocknum,replacement,station_list_used).values()
 
 
           if replacement == False: 
