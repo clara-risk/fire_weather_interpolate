@@ -58,7 +58,7 @@ for input_date in sorted(overall_dates):
    
    temperature = GD.get_noon_temp(input_date,file_path_hourly)
    #Run the xval procedure for the clusters using 30 repetitions 
-   cluster_size, MAE = idw.select_block_size_IDW(30,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile)
+   cluster_size, MAE = idw.select_block_size_IDW(30,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list)
    
    error_dict[input_date] = [MAE,cluster_size]
    end = time.time()
