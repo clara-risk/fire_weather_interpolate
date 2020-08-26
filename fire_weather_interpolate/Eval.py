@@ -694,3 +694,43 @@ def plot(shapefile,maxmin,idw1_grid,idw2_grid,idew1_grid,idew2_grid,tpss_grid,rf
 
 
     plt.show()
+
+def select_random_station(groups,blocknum,replacement,used_stations):
+    '''Select a random station from each group for bagging xval 
+    Parameters
+        groups (dict): dictionary of what group each station belongs to 
+        blocknum (int): number of blocks 
+        replacement (bool): whether or not to use replacement 
+        used_stations (list): empty list if using replacement, if not, it is a list
+        of already used stations 
+    Returns
+        stations_selected (dict): dictionary of selected stations 
+    '''
+     if not replacement: 
+          stations_selected = {}
+          used_stations = [x for y in used_stations for x in y] #merge all sublists
+          for group in range(1,blocknum+1):
+               try: 
+                    group1 = [k for k,v in groups.items() if v == group]
+                    for station in used_stations:
+                         if station in group1: 
+                              group1.remove(station) 
+                    group1_selection = np.random.choice(group1,1)
+                         
+                    #print('Group selection %s is: %s'%(group,group1_selection[0]))
+                    stations_selected[group] = group1_selection[0] 
+               except ValueError: #No stations in that group!
+                    pass
+                    #print('No stations in group %s'%group)
+
+          return stations_selected
+     else: #Replace the stations
+          stations_selected = {}
+          for group in range(1,blocknum+1):
+               try: 
+                    group1 = [k for k,v in groups.items() if v == group]
+                    group1_selection = np.random.choice(group1,1)
+                    stations_selected[group] = group1_selection[0]
+               except ValueError:
+                    pass 
+          return stations_selected
