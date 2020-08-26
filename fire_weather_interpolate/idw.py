@@ -240,54 +240,6 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d):
      return absolute_error_dictionary
      
 
-def sorting_stations(blocks,shapefile,Cvar_dict):
-     '''Here we are sorting the stations based on their position on the array. 
-     '''
-     x_origin_list = []
-     y_origin_list = [] 
-
-     groups = {} 
-     station_name_list = []
-     projected_lat_lon = {}
-
-     for station_name in Cvar_dict.keys():
-          
-          if station_name in latlon_dict.keys():
-               
-             station_name_list.append(station_name)
-
-             loc = latlon_dict[station_name]
-             latitude = loc[0]
-             longitude = loc[1]
-             Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
-             Plat = float(Plat)
-             Plon = float(Plon)
-             projected_lat_lon[station_name] = [Plat,Plon]
-
-
-
-     for station_name_hold_back in station_name_list:
-        
-        na_map = gpd.read_file(shapefile)
-        bounds = na_map.bounds
-        xmax = bounds['maxx']
-        xmin= bounds['minx']
-        ymax = bounds['maxy']
-        ymin = bounds['miny']
-        pixelHeight = 10000 
-        pixelWidth = 10000
-
-        #Delete at a certain point
-        coord_pair = projected_lat_lon[station_name_hold_back]
-
-        x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
-        y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
-
-        group = blocks[y_orig][x_orig] 
-        groups[station_name_hold_back] = group 
-
-     return groups
-
 def select_block_size(nruns,group_type):
      block25_error = []
      block16_error = []
@@ -298,13 +250,13 @@ def select_block_size(nruns,group_type):
      
      for n in range(0,nruns):
 
-          block25 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,25,5,True,False,group_type)
+          block25 = spatial_groups_IDW(idw1_grid,latlon_dict,Cvar_dict,shapefile,1,25,5,True,False,group_type)
           block25_error.append(block25) 
 
-          block16 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,16,8,True,False,group_type)
+          block16 = spatial_groups_IDW(idw1_grid,latlon_dict,Cvar_dict,shapefile,1,16,8,True,False,group_type)
           block16_error.append(block16)
           
-          block9 = spatial_groups_IDW(idw1_grid,latlon_dict,temp_dict,shapefile,1,9,14,True,False,group_type)
+          block9 = spatial_groups_IDW(idw1_grid,latlon_dict,Cvar_dict,shapefile,1,9,14,True,False,group_type)
           block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
