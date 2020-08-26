@@ -23,7 +23,7 @@ import mpl_toolkits.mplot3d.axes3d as p3
 
 import get_data as GD
 
-def spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num,plot_2D,plot_3D):
+def spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num,file_path_elev,idx_list,plot_2D,plot_3D):
      '''Spatial clustering based on scikit learn's agglomerative clustering
      Parameters
          loc_dict (dict): the latitude and longitudes of the hourly/daily stations, loaded from the 
@@ -31,6 +31,8 @@ def spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num,plot_2D,plot_3D):
          Cvar_dict (dict): dictionary of weather variable values for each station 
          shapefile (str): path to the study area shapefile 
          cluster_num (int): number of clusters to form 
+         file_path_elev (str): path to the elevation lookup file 
+         idx_list (int): column of elevation in lookup file 
          plot_2D/plot_3D (bool): whether to plot maps of the clusters in either 2d or 3d
      Returns 
          station_class (dict): a dictionary of cluster that each station is in 
