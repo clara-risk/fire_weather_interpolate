@@ -313,11 +313,11 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      return lowest_stdev,ave_MAE
                
           
-def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blocknum,nfolds,replacement,show):
+def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,nfolds,replacement,show):
      '''Spatially blocked k-folds cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
-         latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
+         loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
          .json file
          Cvar_dict (dict): dictionary of weather variable values for each station 
          shapefile (str): path to the study area shapefile 
@@ -337,17 +337,8 @@ def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blockn
           absolute_error_dictionary = {} 
           projected_lat_lon = {}
 
-          if group_type == 'blocks': 
-               folds = make_block(idw1_grid,blocknum)
-               dictionaryGroups = sorting_stations(folds,shapefile,Cvar_dict)
-               station_list = select_random_station(dictionaryGroups,blocknum,replacement,station_list_used).values()
-          elif group_type == 'clusters':
-               cluster = c3d.spatial_cluster(latlon_dict,Cvar_dict,shapefile,blocknum,False,False)
-               station_list = select_random_station(cluster,blocknum,replacement,station_list_used).values()
+          station_list = select_random_station(dictionary_Groups,blocknum,replacement,station_list_used).values()
 
-          else:
-               print('That is not a valid group type.')
-               sys.exit() 
 
           if replacement == False: 
                station_list_used.append(list(station_list))
@@ -355,11 +346,12 @@ def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blockn
           #print(station_list) 
           
 
+                    
           for station_name in Cvar_dict.keys():
                
-               if station_name in latlon_dict.keys():
+               if station_name in loc_dict.keys():
 
-                  loc = latlon_dict[station_name]
+                  loc = loc_dict[station_name]
                   latitude = loc[0]
                   longitude = loc[1]
                   Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
@@ -372,9 +364,9 @@ def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blockn
           lon = []
           Cvar = []
           for station_name in sorted(Cvar_dict.keys()):
-               if station_name in latlon_dict.keys():
+               if station_name in loc_dict.keys():
                     if station_name not in station_list: #This is the step where we hold back the fold
-                         loc = latlon_dict[station_name]
+                         loc = loc_dict[station_name]
                          latitude = loc[0]
                          longitude = loc[1]
                          cvar_val = Cvar_dict[station_name]
@@ -470,7 +462,7 @@ def spatial_groups_IDW(idw_example_grid,latlon_dict,Cvar_dict,shapefile,d,blockn
           #print(absolute_error_dictionary)
           count+=1
      overall_error = sum(error_dictionary.values())/nfolds #average of all the runs
-     print(overall_error)
+     #print(overall_error)
      return overall_error
 
 
