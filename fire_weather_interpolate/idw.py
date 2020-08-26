@@ -240,7 +240,7 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d):
      return absolute_error_dictionary
      
 
-def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile):
+def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
      in order to select the block/cluster size
      Parameters
@@ -251,6 +251,8 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
          Cvar_dict (dict): dictionary of weather variable values for each station 
          idw_example_grid (numpy array): used for reference of study area grid size
          shapefile (str): path to the study area shapefile 
+         file_path_elev (str): path to the elevation lookup file
+         idx_list (int): position of the elevation column in the lookup file
      Returns 
          lowest_stdev,ave_MAE (int,float): block/cluster number w/ lowest stdev, associated
          ave_MAE of all the runs 
@@ -269,9 +271,9 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
 
      elif group_type == 'clusters':
           
-          dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,False,False)
-          dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,False,False)
-          dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,False,False)
+          dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False)
+          dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False)
+          dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False)
 
      else:
           print('Thats not a valid group type')
