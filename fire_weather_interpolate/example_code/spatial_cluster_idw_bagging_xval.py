@@ -47,7 +47,7 @@ for year in years:
 
 #Make the example idw grid for referencing the size 
 xtemp_dict = GD.get_noon_temp('2018-07-01 13:00',file_path_hourly)
-idw1_grid,maxmin = idw.IDW(hourly_latlon,xtemp_dict,'2018-07-01 13:00','Temperature (⁰C)',shapefile,False,1)
+idw1_grid,maxmin = idw.IDW(hourly_dictionary,xtemp_dict,'2018-07-01 13:00','Temperature (⁰C)',shapefile,False,1)
 
 #Starting the procedure....
 error_dict = {}
