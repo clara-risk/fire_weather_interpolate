@@ -61,6 +61,8 @@ from . import tps as tps
 from . import rf as rf 
 from . import fwi as fwi
 from . import Eval as Eval  
+from . import cluster_3d as c3d
+from . import make_blocks as mbk
 #Check import 
 
 try:
