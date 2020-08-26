@@ -138,3 +138,52 @@ def make_block(idw_grid,blocknum):
           blocks = np.concatenate([topBlock,secondBlock,thirdBlock,fourthBlock,bottomBlock],axis=0)         
 
      return blocks
+
+
+def sorting_stations(blocks,shapefile,Cvar_dict):
+     '''Here we are sorting the stations based on their position on the array. 
+     '''
+     x_origin_list = []
+     y_origin_list = [] 
+
+     groups = {} 
+     station_name_list = []
+     projected_lat_lon = {}
+
+     for station_name in Cvar_dict.keys():
+          
+          if station_name in latlon_dict.keys():
+               
+             station_name_list.append(station_name)
+
+             loc = latlon_dict[station_name]
+             latitude = loc[0]
+             longitude = loc[1]
+             Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
+             Plat = float(Plat)
+             Plon = float(Plon)
+             projected_lat_lon[station_name] = [Plat,Plon]
+
+
+
+     for station_name_hold_back in station_name_list:
+        
+        na_map = gpd.read_file(shapefile)
+        bounds = na_map.bounds
+        xmax = bounds['maxx']
+        xmin= bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']
+        pixelHeight = 10000 
+        pixelWidth = 10000
+
+        #Delete at a certain point
+        coord_pair = projected_lat_lon[station_name_hold_back]
+
+        x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+        y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+
+        group = blocks[y_orig][x_orig] 
+        groups[station_name_hold_back] = group 
+
+     return groups
