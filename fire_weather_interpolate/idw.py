@@ -651,7 +651,6 @@ def shuffle_split(loc_dict,Cvar_dict,shapefile,d,rep,show):
      Returns 
          overall_error (float): average MAE of all the replications 
      '''
-     groups_complete = [] #If not using replacement, keep a record of what we have done 
      count = 1
      error_dictionary = {} 
      while count <= rep: #Loop through each block/cluster, leaving whole cluster out 
