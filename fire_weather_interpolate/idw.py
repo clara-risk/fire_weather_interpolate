@@ -17,6 +17,7 @@ import math, statistics
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.neighbors import kneighbors_graph
 import mpl_toolkits.mplot3d.axes3d as p3
+from sklearn.model_selection import ShuffleSplit
 
 import warnings
 warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the /0 warning
@@ -636,3 +637,165 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,n
      overall_error = sum(error_dictionary.values())/nfolds #average of all the runs
      
      return overall_error
+
+def shuffle_split(loc_dict,Cvar_dict,shapefile,d,rep,show):
+     '''Shuffle-split cross-validation with 50/50 training test split 
+     Parameters
+         loc_dict (dict): the latitude and longitudes of the hourly/daily stations, loaded from the 
+         .json file
+         Cvar_dict (dict): dictionary of weather variable values for each station 
+         shapefile (str): path to the study area shapefile 
+         d (int): the weighting function for IDW interpolation
+         rep (int): number of replications 
+         show (bool): if you want to show a map of the clusters
+     Returns 
+         overall_error (float): average MAE of all the replications 
+     '''
+     groups_complete = [] #If not using replacement, keep a record of what we have done 
+     count = 1
+     error_dictionary = {} 
+     while count <= rep: #Loop through each block/cluster, leaving whole cluster out 
+          x_origin_list = []
+          y_origin_list = [] 
+
+          absolute_error_dictionary = {} 
+          projected_lat_lon = {}
+
+          #Split the stations in two
+          stations = np.array(list(Cvar_dict.keys()))
+          splits = ShuffleSplit(n_splits=1, train_size=.5) #Won't be exactly 50/50 if uneven num stations
+
+
+          for train_index, test_index in splits.split(stations):
+
+               train_stations = stations[train_index] 
+               #print(train_stations)
+               test_stations = stations[test_index]
+               #print(test_stations)
+
+          #They can't overlap
+
+          for val in train_stations:
+               if val in test_stations:
+                    print('Error, the train and test sets overlap!')
+                    sys.exit()
+
+          
+          for station_name in Cvar_dict.keys():
+               
+               if station_name in loc_dict.keys():
+
+                  loc = loc_dict[station_name]
+                  latitude = loc[0]
+                  longitude = loc[1]
+                  Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
+                  Plat = float(Plat)
+                  Plon = float(Plon)
+                  projected_lat_lon[station_name] = [Plat,Plon]
+
+
+          lat = []
+          lon = []
+          Cvar = []
+          for station_name in sorted(Cvar_dict.keys()):
+               if station_name in loc_dict.keys():
+                    if station_name not in test_stations: #This is the step where we hold back the fold
+                         loc = loc_dict[station_name]
+                         latitude = loc[0]
+                         longitude = loc[1]
+                         cvar_val = Cvar_dict[station_name]
+                         lat.append(float(latitude))
+                         lon.append(float(longitude))
+                         Cvar.append(cvar_val)
+                    else:
+                         pass #Skip the station 
+                     
+          y = np.array(lat)
+          x = np.array(lon)
+          z = np.array(Cvar) 
+             
+          na_map = gpd.read_file(shapefile)
+          bounds = na_map.bounds
+          xmax = bounds['maxx']
+          xmin= bounds['minx']
+          ymax = bounds['maxy']
+          ymin = bounds['miny']
+          pixelHeight = 10000 
+          pixelWidth = 10000
+                     
+          num_col = int((xmax - xmin) / pixelHeight)
+          num_row = int((ymax - ymin) / pixelWidth)
+
+
+             #We need to project to a projected system before making distance matrix
+          source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
+          xProj, yProj = pyproj.Proj('esri:102001')(x,y)
+
+          yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+          xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+
+          Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
+          Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+
+          Xi,Yi = np.meshgrid(Xi,Yi)
+          Xi,Yi = Xi.flatten(), Yi.flatten()
+          maxmin = [np.min(yProj_extent),np.max(yProj_extent),np.max(xProj_extent),np.min(xProj_extent)]
+
+          vals = np.vstack((xProj,yProj)).T
+             
+          interpol = np.vstack((Xi,Yi)).T
+          dist_not = np.subtract.outer(vals[:,0], interpol[:,0]) #Length of the triangle side from the cell to the point with data 
+          dist_one = np.subtract.outer(vals[:,1], interpol[:,1]) #Length of the triangle side from the cell to the point with data 
+          distance_matrix = np.hypot(dist_not,dist_one) #euclidean distance, getting the hypotenuse
+             
+          weights = 1/(distance_matrix**d) #what if distance is 0 --> np.inf? have to account for the pixel underneath
+          weights[np.where(np.isinf(weights))] = 1/(1.0E-50) #Making sure to assign the value of the weather station above the pixel directly to the pixel underneath
+          weights /= weights.sum(axis = 0) 
+
+          Zi = np.dot(weights.T, z)
+          idw_grid = Zi.reshape(num_row,num_col)
+          if show and (count == 1):
+               fig, ax = plt.subplots(figsize= (15,15))
+               crs = {'init': 'esri:102001'}
+
+               na_map = gpd.read_file(shapefile)
+
+
+               im = plt.imshow(folds,extent=(xProj_extent.min()-1,xProj_extent.max()+1,yProj_extent.max()-1,yProj_extent.min()+1),cmap='tab20b') 
+               na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
+                 
+               plt.scatter(xProj,yProj,c='black',s=2)
+
+               plt.gca().invert_yaxis()
+               cbar = plt.colorbar(im,ax=ax,cmap='tab20b')
+               cbar.set_label('Block Number') 
+
+               title = 'Group selection'
+               fig.suptitle(title, fontsize=14)
+               plt.xlabel('Longitude')
+               plt.ylabel('Latitude') 
+
+               plt.show()
+
+          #Compare at a certain point
+          for station_name_hold_back in test_stations: 
+               coord_pair = projected_lat_lon[station_name_hold_back]
+
+               x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+               y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+               x_origin_list.append(x_orig)
+               y_origin_list.append(y_orig)
+
+               interpolated_val = idw_grid[y_orig][x_orig] 
+
+               original_val = Cvar_dict[station_name]
+               absolute_error = abs(interpolated_val-original_val)
+               absolute_error_dictionary[station_name_hold_back] = absolute_error
+
+          error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
+          
+          count+=1
+     overall_error = sum(error_dictionary.values())/rep #average of all the runs
+     
+     return overall_error
+
