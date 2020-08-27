@@ -377,7 +377,7 @@ def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
         Cvar = []
         for station_name in sorted(Cvar_dict.keys()):
             if station_name in latlon_dict.keys():
-                if station_name not in train_stations:
+                if station_name not in test_stations:
                     loc = latlon_dict[station_name]
                     latitude = loc[0]
                     longitude = loc[1]
@@ -432,7 +432,7 @@ def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
 
         #Calc the RMSE, MAE, at the pixel loc
         #Delete at a certain point
-        for station_name_hold_back in train_stations: 
+        for station_name_hold_back in test_stations: 
             coord_pair = projected_lat_lon[station_name_hold_back]
 
             x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
