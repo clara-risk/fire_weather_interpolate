@@ -367,10 +367,10 @@ def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
 
           #They can't overlap
 
-          for val in train_stations:
-               if val in test_stations:
-                    print('Error, the train and test sets overlap!')
-                    sys.exit()
+        for val in train_stations:
+            if val in test_stations:
+                print('Error, the train and test sets overlap!')
+                sys.exit()
 
         lat = []
         lon = []
