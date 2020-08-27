@@ -382,10 +382,10 @@ def shuffle_split_IDEW(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
 
           #They can't overlap
 
-          for val in train_stations:
-               if val in test_stations:
-                    print('Error, the train and test sets overlap!')
-                    sys.exit()
+        for val in train_stations:
+            if val in test_stations:
+                print('Error, the train and test sets overlap!')
+                sys.exit()
 
         for station_name in Cvar_dict.keys():
             if station_name in latlon_dict.keys():
