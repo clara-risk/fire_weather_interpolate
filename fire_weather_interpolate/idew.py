@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the /0 warning
 
+from sklearn.model_selection import ShuffleSplit
 
 import get_data as GD
 
@@ -343,7 +344,181 @@ def cross_validate_IDEW(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_arra
     return absolute_error_dictionary
 
 
+def shuffle_split_IDEW(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,d,rep):
+    '''Leave-one-out cross-validation procedure for IDEW
+    Parameters
+        latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
+        .json file
+        Cvar_dict (dict): dictionary of weather variable values for each station 
+        shapefile (str): path to the study area shapefile 
+        file_path_elev (str): file path to the elevation lookup file 
+        elev_array (np_array): the elevation array for the study area 
+        idx_list (list): the index of the elevation data column in the lookup file 
+        d (int): the weighting function for IDW interpolation 
+    Returns 
+        absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
+        was left out 
+    '''
+    count = 1
+    error_dictionary = {}
+    while count <= rep:
+        x_origin_list = []
+        y_origin_list = [] 
 
+        absolute_error_dictionary = {} 
+        station_name_list = []
+        projected_lat_lon = {}
+
+        #Split the stations in two
+        stations = np.array(list(Cvar_dict.keys()))
+        splits = ShuffleSplit(n_splits=1, train_size=.5) #Won't be exactly 50/50 if uneven num stations
+
+        for train_index, test_index in splits.split(stations):
+
+               train_stations = stations[train_index] 
+               #print(train_stations)
+               test_stations = stations[test_index]
+               #print(test_stations)
+
+          #They can't overlap
+
+          for val in train_stations:
+               if val in test_stations:
+                    print('Error, the train and test sets overlap!')
+                    sys.exit()
+
+        for station_name in Cvar_dict.keys():
+            if station_name in latlon_dict.keys():
+                station_name_list.append(station_name)
+
+                loc = latlon_dict[station_name]
+                latitude = loc[0]
+                longitude = loc[1]
+                Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
+                Plat = float(Plat)
+                Plon = float(Plon)
+                projected_lat_lon[station_name] = [Plat,Plon]
+
+
+
+        lat = []
+        lon = []
+        Cvar = []
+        for station_name in sorted(Cvar_dict.keys()):
+            if station_name in latlon_dict.keys():
+                if station_name not in test_stations:
+                    loc = latlon_dict[station_name]
+                    latitude = loc[0]
+                    longitude = loc[1]
+                    cvar_val = Cvar_dict[station_name]
+                    lat.append(float(latitude))
+                    lon.append(float(longitude))
+                    Cvar.append(cvar_val)
+                else:
+
+                    pass
+                
+        y = np.array(lat)
+        x = np.array(lon)
+        z = np.array(Cvar) #what if we add the bounding locations to the array??? ==> that would be extrapolation not interpolation? 
+
+        na_map = gpd.read_file(shapefile)
+        bounds = na_map.bounds
+        xmax = bounds['maxx']
+        xmin= bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']
+        pixelHeight = 10000 
+        pixelWidth = 10000
+                
+        num_col = int((xmax - xmin) / pixelHeight)
+        num_row = int((ymax - ymin) / pixelWidth)
+
+
+        #We need to project to a projected system before making distance matrix
+        source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
+        xProj, yProj = pyproj.Proj('esri:102001')(x,y)
+
+        yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+        xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+
+        Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
+        Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+
+        Xi,Yi = np.meshgrid(Xi,Yi)
+        Xi,Yi = Xi.flatten(), Yi.flatten()
+        maxmin = [np.min(yProj_extent),np.max(yProj_extent),np.max(xProj_extent),np.min(xProj_extent)]
+
+        vals = np.vstack((xProj,yProj)).T
+        
+        interpol = np.vstack((Xi,Yi)).T
+        dist_not = np.subtract.outer(vals[:,0], interpol[:,0]) #Length of the triangle side from the cell to the point with data 
+        dist_one = np.subtract.outer(vals[:,1], interpol[:,1]) #Length of the triangle side from the cell to the point with data 
+        distance_matrix = np.hypot(dist_not,dist_one) #euclidean distance, getting the hypotenuse
+        
+        weights = 1/(distance_matrix**d) #what if distance is 0 --> np.inf? have to account for the pixel underneath
+        weights[np.where(np.isinf(weights))] = 1/(1.0E-50) #Making sure to assign the value of the weather station above the pixel directly to the pixel underneath
+        weights /= weights.sum(axis = 0) 
+
+        Zi = np.dot(weights.T, z)
+        idw_grid = Zi.reshape(num_row,num_col)
+
+
+        
+        elev_dict= GD.finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list)
+
+        xProj_input=[]
+        yProj_input=[]
+        e_input = []
+        
+
+        for keys in zip(xProj,yProj): # in case there are two stations at the same lat\lon 
+            x= keys[0]
+            y = keys[1]
+            xProj_input.append(x)
+            yProj_input.append(y)
+            e_input.append(elev_dict[keys])
+
+        source_elev = np.array(e_input)
+
+
+        vals2 = np.vstack(source_elev).T
+
+        interpol2 = np.vstack(elev_array).T
+
+        dist_not2 = np.subtract.outer(vals2[0], interpol2[0])
+        dist_not2 = np.absolute(dist_not2)
+        weights2 = 1/(dist_not2**d)
+
+        weights2[np.where(np.isinf(weights2))] = 1 
+        weights2 /= weights2.sum(axis = 0)
+
+        fin = 0.8*np.dot(weights.T,z) + 0.2*np.dot(weights2.T,z)
+        
+        fin = fin.reshape(num_row,num_col)
+
+        #Calc the RMSE, MAE, NSE, and MRAE at the pixel loc
+        #Delete at a certain point
+        for station_name_hold_back in test_stations: 
+            coord_pair = projected_lat_lon[station_name_hold_back]
+
+            x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+            y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+            x_origin_list.append(x_orig)
+            y_origin_list.append(y_orig)
+
+            interpolated_val = fin[y_orig][x_orig] 
+
+            original_val = Cvar_dict[station_name]
+            absolute_error = abs(interpolated_val-original_val)
+            absolute_error_dictionary[station_name_hold_back] = absolute_error
+
+        error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
+        count+=1
+
+    overall_error = sum(error_dictionary.values())/rep
+    
+    return overall_error
 
 
         
