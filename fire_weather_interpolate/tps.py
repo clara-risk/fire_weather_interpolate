@@ -450,4 +450,4 @@ def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
 
     overall_error = sum(error_dictionary.values())/rep
     
-    return absolute_error_dictionary
+    return overall_error
