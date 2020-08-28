@@ -506,7 +506,7 @@ def spatial_kfold_tps(loc_dict,Cvar_dict,shapefile,phi,file_path_elev,elev_array
         if station_name in loc_dict.keys():
             station_name_list.append(station_name)
 
-            loc = latlon_dict[station_name]
+            loc = loc_dict[station_name]
             latitude = loc[0]
             longitude = loc[1]
             Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
@@ -540,7 +540,7 @@ def spatial_kfold_tps(loc_dict,Cvar_dict,shapefile,phi,file_path_elev,elev_array
     for station_name in sorted(Cvar_dict.keys()):
         if station_name in loc_dict.keys():
             if station_name not in station_list:
-                loc = latlon_dict[station_name]
+                loc = loc_dict[station_name]
                 latitude = loc[0]
                 longitude = loc[1]
                 cvar_val = Cvar_dict[station_name]
