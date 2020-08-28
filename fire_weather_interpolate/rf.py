@@ -22,6 +22,7 @@ from sklearn.model_selection import ShuffleSplit
 from sklearn import metrics
 
 import get_data as GD
+import cluster_3d as c3d
 
 def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,file_path_elev,idx_list): 
     lat = []
@@ -515,10 +516,10 @@ def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,i
     return overall_error
         
 
-def spatial_kfold_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,rep):
+def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,rep):
     '''Spatially blocked k-folds cross-validation procedure for rf
     Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
+        loc_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
         .json file
         Cvar_dict (dict): dictionary of weather variable values for each station 
         shapefile (str): path to the study area shapefile 
