@@ -706,7 +706,7 @@ def select_random_station(groups,blocknum,replacement,used_stations):
     Returns
         stations_selected (dict): dictionary of selected stations 
     '''
-     if not replacement: 
+    if not replacement: 
           stations_selected = {}
           used_stations = [x for y in used_stations for x in y] #merge all sublists
           for group in range(1,blocknum+1):
