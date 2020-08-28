@@ -635,8 +635,12 @@ def shuffle_split_OK(latlon_dict,Cvar_dict,shapefile,model,rep):
             y_origin_list.append(y_orig)
             z_origin_list.append(Cvar_dict[station])
             
+        stations_input = [] #we can't just use Cvar_dict.keys() because some stations do not have valid lat/lon
+        for station_code in Cvar_dict.keys():
+            if station_code in loc_dict.keys():
+                stations_input.append(station_code)
         #Split the stations in two
-        stations = np.array(list(Cvar_dict.keys()))
+        stations = np.array(stations_input)
         splits = ShuffleSplit(n_splits=1, train_size=.5) #Won't be exactly 50/50 if uneven num stations
 
         for train_index, test_index in splits.split(stations):
