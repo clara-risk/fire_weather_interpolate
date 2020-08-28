@@ -19,6 +19,7 @@ warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import ShuffleSplit
+from sklearn import metrics
 
 import get_data as GD
 
@@ -325,7 +326,7 @@ def cross_validate_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
     return absolute_error_dictionary
 
 def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,rep):
-    '''Shuffle split cross-validation procedure for IDEW
+    '''Shuffle split cross-validation procedure for rf
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
         .json file
@@ -334,7 +335,6 @@ def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,i
         file_path_elev (str): file path to the elevation lookup file 
         elev_array (np_array): the elevation array for the study area 
         idx_list (list): the index of the elevation data column in the lookup file 
-        d (int): the weighting function for IDW interpolation
         rep (int): number of repetitions to run 
     Returns 
         overall_error (float): average MAE value of all the reps 
@@ -514,3 +514,191 @@ def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,i
 
     return overall_error
         
+
+def spatial_kfold_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,rep):
+    '''Spatially blocked k-folds cross-validation procedure for rf
+    Parameters
+        latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
+        .json file
+        Cvar_dict (dict): dictionary of weather variable values for each station 
+        shapefile (str): path to the study area shapefile 
+        file_path_elev (str): file path to the elevation lookup file 
+        elev_array (np_array): the elevation array for the study area 
+        idx_list (list): the index of the elevation data column in the lookup file 
+        rep (int): number of repetitions to run 
+    Returns 
+        overall_error (float): average MAE value of all the reps 
+    '''
+    groups_complete = [] #If not using replacement, keep a record of what we have done 
+    error_dictionary = {} 
+
+    x_origin_list = []
+    y_origin_list = [] 
+
+    absolute_error_dictionary = {} 
+    projected_lat_lon = {}
+
+    #Selecting blocknum
+    block_num_ref = [25,16,9] 
+    calinski_harabasz = [] 
+
+    label,Xelev,cluster25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,True)
+    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label)) #Calinski-Harabasz Index --> higher the better
+    label,Xelev,cluster16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,True)
+    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
+    label,Xelev,cluster9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,True)
+    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
+
+    minIndex = calinski_harabasz.index(min(calinski_harabasz))
+    blocknum = block_num_ref[minIndex] #lookup the block size that corresponds
+
+    cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,blocknum,file_path_elev,idx_list,False,False,False)
+
+    for group in cluster.values():
+        if group not in groups_complete:
+            station_list = [k for k,v in cluster.items() if v == group]
+            groups_complete.append(group)
+
+    for station_name in Cvar_dict.keys():
+        if station_name in latlon_dict.keys():
+
+            loc = latlon_dict[station_name]
+            latitude = loc[0]
+            longitude = loc[1]
+            Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
+            Plat = float(Plat)
+            Plon = float(Plon)
+            projected_lat_lon[station_name] = [Plat,Plon]
+
+                    
+        lat = []
+        lon = []
+        Cvar = []
+        for station_name in sorted(Cvar_dict.keys()):
+            if station_name in latlon_dict.keys():
+                if station_name not in station_list:
+                    loc = latlon_dict[station_name]
+                    latitude = loc[0]
+                    longitude = loc[1]
+                    cvar_val = Cvar_dict[station_name]
+                    lat.append(float(latitude))
+                    lon.append(float(longitude))
+                    Cvar.append(cvar_val)
+                else:
+
+                    pass
+                
+        y = np.array(lat)
+        x = np.array(lon)
+        z = np.array(Cvar) 
+
+        na_map = gpd.read_file(shapefile)
+        bounds = na_map.bounds
+        xmax = bounds['maxx']
+        xmin= bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']
+        pixelHeight = 10000 
+        pixelWidth = 10000
+            
+        num_col = int((xmax - xmin) / pixelHeight)
+        num_row = int((ymax - ymin) / pixelWidth)
+
+
+        #We need to project to a projected system before making distance matrix
+        source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') 
+        xProj, yProj = pyproj.Proj('esri:102001')(x,y)
+    
+        df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z})
+
+        yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+        xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+
+        Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
+        Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+
+        Xi,Yi = np.meshgrid(Xi,Yi)
+        Xi,Yi = Xi.flatten(), Yi.flatten()
+    
+    
+        maxmin = [np.min(yProj_extent),np.max(yProj_extent),np.max(xProj_extent),np.min(xProj_extent)]
+    
+    
+        #Elevation 
+        concat = np.array((Xi.flatten(), Yi.flatten())).T #Preparing the coordinates to send to the function that will get the elevation grid 
+        send_to_list = concat.tolist()
+        send_to_tuple = [tuple(x) for x in send_to_list] #The elevation function takes a tuple 
+
+
+        Xi1_grd=[]
+        Yi1_grd=[]
+        elev_grd = []
+        elev_grd_dict = GD.finding_data_frm_lookup(send_to_tuple,file_path_elev,idx_list) #Get the elevations from the lookup file 
+
+        for keys in elev_grd_dict.keys(): #The keys are each lat lon pair 
+            x= keys[0]
+            y = keys[1]
+            Xi1_grd.append(x)
+            Yi1_grd.append(y)
+            elev_grd.append(elev_grd_dict[keys]) #Append the elevation data to the empty list 
+
+        elev_array = np.array(elev_grd) #make an elevation array
+
+    
+
+        elev_dict= GD.finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list) #Get the elevations for the stations 
+
+        xProj_input=[]
+        yProj_input=[]
+        e_input = []
+
+
+        for keys in zip(xProj,yProj): #Repeat process for just the stations not the whole grid 
+            x= keys[0]
+            y = keys[1]
+            xProj_input.append(x)
+            yProj_input.append(y)
+            e_input.append(elev_dict[keys])
+
+        source_elev = np.array(e_input)
+    
+        Xi1_grd = np.array(Xi1_grd)
+        Yi1_grd = np.array(Yi1_grd)
+    
+        df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'elevS':source_elev, 'var': z})
+    
+        df_testX = pd.DataFrame({'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
+    
+    
+        reg = RandomForestRegressor(n_estimators = 100, max_features='sqrt',random_state=1)     
+    
+    
+        y = np.array(df_trainX['var']).reshape(-1,1)
+        X_train = np.array(df_trainX[['xProj','yProj','elevS']])
+        X_test = np.array(df_testX[['Xi','Yi','elev']])
+    
+        reg.fit(X_train, y)
+    
+        Zi = reg.predict(X_test)
+    
+        rf_grid = Zi.reshape(num_row,num_col)
+
+        #Calc the RMSE, MAE at the pixel loc
+        #Delete at a certain point
+        for station_name_hold_back in station_list: 
+            coord_pair = projected_lat_lon[station_name_hold_back]
+
+            x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+            y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+            x_origin_list.append(x_orig)
+            y_origin_list.append(y_orig)
+
+            interpolated_val = rf_grid[y_orig][x_orig] 
+
+            original_val = Cvar_dict[station_name]
+            absolute_error = abs(interpolated_val-original_val)
+            absolute_error_dictionary[station_name_hold_back] = absolute_error
+        
+    MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
+     
+    return blocknum,MAE
