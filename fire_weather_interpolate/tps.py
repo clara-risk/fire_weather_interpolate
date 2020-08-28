@@ -459,7 +459,7 @@ def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
     
     return overall_error
 
-def spatial_kfold_tps(loc_dict,Cvar_dict,shapefile,phi):
+def spatial_kfold_tps(loc_dict,Cvar_dict,shapefile,phi,file_path_elev,elev_array,idx_list):
     '''Spatially blocked k-folds cross-validation procedure for thin plate splines 
     Parameters
         loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
