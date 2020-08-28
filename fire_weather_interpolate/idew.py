@@ -573,7 +573,6 @@ def spatial_kfold_IDEW(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,id
 
     for station_name in Cvar_dict.keys():
         if station_name in loc_dict.keys():
-            station_name_list.append(station_name)
 
             loc = latlon_dict[station_name]
             latitude = loc[0]
