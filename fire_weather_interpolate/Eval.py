@@ -724,7 +724,7 @@ def select_random_station(groups,blocknum,replacement,used_stations):
                     #print('No stations in group %s'%group)
 
           return stations_selected
-     else: #Replace the stations
+    else: #Replace the stations
           stations_selected = {}
           for group in range(1,blocknum+1):
                try: 
