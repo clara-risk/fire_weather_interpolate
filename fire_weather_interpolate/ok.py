@@ -16,6 +16,9 @@ from pykrige.ok import OrdinaryKriging
 from skgstat import Variogram
 import matplotlib.pyplot as plt
 
+
+from sklearn.model_selection import ShuffleSplit
+
 import warnings
 warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the /0 warning
 
