@@ -561,9 +561,9 @@ def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_
             groups_complete.append(group)
 
     for station_name in Cvar_dict.keys():
-        if station_name in latlon_dict.keys():
+        if station_name in loc_dict.keys():
 
-            loc = latlon_dict[station_name]
+            loc = loc_dict[station_name]
             latitude = loc[0]
             longitude = loc[1]
             Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
@@ -576,9 +576,9 @@ def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_
         lon = []
         Cvar = []
         for station_name in sorted(Cvar_dict.keys()):
-            if station_name in latlon_dict.keys():
+            if station_name in loc_dict.keys():
                 if station_name not in station_list:
-                    loc = latlon_dict[station_name]
+                    loc = loc_dict[station_name]
                     latitude = loc[0]
                     longitude = loc[1]
                     cvar_val = Cvar_dict[station_name]
