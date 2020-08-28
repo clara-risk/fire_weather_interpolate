@@ -660,8 +660,12 @@ def shuffle_split(loc_dict,Cvar_dict,shapefile,d,rep,show):
           absolute_error_dictionary = {} 
           projected_lat_lon = {}
 
+          stations_input = [] #we can't just use Cvar_dict.keys() because some stations do not have valid lat/lon
+          for station_code in Cvar_dict.keys():
+               if station_code in loc_dict.keys():
+                     stations_input.append(station_code)
           #Split the stations in two
-          stations = np.array(list(Cvar_dict.keys()))
+          stations = np.array(stations_input)
           splits = ShuffleSplit(n_splits=1, train_size=.5) #Won't be exactly 50/50 if uneven num stations
 
 
