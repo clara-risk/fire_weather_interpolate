@@ -459,7 +459,7 @@ def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
     
     return overall_error
 
-def spatial_kfold_tps(loc_dict,Cvar_dict,shapefile,phi,rep):
+def spatial_kfold_tps(loc_dict,Cvar_dict,shapefile,phi):
     '''Spatially blocked k-folds cross-validation procedure for thin plate splines 
     Parameters
         loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
@@ -467,7 +467,6 @@ def spatial_kfold_tps(loc_dict,Cvar_dict,shapefile,phi,rep):
         Cvar_dict (dict): dictionary of weather variable values for each station 
         shapefile (str): path to the study area shapefile 
         phi (float): smoothing parameter for the thin plate spline, if 0 no smoothing
-        rep (int): number of replications 
     Returns 
         MAE (float): MAE average of all the replications
      '''
