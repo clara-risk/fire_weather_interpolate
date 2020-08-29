@@ -402,7 +402,7 @@ def cross_validate_OK(latlon_dict,Cvar_dict,shapefile,model):
 
             interpolated_val = kriging_surface[y_orig][x_orig] #which comes first?
 
-            original_val = Cvar_dict[station_name]
+            original_val = Cvar_dict[station_name_hold_back]
             absolute_error = abs(interpolated_val-original_val)
             absolute_error_dictionary[station_name_hold_back] = absolute_error
         except:
@@ -543,7 +543,7 @@ def leave_p_out_crossval(latlon_dict,Cvar_dict,shapefile,model,nruns,p):
 
                 interpolated_val = kriging_surface[y_orig][x_orig] #which comes first?
 
-                original_val = Cvar_dict[station_name]
+                original_val = Cvar_dict[station_name_hold_back]
                 absolute_error = abs(interpolated_val-original_val)
                 absolute_error_dictionary[station_name_hold_back] = absolute_error
             except:
@@ -721,8 +721,8 @@ def shuffle_split_OK(latlon_dict,Cvar_dict,shapefile,model,rep):
 
         #Calc the RMSE, MAE at the pixel loc
         #Delete at a certain point
-            for station_name_hold_back in test_stations
-                coord_pair = projected_lat_lon[station_name_hold_back]
+            for statLoc in test_stations
+                coord_pair = projected_lat_lon[statLoc]
 
                 x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
                 y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
@@ -731,9 +731,9 @@ def shuffle_split_OK(latlon_dict,Cvar_dict,shapefile,model,rep):
 
                 interpolated_val = kriging_surface[y_orig][x_orig] #which comes first?
 
-                original_val = Cvar_dict[station_name]
+                original_val = Cvar_dict[statLoc]
                 absolute_error = abs(interpolated_val-original_val)
-                absolute_error_dictionary[station_name_hold_back] = absolute_error
+                absolute_error_dictionary[statLoc] = absolute_error
             error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
             count+=1
         except:
