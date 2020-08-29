@@ -18,6 +18,7 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.neighbors import kneighbors_graph
 import mpl_toolkits.mplot3d.axes3d as p3
 from sklearn.model_selection import ShuffleSplit
+from sklearn import metrics
 
 import warnings
 warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the /0 warning
