@@ -480,10 +480,9 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
          Cvar_dict (dict): dictionary of weather variable values for each station 
          shapefile (str): path to the study area shapefile 
          d (int): the weighting function for IDW interpolation
-         file_path_elev (str): file path to elevation lookup file
-         idx_list (lst): where elevation column is in the file 
      Returns 
-        MAE (float): MAE average of all the replications
+         error_dictionary (dict): a dictionary of the absolute error at each fold when it
+         was left out 
      '''
      groups_complete = [] #If not using replacement, keep a record of what we have done 
      error_dictionary = {} 
@@ -496,22 +495,22 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
                     
      
      #Selecting blocknum
-    block_num_ref = [25,16,9] 
-    calinski_harabasz = [] 
+     block_num_ref = [25,16,9] 
+     calinski_harabasz = [] 
 
-    label,Xelev,cluster25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,True)
-    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label)) #Calinski-Harabasz Index --> higher the better
-    label,Xelev,cluster16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,True)
-    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
-    label,Xelev,cluster9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,True)
-    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
+     label,Xelev,cluster25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,True)
+     calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label)) #Calinski-Harabasz Index --> higher the better
+     label,Xelev,cluster16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,True)
+     calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
+     label,Xelev,cluster9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,True)
+     calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
 
-    minIndex = calinski_harabasz.index(min(calinski_harabasz))
-    blocknum = block_num_ref[minIndex] #lookup the block size that corresponds
+     minIndex = calinski_harabasz.index(min(calinski_harabasz))
+     blocknum = block_num_ref[minIndex] #lookup the block size that corresponds
 
-    cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,blocknum,file_path_elev,idx_list,False,False,False)
+     cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,blocknum,file_path_elev,idx_list,False,False,False)
 
-    for group in cluster.values():
+     for group in cluster.values():
         if group not in groups_complete:
             station_list = [k for k,v in cluster.items() if v == group]
             groups_complete.append(group)
@@ -608,9 +607,9 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
           absolute_error = abs(interpolated_val-original_val)
           absolute_error_dictionary[statLoc] = absolute_error
 
-    MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
-     
-    return blocknum,MAE
+     MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
+
+     return blocknum,MAE
 
 def shuffle_split(loc_dict,Cvar_dict,shapefile,d,rep,show):
      '''Shuffle-split cross-validation with 50/50 training test split 
