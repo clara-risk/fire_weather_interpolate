@@ -471,7 +471,7 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
      return overall_error
 
 
-def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,nfolds):
+def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_elev,idx_list):
      '''Spatially blocked k-folds cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
@@ -480,13 +480,10 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,n
          Cvar_dict (dict): dictionary of weather variable values for each station 
          shapefile (str): path to the study area shapefile 
          d (int): the weighting function for IDW interpolation
-         blocknum (int): number of clusters/blocks you want to use 
-         nfolds (int): # number of folds. For 10-fold we use 10, etc. 
-         show (bool): if you want to show a map of the clusters
-         group_type (str): specify one of two options, 'clusters' or 'blocks'
+         file_path_elev (str): file path to elevation lookup file
+         idx_list (lst): where elevation column is in the file 
      Returns 
-         error_dictionary (dict): a dictionary of the absolute error at each fold when it
-         was left out 
+        MAE (float): MAE average of all the replications
      '''
      groups_complete = [] #If not using replacement, keep a record of what we have done 
      error_dictionary = {} 
