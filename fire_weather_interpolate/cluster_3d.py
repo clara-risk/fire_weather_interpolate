@@ -23,7 +23,7 @@ import mpl_toolkits.mplot3d.axes3d as p3
 
 import get_data as GD
 
-def spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num,file_path_elev,idx_list,plot_2D,plot_3D):
+def spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num,file_path_elev,idx_list,plot_2D,plot_3D,return_all):
      '''Spatial clustering based on scikit learn's agglomerative clustering
      Parameters
          loc_dict (dict): the latitude and longitudes of the hourly/daily stations, loaded from the 
@@ -34,6 +34,7 @@ def spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num,file_path_elev,idx_
          file_path_elev (str): path to the elevation lookup file 
          idx_list (int): column of elevation in lookup file 
          plot_2D/plot_3D (bool): whether to plot maps of the clusters in either 2d or 3d
+         return_all (bool): whether or not to return all the outputs (needed for selecting cluster size) 
      Returns 
          station_class (dict): a dictionary of cluster that each station is in 
      '''     
@@ -152,4 +153,8 @@ def spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num,file_path_elev,idx_
      if count != label.shape[0]:
           print('The groups and label matrix do not match')
 
-     return station_class
+     if return_all:
+          return label, Xelev, station_class
+     else: 
+
+          return station_class
