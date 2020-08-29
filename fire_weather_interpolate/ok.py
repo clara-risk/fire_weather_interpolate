@@ -16,8 +16,10 @@ from pykrige.ok import OrdinaryKriging
 from skgstat import Variogram
 import matplotlib.pyplot as plt
 
-
 from sklearn.model_selection import ShuffleSplit
+from sklearn import metrics
+
+import cluster_3d as c3d
 
 import warnings
 warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the /0 warning
@@ -721,7 +723,7 @@ def shuffle_split_OK(latlon_dict,Cvar_dict,shapefile,model,rep):
 
         #Calc the RMSE, MAE at the pixel loc
         #Delete at a certain point
-            for statLoc in test_stations
+            for statLoc in test_stations: 
                 coord_pair = projected_lat_lon[statLoc]
 
                 x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
@@ -741,3 +743,161 @@ def shuffle_split_OK(latlon_dict,Cvar_dict,shapefile,model,rep):
 
     overall_error = sum(error_dictionary.values())/rep
     return overall_error
+
+def spatial_kfold_OK(loc_dict,Cvar_dict,shapefile,phi,file_path_elev,elev_array,idx_list):
+    '''Cross_validate the ordinary kriging 
+    Parameters 
+        latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
+        .json file
+        Cvar_dict (dict): dictionary of weather variable values for each station 
+        shapefile (str): path to the study area shapefile 
+        model (str): semivariogram model name, ex. 'gaussian'
+    Returns 
+        absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
+        was left out 
+    '''
+    groups_complete = [] #If not using replacement, keep a record of what we have done 
+    error_dictionary = {} 
+
+    x_origin_list = []
+    y_origin_list = [] 
+    z_origin_list = []
+    absolute_error_dictionary = {} #for plotting
+    station_name_list = []
+    projected_lat_lon = {}
+
+    for station_name in Cvar_dict.keys():
+        if station_name in loc_dict.keys():
+            station_name_list.append(station_name)
+
+            loc = loc_dict[station_name]
+            latitude = loc[0]
+            longitude = loc[1]
+            Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
+            Plat = float(Plat)
+            Plon = float(Plon)
+            projected_lat_lon[station_name] = [Plat,Plon]
+
+    for station in station_name_list:
+
+        na_map = gpd.read_file(shapefile)
+        bounds = na_map.bounds
+
+        pixelHeight = 10000 
+        pixelWidth = 10000
+
+
+        coord_pair = projected_lat_lon[station]
+
+        x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+        y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+        x_origin_list.append(x_orig)
+        y_origin_list.append(y_orig)
+        z_origin_list.append(Cvar_dict[station])
+            
+    #Selecting blocknum
+    block_num_ref = [25,16,9] 
+    calinski_harabasz = [] 
+
+    label,Xelev,cluster25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,True)
+    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label)) #Calinski-Harabasz Index --> higher the better
+    label,Xelev,cluster16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,True)
+    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
+    label,Xelev,cluster9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,True)
+    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
+
+    minIndex = calinski_harabasz.index(min(calinski_harabasz))
+    blocknum = block_num_ref[minIndex] #lookup the block size that corresponds
+
+    cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,blocknum,file_path_elev,idx_list,False,False,False)
+
+    for group in cluster.values():
+        if group not in groups_complete:
+            station_list = [k for k,v in cluster.items() if v == group]
+            groups_complete.append(group)
+
+             
+    lat = []
+    lon = []
+    Cvar = []
+    for station_name in sorted(Cvar_dict.keys()):
+        if station_name in loc_dict.keys():
+            if station_name not in station_list:
+                loc = loc_dict[station_name]
+                latitude = loc[0]
+                longitude = loc[1]
+                cvar_val = Cvar_dict[station_name]
+                lat.append(float(latitude))
+                lon.append(float(longitude))
+                Cvar.append(cvar_val)
+            else:
+                #print('Skipping station!')
+                pass
+            
+    y = np.array(lat)
+    x = np.array(lon)
+    z = np.array(Cvar) #what if we add the bounding locations to the array??? ==> that would be extrapolation not interpolation? 
+
+    na_map = gpd.read_file(shapefile)
+    bounds = na_map.bounds
+    xmax = bounds['maxx']
+    xmin= bounds['minx']
+    ymax = bounds['maxy']
+    ymin = bounds['miny']
+    pixelHeight = 10000 
+    pixelWidth = 10000
+            
+    num_col = int((xmax - xmin) / pixelHeight)
+    num_row = int((ymax - ymin) / pixelWidth)
+
+
+    #We need to project to a projected system before making distance matrix
+    source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
+    xProj, yProj = pyproj.Proj('esri:102001')(x,y)
+
+    yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+    xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+
+    Yi1 = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
+    Xi1 = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+
+    Xi,Yi = np.meshgrid(Xi1,Yi1)
+    
+    empty_grid = np.empty((num_row,num_col,))*np.nan
+
+    for x3,y3,z3 in zip(x_origin_list,y_origin_list,z_origin_list):
+        empty_grid[y3][x3] = z3
+
+
+
+    vals = ~np.isnan(empty_grid)
+
+    OK = OrdinaryKriging(xProj,yProj,z,variogram_model=model,verbose=False,enable_plotting=False)
+    try: 
+        z1,ss1 = OK.execute('grid',Xi1,Yi1,n_closest_points=10,backend='C') #n_closest_points=10
+
+        kriging_surface = z1.reshape(num_row,num_col)
+
+    #Calc the RMSE, MAE at the pixel loc
+    #Delete at a certain point
+        for loc in station_list: 
+            coord_pair = projected_lat_lon[loc]
+
+            x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+            y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+            x_origin_list.append(x_orig)
+            y_origin_list.append(y_orig)
+
+            interpolated_val = kriging_surface[y_orig][x_orig] #which comes first?
+
+            original_val = Cvar_dict[loc]
+            absolute_error = abs(interpolated_val-original_val)
+            absolute_error_dictionary[loc] = absolute_error
+
+    except:
+        pass
+
+    MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values())
+
+    overall_error = sum(error_dictionary.values())/rep
+    return blocknum,MAE
