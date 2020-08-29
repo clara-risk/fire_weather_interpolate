@@ -338,8 +338,8 @@ def cross_validate_IDEW(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_arra
 
         interpolated_val = fin[y_orig][x_orig] 
 
-        original_val = Cvar_dict[station_name]
-        absolute_error = abs(interpolated_val-original_val)
+        original_val = Cvar_dict[station_name_hold_back] #Get the original value
+        absolute_error = abs(interpolated_val-original_val) #Calc the difference
         absolute_error_dictionary[station_name_hold_back] = absolute_error
 
 
@@ -505,8 +505,8 @@ def shuffle_split_IDEW(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
 
         #Calc the RMSE, MAE, NSE, and MRAE at the pixel loc
         #Delete at a certain point
-        for station_name_hold_back in test_stations: 
-            coord_pair = projected_lat_lon[station_name_hold_back]
+        for statLoc in test_stations: 
+            coord_pair = projected_lat_lon[statLoc]
 
             x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
             y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
@@ -515,9 +515,9 @@ def shuffle_split_IDEW(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
 
             interpolated_val = fin[y_orig][x_orig] 
 
-            original_val = Cvar_dict[station_name]
+            original_val = Cvar_dict[statLoc]
             absolute_error = abs(interpolated_val-original_val)
-            absolute_error_dictionary[station_name_hold_back] = absolute_error
+            absolute_error_dictionary[statLoc] = absolute_error
 
         error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
         count+=1
@@ -682,8 +682,8 @@ def spatial_kfold_IDEW(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,id
 
     #Calc the RMSE, MAE, NSE, and MRAE at the pixel loc
     #Delete at a certain point
-    for station_name_hold_back in station_list: 
-        coord_pair = projected_lat_lon[station_name_hold_back]
+    for statLoc in station_list: 
+        coord_pair = projected_lat_lon[statLoc]
 
         x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
         y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
@@ -692,9 +692,9 @@ def spatial_kfold_IDEW(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,id
 
         interpolated_val = fin[y_orig][x_orig] 
 
-        original_val = Cvar_dict[station_name]
+        original_val = Cvar_dict[statLoc]
         absolute_error = abs(interpolated_val-original_val)
-        absolute_error_dictionary[station_name_hold_back] = absolute_error
+        absolute_error_dictionary[statLoc] = absolute_error
 
 
 
