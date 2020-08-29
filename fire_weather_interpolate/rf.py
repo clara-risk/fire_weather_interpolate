@@ -319,7 +319,7 @@ def cross_validate_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
 
         interpolated_val = rf_grid[y_orig][x_orig] 
 
-        original_val = Cvar_dict[station_name]
+        original_val = Cvar_dict[station_name_hold_back]
         absolute_error = abs(interpolated_val-original_val)
         absolute_error_dictionary[station_name_hold_back] = absolute_error
 
@@ -499,7 +499,7 @@ def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,i
 
         #Calc the RMSE, MAE at the pixel loc
         #Delete at a certain point
-        for station_name_hold_back in test_stations: 
+        for statLoc in test_stations: 
             coord_pair = projected_lat_lon[station_name_hold_back]
 
             x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
@@ -509,9 +509,9 @@ def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,i
 
             interpolated_val = rf_grid[y_orig][x_orig] 
 
-            original_val = Cvar_dict[station_name]
+            original_val = Cvar_dict[statLoc]
             absolute_error = abs(interpolated_val-original_val)
-            absolute_error_dictionary[station_name_hold_back] = absolute_error
+            absolute_error_dictionary[statLoc] = absolute_error
         error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
         count+=1
 
@@ -690,8 +690,8 @@ def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_
 
     #Calc the RMSE, MAE at the pixel loc
     #Delete at a certain point
-    for station_name_hold_back in station_list: 
-        coord_pair = projected_lat_lon[station_name_hold_back]
+    for statLoc in station_list: 
+        coord_pair = projected_lat_lon[statLoc]
 
         x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
         y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
@@ -700,9 +700,9 @@ def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_
 
         interpolated_val = rf_grid[y_orig][x_orig] 
 
-        original_val = Cvar_dict[station_name]
+        original_val = Cvar_dict[statLoc]
         absolute_error = abs(interpolated_val-original_val)
-        absolute_error_dictionary[station_name_hold_back] = absolute_error
+        absolute_error_dictionary[statLoc] = absolute_error
         
     MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
      
