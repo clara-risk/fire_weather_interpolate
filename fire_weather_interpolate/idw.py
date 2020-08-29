@@ -234,7 +234,7 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d):
 
         interpolated_val = idw_grid[y_orig][x_orig] 
 
-        original_val = Cvar_dict[station_name]
+        original_val = Cvar_dict[station_name_hold_back]
         absolute_error = abs(interpolated_val-original_val)
         absolute_error_dictionary[station_name_hold_back] = absolute_error
 
@@ -448,8 +448,8 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
                plt.show()
 
           #Compare at a certain point
-          for station_name_hold_back in station_list: 
-               coord_pair = projected_lat_lon[station_name_hold_back]
+          for statLoc in station_list: 
+               coord_pair = projected_lat_lon[statLoc]
 
                x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
                y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
@@ -458,9 +458,9 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
 
                interpolated_val = idw_grid[y_orig][x_orig] 
 
-               original_val = Cvar_dict[station_name]
+               original_val = Cvar_dict[statLoc]
                absolute_error = abs(interpolated_val-original_val)
-               absolute_error_dictionary[station_name_hold_back] = absolute_error
+               absolute_error_dictionary[statLoc] = absolute_error
 
           error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
           #print(absolute_error_dictionary)
@@ -617,8 +617,8 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,n
                plt.show()
 
           #Compare at a certain point
-          for station_name_hold_back in station_list: 
-               coord_pair = projected_lat_lon[station_name_hold_back]
+          for statLoc in station_list: 
+               coord_pair = projected_lat_lon[statLoc]
 
                x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
                y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
@@ -627,9 +627,9 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,n
 
                interpolated_val = idw_grid[y_orig][x_orig] 
 
-               original_val = Cvar_dict[station_name]
+               original_val = Cvar_dict[statLoc]
                absolute_error = abs(interpolated_val-original_val)
-               absolute_error_dictionary[station_name_hold_back] = absolute_error
+               absolute_error_dictionary[statLoc] = absolute_error
 
           error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
           
@@ -781,8 +781,8 @@ def shuffle_split(loc_dict,Cvar_dict,shapefile,d,rep,show):
                plt.show()
 
           #Compare at a certain point
-          for station_name_hold_back in test_stations: 
-               coord_pair = projected_lat_lon[station_name_hold_back]
+          for statLoc in test_stations: 
+               coord_pair = projected_lat_lon[statLoc]
 
                x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
                y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
@@ -791,9 +791,9 @@ def shuffle_split(loc_dict,Cvar_dict,shapefile,d,rep,show):
 
                interpolated_val = idw_grid[y_orig][x_orig] 
 
-               original_val = Cvar_dict[station_name]
+               original_val = Cvar_dict[statLoc] #Previous, this line had a large error. 
                absolute_error = abs(interpolated_val-original_val)
-               absolute_error_dictionary[station_name_hold_back] = absolute_error
+               absolute_error_dictionary[statLoc] = absolute_error
 
           error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
           
