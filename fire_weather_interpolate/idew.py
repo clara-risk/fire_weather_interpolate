@@ -227,8 +227,32 @@ def cross_validate_IDEW(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_arra
             Plon = float(Plon)
             projected_lat_lon[station_name] = [Plat,Plon]
 
+    #Pre-make the elev_dict to speed up code
+    
+    latO = []
+    lonO = []
+    for station_name in sorted(Cvar_dict.keys()):
+        if station_name in latlon_dict.keys():
+            loc = latlon_dict[station_name]
+            latitude = loc[0]
+            longitude = loc[1]
+            cvar_val = Cvar_dict[station_name]
+            latO.append(float(latitude))
+            lonO.append(float(longitude))
+        else:
+            pass
+                
+    yO = np.array(latO)
+    xO = np.array(lonO)
 
 
+    #We need to project to a projected system before making distance matrix
+    source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
+    xProjO, yProjO = pyproj.Proj('esri:102001')(xO,yO)
+    elev_dict= GD.finding_data_frm_lookup(zip(xProjO, yProjO),file_path_elev,idx_list)
+
+        
+    
     for station_name_hold_back in station_name_list:
 
         lat = []
@@ -295,7 +319,7 @@ def cross_validate_IDEW(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_arra
 
 
         
-        elev_dict= GD.finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list)
+        #elev_dict= GD.finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list)
 
         xProj_input=[]
         yProj_input=[]
