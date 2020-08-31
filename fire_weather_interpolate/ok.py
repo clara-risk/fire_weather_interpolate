@@ -467,75 +467,75 @@ def leave_p_out_crossval(latlon_dict,Cvar_dict,shapefile,model,nruns,p):
             y_origin_list.append(y_orig)
             z_origin_list.append(Cvar_dict[station_name_hold_back])
 
-        #Making the groups of randomly selected, bootstrapping with replacement
+        #Making the groups of randomly selected, bootstrapping without replacement
         #weather stations to be held out together
-        bootstrap_p = np.random.choice(station_name_list,p) 
+        bootstrap_p = np.random.choice(station_name_list,p,replace=False) 
         
-        for station_name_hold_back in bootstrap_p:
              
-            lat = []
-            lon = []
-            Cvar = []
-            for station_name in sorted(Cvar_dict.keys()):
-                if station_name in latlon_dict.keys():
-                    if station_name != station_name_hold_back:
-                        loc = latlon_dict[station_name]
-                        latitude = loc[0]
-                        longitude = loc[1]
-                        cvar_val = Cvar_dict[station_name]
-                        lat.append(float(latitude))
-                        lon.append(float(longitude))
-                        Cvar.append(cvar_val)
-                    else:
-                        #print('Skipping station!')
-                        pass
-                    
-            y = np.array(lat)
-            x = np.array(lon)
-            z = np.array(Cvar) 
+        lat = []
+        lon = []
+        Cvar = []
+        for station_name in sorted(Cvar_dict.keys()):
+            if station_name in latlon_dict.keys():
+                if station_name not in bootstrap_p:
+                    loc = latlon_dict[station_name]
+                    latitude = loc[0]
+                    longitude = loc[1]
+                    cvar_val = Cvar_dict[station_name]
+                    lat.append(float(latitude))
+                    lon.append(float(longitude))
+                    Cvar.append(cvar_val)
+                else:
+                    #print('Skipping station!')
+                    pass
+                
+        y = np.array(lat)
+        x = np.array(lon)
+        z = np.array(Cvar) 
 
-            na_map = gpd.read_file(shapefile)
-            bounds = na_map.bounds
-            xmax = bounds['maxx']
-            xmin= bounds['minx']
-            ymax = bounds['maxy']
-            ymin = bounds['miny']
-            pixelHeight = 10000 
-            pixelWidth = 10000
-                    
-            num_col = int((xmax - xmin) / pixelHeight)
-            num_row = int((ymax - ymin) / pixelWidth)
-
-
-            #We need to project to a projected system before making distance matrix
-            source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
-            xProj, yProj = pyproj.Proj('esri:102001')(x,y)
-
-            yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
-            xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
-
-            Yi1 = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
-            Xi1 = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
-
-            Xi,Yi = np.meshgrid(Xi1,Yi1)
-            
-            empty_grid = np.empty((num_row,num_col,))*np.nan
-
-            for x3,y3,z3 in zip(x_origin_list,y_origin_list,z_origin_list):
-                empty_grid[y3][x3] = z3
+        na_map = gpd.read_file(shapefile)
+        bounds = na_map.bounds
+        xmax = bounds['maxx']
+        xmin= bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']
+        pixelHeight = 10000 
+        pixelWidth = 10000
+                
+        num_col = int((xmax - xmin) / pixelHeight)
+        num_row = int((ymax - ymin) / pixelWidth)
 
 
+        #We need to project to a projected system before making distance matrix
+        source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
+        xProj, yProj = pyproj.Proj('esri:102001')(x,y)
 
-            vals = ~np.isnan(empty_grid)
+        yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+        xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
 
-            OK = OrdinaryKriging(xProj,yProj,z,variogram_model=model,verbose=False,enable_plotting=False)
-            try: 
-                z1,ss1 = OK.execute('grid',Xi1,Yi1,backend='C') #n_closest_points=10
+        Yi1 = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
+        Xi1 = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+
+        Xi,Yi = np.meshgrid(Xi1,Yi1)
         
-                kriging_surface = z1.reshape(num_row,num_col)
+        empty_grid = np.empty((num_row,num_col,))*np.nan
 
-            #Calc the RMSE, MAE at the pixel loc
-            #Delete at a certain point
+        for x3,y3,z3 in zip(x_origin_list,y_origin_list,z_origin_list):
+            empty_grid[y3][x3] = z3
+
+
+
+        vals = ~np.isnan(empty_grid)
+
+        try:
+            OK = OrdinaryKriging(xProj,yProj,z,variogram_model=model,verbose=False,enable_plotting=False)
+            z1,ss1 = OK.execute('grid',Xi1,Yi1,backend='C') #n_closest_points=10
+    
+            kriging_surface = z1.reshape(num_row,num_col)
+
+        #Calc the RMSE, MAE at the pixel loc
+        #Delete at a certain point
+            for station_name_hold_back in bootstrap_p: 
                 coord_pair = projected_lat_lon[station_name_hold_back]
 
                 x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
@@ -548,8 +548,8 @@ def leave_p_out_crossval(latlon_dict,Cvar_dict,shapefile,model,nruns,p):
                 original_val = Cvar_dict[station_name_hold_back]
                 absolute_error = abs(interpolated_val-original_val)
                 absolute_error_dictionary[station_name_hold_back] = absolute_error
-            except:
-                pass
+        except:
+            pass
         try: 
             MAE = sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values())
         except ZeroDivisionError:
@@ -560,6 +560,7 @@ def leave_p_out_crossval(latlon_dict,Cvar_dict,shapefile,model,nruns,p):
     MAE2 = sum(MAEs.values())/len(MAEs.values()) #Sum of the results for all the runs 
     
     return MAE2 
+
 
 def get_best_model(models,latlon_dict,Cvar_dict,shapefile,nruns,p):
     '''Select the best semivariogram using the leave_p_out cross-validation procedure 
