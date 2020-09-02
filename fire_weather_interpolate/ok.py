@@ -900,5 +900,4 @@ def spatial_kfold_OK(loc_dict,Cvar_dict,shapefile,model,file_path_elev,idx_list)
 
     MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values())
 
-    overall_error = sum(error_dictionary.values())/rep
     return blocknum,MAE
