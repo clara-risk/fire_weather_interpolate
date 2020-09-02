@@ -745,7 +745,7 @@ def shuffle_split_OK(latlon_dict,Cvar_dict,shapefile,model,rep):
     overall_error = sum(error_dictionary.values())/rep
     return overall_error
 
-def spatial_kfold_OK(loc_dict,Cvar_dict,shapefile,model,file_path_elev,elev_array,idx_list):
+def spatial_kfold_OK(loc_dict,Cvar_dict,shapefile,model,file_path_elev,idx_list):
     '''Cross_validate the ordinary kriging 
     Parameters 
         latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
