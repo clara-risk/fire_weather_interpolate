@@ -500,7 +500,7 @@ def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,i
         #Calc the RMSE, MAE at the pixel loc
         #Delete at a certain point
         for statLoc in test_stations: 
-            coord_pair = projected_lat_lon[station_name_hold_back]
+            coord_pair = projected_lat_lon[statLoc]
 
             x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
             y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
