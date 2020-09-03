@@ -365,7 +365,7 @@ def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,i
         #Split the stations in two
         stations_input = [] #we can't just use Cvar_dict.keys() because some stations do not have valid lat/lon
         for station_code in Cvar_dict.keys():
-            if station_code in loc_dict.keys():
+            if station_code in latlon_dict.keys():
                 stations_input.append(station_code)
           #Split the stations in two
         stations = np.array(stations_input)
