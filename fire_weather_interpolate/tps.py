@@ -475,9 +475,6 @@ def spatial_kfold_tps(loc_dict,Cvar_dict,shapefile,phi,file_path_elev,elev_array
     error_dictionary = {} 
 
 
-    x_origin_list = []
-    y_origin_list = [] 
-    z_origin_list = []
     absolute_error_dictionary = {} #for plotting
     station_name_list = []
     projected_lat_lon = {}
@@ -516,28 +513,21 @@ def spatial_kfold_tps(loc_dict,Cvar_dict,shapefile,phi,file_path_elev,elev_array
             projected_lat_lon[station_name] = [Plat,Plon]
 
 
-    for station_name_hold_back in station_name_list:
-
-        na_map = gpd.read_file(shapefile)
-        bounds = na_map.bounds
-
-        pixelHeight = 10000 
-        pixelWidth = 10000
-
-
-        coord_pair = projected_lat_lon[station_name_hold_back]
-
-        x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
-        y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
-        x_origin_list.append(x_orig)
-        y_origin_list.append(y_orig)
-        z_origin_list.append(Cvar_dict[station_name_hold_back])
-
-
-
     lat = []
     lon = []
     Cvar = []
+
+    #For preparing the empty grid w/ the values inserted for the rbf function 
+    x_origin_list = []
+    y_origin_list = [] 
+    z_origin_list = []
+
+    na_map = gpd.read_file(shapefile)
+    bounds = na_map.bounds
+
+    pixelHeight = 10000 
+    pixelWidth = 10000
+
     for station_name in sorted(Cvar_dict.keys()):
         if station_name in loc_dict.keys():
             if station_name not in station_list:
@@ -548,6 +538,14 @@ def spatial_kfold_tps(loc_dict,Cvar_dict,shapefile,phi,file_path_elev,elev_array
                 lat.append(float(latitude))
                 lon.append(float(longitude))
                 Cvar.append(cvar_val)
+
+                coord_pair = projected_lat_lon[station_name_hold_back]
+
+                x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+                y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+                x_origin_list.append(x_orig)
+                y_origin_list.append(y_orig)
+                z_origin_list.append(Cvar_dict[station_name_hold_back])
             else:
                 pass
                 
