@@ -188,9 +188,7 @@ def cross_validate_tps(latlon_dict,Cvar_dict,shapefile,phi):
         absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
         was left out 
      '''
-    x_origin_list = []
-    y_origin_list = [] 
-    z_origin_list = []
+
     absolute_error_dictionary = {} #for plotting
     station_name_list = []
     projected_lat_lon = {}
@@ -208,25 +206,14 @@ def cross_validate_tps(latlon_dict,Cvar_dict,shapefile,phi):
             projected_lat_lon[station_name] = [Plat,Plon]
 
 
+    na_map = gpd.read_file(shapefile)
+    bounds = na_map.bounds
+    pixelHeight = 10000 
+    pixelWidth = 10000
     for station_name_hold_back in station_name_list:
-
-        na_map = gpd.read_file(shapefile)
-        bounds = na_map.bounds
-
-        pixelHeight = 10000 
-        pixelWidth = 10000
-
-
-        coord_pair = projected_lat_lon[station_name_hold_back]
-
-        x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
-        y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
-        x_origin_list.append(x_orig)
-        y_origin_list.append(y_orig)
-        z_origin_list.append(Cvar_dict[station_name_hold_back])
-
-
-    for station_name_hold_back in station_name_list:
+        x_origin_list = []
+        y_origin_list = [] 
+        z_origin_list = []
 
         lat = []
         lon = []
@@ -241,7 +228,16 @@ def cross_validate_tps(latlon_dict,Cvar_dict,shapefile,phi):
                     lat.append(float(latitude))
                     lon.append(float(longitude))
                     Cvar.append(cvar_val)
+
+                    coord_pair = projected_lat_lon[station_name]
+
+                    x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+                    y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+                    x_origin_list.append(x_orig)
+                    y_origin_list.append(y_orig)
+                    z_origin_list.append(Cvar_dict[station_name])
                 else:
+                    print(station_name)
                     pass
                     
         y = np.array(lat)
@@ -298,6 +294,8 @@ def cross_validate_tps(latlon_dict,Cvar_dict,shapefile,phi):
         interpolated_val = spline[y_orig][x_orig] 
 
         original_val = Cvar_dict[station_name_hold_back] #Original value
+        #print(original_val)
+        #print(interpolated_val)
         absolute_error = abs(interpolated_val-original_val)
         absolute_error_dictionary[station_name_hold_back] = absolute_error
 
