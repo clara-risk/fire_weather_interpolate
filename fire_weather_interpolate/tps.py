@@ -539,13 +539,13 @@ def spatial_kfold_tps(loc_dict,Cvar_dict,shapefile,phi,file_path_elev,elev_array
                 lon.append(float(longitude))
                 Cvar.append(cvar_val)
 
-                coord_pair = projected_lat_lon[station_name_hold_back]
+                coord_pair = projected_lat_lon[station_name]
 
                 x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
                 y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
                 x_origin_list.append(x_orig)
                 y_origin_list.append(y_orig)
-                z_origin_list.append(Cvar_dict[station_name_hold_back])
+                z_origin_list.append(Cvar_dict[station_name])
             else:
                 pass
                 
