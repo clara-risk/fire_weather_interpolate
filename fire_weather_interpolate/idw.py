@@ -243,7 +243,7 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d):
      return absolute_error_dictionary
      
 
-def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list):
+def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list,d):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
      in order to select the block/cluster size
      Parameters
@@ -291,13 +291,13 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      
      for n in range(0,nruns):
 
-          block25 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,1,25,5,True,False,dictionaryGroups25)
+          block25 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,25,5,True,False,dictionaryGroups25)
           block25_error.append(block25) 
 
-          block16 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,1,16,8,True,False,dictionaryGroups16)
+          block16 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,16,8,True,False,dictionaryGroups16)
           block16_error.append(block16)
           
-          block9 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,1,9,14,True,False,dictionaryGroups9)
+          block9 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,9,14,True,False,dictionaryGroups9)
           block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
