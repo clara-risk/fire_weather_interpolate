@@ -274,9 +274,9 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
 
      elif group_type == 'clusters':
           
-          dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False)
-          dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False)
-          dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False)
+          dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,False)
+          dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,False)
+          dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,False)
 
      else:
           print('Thats not a valid group type')
@@ -348,7 +348,7 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
           if replacement == False: 
                station_list_used.append(list(station_list))
           #print(station_list_used) 
-          #print(station_list) 
+
           
 
                     
@@ -449,7 +449,8 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
                plt.show()
 
           #Compare at a certain point
-          for statLoc in station_list: 
+          for statLoc in station_list:
+
                coord_pair = projected_lat_lon[statLoc]
 
                x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
@@ -462,6 +463,7 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
                original_val = Cvar_dict[statLoc]
                absolute_error = abs(interpolated_val-original_val)
                absolute_error_dictionary[statLoc] = absolute_error
+
 
           error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
           #print(absolute_error_dictionary)
