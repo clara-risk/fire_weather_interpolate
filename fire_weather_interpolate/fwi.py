@@ -1871,7 +1871,7 @@ def FWI(isi,bui,maxmin,show,shapefile,mask,endMask):
     return fwi
 
 def plot_july(fwi_list,maxmin,year,var,shapefile):
-    ''' Visualize all values for July 
+    ''' Visualize all values for July. **CHANGE INDEX IF LEAP YEAR**
     Parameters
         fwi_list (list): list of fwi metric arrays for a certain measure (i.e. dmc)
         maxmin (list): bounds of study area
@@ -1884,7 +1884,7 @@ def plot_july(fwi_list,maxmin,year,var,shapefile):
 
     fig = plt.figure()
     COUNT = 0
-    for index in range(92,122): #The range refers to the start and end indexes of where July is in the list 
+    for index in range(121,152): #The range refers to the start and end indexes of where July is in the list 
         ax = fig.add_subplot(4,8,COUNT+1)
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
