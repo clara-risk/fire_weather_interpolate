@@ -1871,7 +1871,7 @@ def FWI(isi,bui,maxmin,show,shapefile,mask,endMask):
     return fwi
 
 def plot_july(fwi_list,maxmin,year,var,shapefile):
-    ''' Visualize all values for July. **CHANGE INDEX IF LEAP YEAR**
+    ''' Visualize all values for July. **DO NOT HAVE TO CHANGE INDEX IF LEAP YEAR** WHY? B/C WE ARE COUNTING FRM MAR1
     Parameters
         fwi_list (list): list of fwi metric arrays for a certain measure (i.e. dmc)
         maxmin (list): bounds of study area
