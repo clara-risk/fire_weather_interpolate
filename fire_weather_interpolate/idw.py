@@ -274,48 +274,41 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
 
      elif group_type == 'clusters':
           
-          dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,False)
-          dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,False)
-          dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,False)
+          block_num_ref = [25,16,9] 
+          calinski_harabasz = [] 
+
+          label,Xelev,cluster25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,True)
+          calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label)) #Calinski-Harabasz Index --> higher the better
+          label,Xelev,cluster16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,True)
+          calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
+          label,Xelev,cluster9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,True)
+          calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
+
+          minIndex = calinski_harabasz.index(min(calinski_harabasz))
+          block_num = block_num_ref[minIndex] #lookup the block size that corresponds
+
+          cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,block_num,file_path_elev,idx_list,False,False,False)
 
      else:
           print('Thats not a valid group type')
           sys.exit() 
                
-     block25_error = []
-     block16_error = []
-     block9_error = []
-     if nruns <= 1:
-          print('That is not enough runs to calculate the standard deviation!')
-          sys.exit() 
-     
+     if block_num == 9:
+          n_folds = 14
+     if block_num == 16:
+          n_folds = 8
+     if block_num == 25:
+          n_folds = 5 
+
+     list_of_MAE = []
      for n in range(0,nruns):
+          ave_MAE = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,block_num,n_folds,True,False,cluster)
+          list_of_MAE.append(ave_MAE)
+     overall_MAE = sum(list_of_MAE)/len(list_of_MAE) 
 
-          block25 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,25,5,True,False,dictionaryGroups25)
-          block25_error.append(block25) 
-
-          block16 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,16,8,True,False,dictionaryGroups16)
-          block16_error.append(block16)
-          
-          block9 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,9,14,True,False,dictionaryGroups9)
-          block9_error.append(block9)
-
-     stdev25 = statistics.stdev(block25_error) 
-     stdev16 = statistics.stdev(block16_error)
-     stdev9 = statistics.stdev(block9_error)
-
-     list_stdev = [stdev25,stdev16,stdev9]
-     list_block_name = [25,16,9]
-     list_error = [block25_error,block16_error,block9_error]
-     index_min = list_stdev.index(min(list_stdev))
-     lowest_stdev = list_block_name[index_min]
-
-     ave_MAE = sum(list_error[index_min])/len(list_error[index_min]) 
-
-     print(lowest_stdev)
-     print(ave_MAE) 
-
-     return lowest_stdev,ave_MAE
+     print(block_num)
+     print(overall_MAE) 
+     return block_num,overall_MAE
                
           
 def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,nfolds,replacement,show,dictionary_Groups):
@@ -347,10 +340,6 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
 
           if replacement == False: 
                station_list_used.append(list(station_list))
-          #print(station_list_used) 
-
-          
-
                     
           for station_name in Cvar_dict.keys():
                
