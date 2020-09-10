@@ -284,8 +284,8 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           label,Xelev,cluster9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,True)
           calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
 
-          minIndex = calinski_harabasz.index(min(calinski_harabasz))
-          block_num = block_num_ref[minIndex] #lookup the block size that corresponds
+          maxIndex = calinski_harabasz.index(max(calinski_harabasz))
+          block_num = block_num_ref[maxIndex] #lookup the block size that corresponds
 
           cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,block_num,file_path_elev,idx_list,False,False,False)
 
@@ -496,8 +496,8 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
      label,Xelev,cluster9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,True)
      calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
 
-     minIndex = calinski_harabasz.index(min(calinski_harabasz))
-     blocknum = block_num_ref[minIndex] #lookup the block size that corresponds
+     maxIndex = calinski_harabasz.index(max(calinski_harabasz))
+     blocknum = block_num_ref[maxIndex] #lookup the block size that corresponds
 
      cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,blocknum,file_path_elev,idx_list,False,False,False)
 
