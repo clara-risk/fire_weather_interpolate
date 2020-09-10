@@ -471,6 +471,7 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
          Cvar_dict (dict): dictionary of weather variable values for each station 
          shapefile (str): path to the study area shapefile 
          d (int): the weighting function for IDW interpolation
+         BlockNum (int): number of clusters you want to form 
      Returns 
          error_dictionary (dict): a dictionary of the absolute error at each fold when it
          was left out 
