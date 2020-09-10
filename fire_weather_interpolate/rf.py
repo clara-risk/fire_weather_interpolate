@@ -521,7 +521,7 @@ def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,i
     return overall_error
         
 
-def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list):
+def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,clusterNum):
     '''Spatially blocked k-folds cross-validation procedure for rf
     Parameters
         loc_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -531,6 +531,7 @@ def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_
         file_path_elev (str): file path to the elevation lookup file 
         elev_array (np_array): the elevation array for the study area 
         idx_list (list): the index of the elevation data column in the lookup file 
+        clusterNum (int): number of clusters to form
     Returns 
         overall_error (float): average MAE value of all the reps 
     '''
@@ -544,20 +545,8 @@ def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_
     projected_lat_lon = {}
 
     #Selecting blocknum
-    block_num_ref = [25,16,9] 
-    calinski_harabasz = [] 
 
-    label,Xelev,cluster25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,True)
-    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label)) #Calinski-Harabasz Index --> higher the better
-    label,Xelev,cluster16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,True)
-    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
-    label,Xelev,cluster9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,True)
-    calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
-
-    minIndex = calinski_harabasz.index(min(calinski_harabasz))
-    blocknum = block_num_ref[minIndex] #lookup the block size that corresponds
-
-    cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,blocknum,file_path_elev,idx_list,False,False,False)
+    cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,clusterNum,file_path_elev,idx_list,False,False,False)
 
     for group in cluster.values():
         if group not in groups_complete:
@@ -706,4 +695,4 @@ def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_
         
     MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
      
-    return blocknum,MAE
+    return clusterNum,MAE
