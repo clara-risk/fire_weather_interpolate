@@ -462,7 +462,7 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
      return overall_error
 
 
-def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_elev,idx_list):
+def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_elev,idx_list,BlockNum):
      '''Spatially blocked k-folds cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
@@ -483,23 +483,7 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
      absolute_error_dictionary = {} 
      projected_lat_lon = {}
 
-                    
-     
-     #Selecting blocknum
-     block_num_ref = [25,16,9] 
-     calinski_harabasz = [] 
-
-     label,Xelev,cluster25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,True)
-     calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label)) #Calinski-Harabasz Index --> higher the better
-     label,Xelev,cluster16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,True)
-     calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
-     label,Xelev,cluster9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,True)
-     calinski_harabasz.append(metrics.calinski_harabasz_score(Xelev, label))
-
-     maxIndex = calinski_harabasz.index(max(calinski_harabasz))
-     blocknum = block_num_ref[maxIndex] #lookup the block size that corresponds
-
-     cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,blocknum,file_path_elev,idx_list,False,False,False)
+     cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,BlockNum,file_path_elev,idx_list,False,False,False)
 
      for group in cluster.values():
         if group not in groups_complete:
@@ -600,7 +584,7 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
 
      MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
 
-     return blocknum,MAE
+     return BlockNum,MAE
 
 def shuffle_split(loc_dict,Cvar_dict,shapefile,d,rep,show):
      '''Shuffle-split cross-validation with 50/50 training test split 
