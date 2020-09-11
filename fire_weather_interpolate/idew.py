@@ -962,7 +962,7 @@ def spatial_groups_IDEW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum
             x_origin_list.append(x_orig)
             y_origin_list.append(y_orig)
 
-            interpolated_val = idw_grid[y_orig][x_orig]
+            interpolated_val = fin[y_orig][x_orig]
 
             original_val = Cvar_dict[statLoc]
             absolute_error = abs(interpolated_val-original_val)
