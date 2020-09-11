@@ -789,7 +789,7 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
                x_origin_list.append(x_orig)
                y_origin_list.append(y_orig)
 
-               interpolated_val = idw_grid[y_orig][x_orig] 
+               interpolated_val = spline[y_orig][x_orig] 
 
                original_val = Cvar_dict[statLoc]
                absolute_error = abs(interpolated_val-original_val)
