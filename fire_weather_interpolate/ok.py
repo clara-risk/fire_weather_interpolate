@@ -890,3 +890,212 @@ def spatial_kfold_OK(loc_dict,Cvar_dict,shapefile,model,file_path_elev,idx_list,
     MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values())
 
     return clusterNum,MAE
+
+
+def select_block_size_OK(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list):
+     '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
+     in order to select the block/cluster size
+     Parameters
+         nruns (int): number of repetitions 
+         group_type (str): whether using 'clusters' or 'blocks'
+         loc_dict (dict): the latitude and longitudes of the daily/hourly stations, 
+         loaded from the .json file
+         Cvar_dict (dict): dictionary of weather variable values for each station 
+         idw_example_grid (numpy array): used for reference of study area grid size
+         shapefile (str): path to the study area shapefile 
+         file_path_elev (str): path to the elevation lookup file
+         idx_list (int): position of the elevation column in the lookup file
+     Returns 
+         lowest_stdev,ave_MAE (int,float): block/cluster number w/ lowest stdev, associated
+         ave_MAE of all the runs 
+     '''
+     
+     #Get group dictionaries
+
+     if group_type == 'blocks': 
+
+          folds25 = mbk.make_block(idw_example_grid,25)
+          dictionaryGroups25 = mbk.sorting_stations(folds25,shapefile,Cvar_dict)
+          folds16 = mbk.make_block(idw_example_grid,16)
+          dictionaryGroups16 = mbk.sorting_stations(folds16,shapefile,Cvar_dict)
+          folds9 = mbk.make_block(idw_example_grid,9)
+          dictionaryGroups9 = mbk.sorting_stations(folds9,shapefile,Cvar_dict)
+
+     elif group_type == 'clusters':
+
+          dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,False)
+          dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,False)
+          dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,False)
+
+     else:
+          print('Thats not a valid group type')
+          sys.exit() 
+               
+     block25_error = []
+     block16_error = []
+     block9_error = []
+     if nruns <= 1:
+          print('That is not enough runs to calculate the standard deviation!')
+          sys.exit() 
+     
+     for n in range(0,nruns):
+
+          block25 = spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,25,5,True,False,dictionaryGroups25)
+          block25_error.append(block25) 
+
+          block16 = spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,16,8,True,False,dictionaryGroups16)
+          block16_error.append(block16)
+          
+          block9 = spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,9,14,True,False,dictionaryGroups9)
+          block9_error.append(block9)
+
+     stdev25 = statistics.stdev(block25_error) 
+     stdev16 = statistics.stdev(block16_error)
+     stdev9 = statistics.stdev(block9_error)
+
+     list_stdev = [stdev25,stdev16,stdev9]
+     list_block_name = [25,16,9]
+     list_error = [block25_error,block16_error,block9_error]
+     index_min = list_stdev.index(min(list_stdev))
+     lowest_stdev = list_block_name[index_min]
+
+     ave_MAE = sum(list_error[index_min])/len(list_error[index_min]) 
+
+     print(lowest_stdev)
+     print(ave_MAE) 
+     return lowest_stdev,ave_MAE
+               
+          
+def spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nfolds,replacement,dictionary_Groups):
+     '''Spatially blocked bagging cross-validation procedure for IDW 
+     Parameters
+         idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
+         loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
+         .json file
+         Cvar_dict (dict): dictionary of weather variable values for each station 
+         shapefile (str): path to the study area shapefile 
+         d (int): the weighting function for IDW interpolation
+         nfolds (int): # number of folds. For 10-fold we use 10, etc. 
+     Returns 
+         error_dictionary (dict): a dictionary of the absolute error at each fold when it
+         was left out 
+     '''
+     station_list_used = [] #If not using replacement, keep a record of what we have done 
+     count = 1
+     error_dictionary = {} 
+     while count <= nfolds: 
+          x_origin_list = []
+          y_origin_list = [] 
+
+          absolute_error_dictionary = {} 
+          projected_lat_lon = {}
+
+          station_list = Eval.select_random_station(dictionary_Groups,blocknum,replacement,station_list_used).values()
+
+
+          if replacement == False: 
+               station_list_used.append(list(station_list))
+          #print(station_list_used) 
+
+          
+
+                    
+          for station_name in Cvar_dict.keys():
+               
+               if station_name in loc_dict.keys():
+
+                  loc = loc_dict[station_name]
+                  latitude = loc[0]
+                  longitude = loc[1]
+                  Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
+                  Plat = float(Plat)
+                  Plon = float(Plon)
+                  projected_lat_lon[station_name] = [Plat,Plon]
+
+
+          lat = []
+          lon = []
+          Cvar = []
+          for station_name in sorted(Cvar_dict.keys()):
+               if station_name in loc_dict.keys():
+                    if station_name not in station_list: #This is the step where we hold back the fold
+                         loc = loc_dict[station_name]
+                         latitude = loc[0]
+                         longitude = loc[1]
+                         cvar_val = Cvar_dict[station_name]
+                         lat.append(float(latitude))
+                         lon.append(float(longitude))
+                         Cvar.append(cvar_val)
+                    else:
+                         pass #Skip the station 
+                     
+          y = np.array(lat)
+          x = np.array(lon)
+          z = np.array(Cvar) 
+             
+          na_map = gpd.read_file(shapefile)
+          bounds = na_map.bounds
+          xmax = bounds['maxx']
+          xmin= bounds['minx']
+          ymax = bounds['maxy']
+          ymin = bounds['miny']
+          pixelHeight = 10000 
+          pixelWidth = 10000
+                     
+          num_col = int((xmax - xmin) / pixelHeight)
+          num_row = int((ymax - ymin) / pixelWidth)
+
+
+    #We need to project to a projected system before making distance matrix
+    source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
+    xProj, yProj = pyproj.Proj('esri:102001')(x,y)
+
+    yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+    xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+
+    Yi1 = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
+    Xi1 = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+
+    Xi,Yi = np.meshgrid(Xi1,Yi1)
+    
+    empty_grid = np.empty((num_row,num_col,))*np.nan
+
+    for x3,y3,z3 in zip(x_origin_list,y_origin_list,z_origin_list):
+        empty_grid[y3][x3] = z3
+
+
+
+    vals = ~np.isnan(empty_grid)
+
+    OK = OrdinaryKriging(xProj,yProj,z,variogram_model=model,verbose=False,enable_plotting=False)
+    try: 
+        z1,ss1 = OK.execute('grid',Xi1,Yi1,n_closest_points=10,backend='C') #n_closest_points=10
+
+        kriging_surface = z1.reshape(num_row,num_col)
+
+    #Calc the RMSE, MAE at the pixel loc
+    #Delete at a certain point
+        for statLoc in station_list:
+
+               coord_pair = projected_lat_lon[statLoc]
+
+               x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+               y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+               x_origin_list.append(x_orig)
+               y_origin_list.append(y_orig)
+
+               interpolated_val = kriging_surface[y_orig][x_orig] 
+
+               original_val = Cvar_dict[statLoc]
+               absolute_error = abs(interpolated_val-original_val)
+               absolute_error_dictionary[statLoc] = absolute_error
+        error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
+        #print(absolute_error_dictionary)
+        count+=1
+
+    except:
+        count+=1
+        pass
+    overall_error = sum(error_dictionary.values())/len(error_dictionary.values()) #average of all the runs, different b/c a fold could fail...
+    #print(overall_error)
+    return overall_error
