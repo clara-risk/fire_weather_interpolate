@@ -762,13 +762,13 @@ def select_block_size_IDEW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,
 
      for n in range(0,nruns):
 
-          block25 = spatial_groups_IDEW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,25,5,True,False,dictionaryGroups25)
+          block25 = spatial_groups_IDEW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,25,5,True,dictionaryGroups25)
           block25_error.append(block25)
 
-          block16 = spatial_groups_IDEW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,16,8,True,False,dictionaryGroups16)
+          block16 = spatial_groups_IDEW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,16,8,True,dictionaryGroups16)
           block16_error.append(block16)
 
-          block9 = spatial_groups_IDEW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,9,14,True,False,dictionaryGroups9)
+          block9 = spatial_groups_IDEW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,9,14,True,dictionaryGroups9)
           block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error)
