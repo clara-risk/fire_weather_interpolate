@@ -810,8 +810,8 @@ def spatial_groups_IDEW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum
     latO = []
     lonO = []
     for station_name in sorted(Cvar_dict.keys()):
-        if station_name in latlon_dict.keys():
-            loc = latlon_dict[station_name]
+        if station_name in loc_dict.keys():
+            loc = loc_dict[station_name]
             latitude = loc[0]
             longitude = loc[1]
             cvar_val = Cvar_dict[station_name]
@@ -860,9 +860,9 @@ def spatial_groups_IDEW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum
         lon = []
         Cvar = []
         for station_name in sorted(Cvar_dict.keys()):
-            if station_name in latlon_dict.keys():
+            if station_name in loc_dict.keys():
                 if station_name not in test_stations:
-                    loc = latlon_dict[station_name]
+                    loc = loc_dict[station_name]
                     latitude = loc[0]
                     longitude = loc[1]
                     cvar_val = Cvar_dict[station_name]
