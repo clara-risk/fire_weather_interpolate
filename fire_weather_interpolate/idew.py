@@ -18,6 +18,7 @@ import geopandas as gpd
 import numpy as np
 import pyproj
 import matplotlib.pyplot as plt
+import statistics
 
 import warnings
 warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the /0 warning
