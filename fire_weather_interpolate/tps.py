@@ -28,6 +28,7 @@ from sklearn import metrics
 
 import cluster_3d as c3d
 import Eval as Eval 
+import statistics
 
 #functions 
 def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,phi):
