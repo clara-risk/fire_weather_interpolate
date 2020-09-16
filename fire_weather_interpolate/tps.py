@@ -694,7 +694,8 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
      error_dictionary = {} 
      while count <= nfolds: 
           x_origin_list = []
-          y_origin_list = [] 
+          y_origin_list = []
+          z_origin_list = []
 
           absolute_error_dictionary = {} 
           projected_lat_lon = {}
@@ -725,6 +726,18 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
           lat = []
           lon = []
           Cvar = []
+
+          #For preparing the empty grid w/ the values inserted for the rbf function 
+          x_origin_list = []
+          y_origin_list = [] 
+          z_origin_list = []
+
+          na_map = gpd.read_file(shapefile)
+          bounds = na_map.bounds
+
+          pixelHeight = 10000 
+          pixelWidth = 10000
+
           for station_name in sorted(Cvar_dict.keys()):
                if station_name in loc_dict.keys():
                     if station_name not in station_list: #This is the step where we hold back the fold
@@ -735,6 +748,13 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
                          lat.append(float(latitude))
                          lon.append(float(longitude))
                          Cvar.append(cvar_val)
+                         coord_pair = projected_lat_lon[station_name]
+                         
+                         x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon
+                         y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+                         x_origin_list.append(x_orig)
+                         y_origin_list.append(y_orig)
+                         z_origin_list.append(Cvar_dict[station_name])
                     else:
                          pass #Skip the station 
                      
@@ -786,12 +806,12 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
 
                coord_pair = projected_lat_lon[statLoc]
 
-               x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
-               y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
-               x_origin_list.append(x_orig)
-               y_origin_list.append(y_orig)
+               x_orig_statLoc = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+               y_orig_statLoc = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+               #x_origin_list.append(x_orig)
+               #y_origin_list.append(y_orig)
 
-               interpolated_val = spline[y_orig][x_orig] 
+               interpolated_val = spline[y_orig_statLoc][x_orig_statLoc] 
 
                original_val = Cvar_dict[statLoc]
                absolute_error = abs(interpolated_val-original_val)
@@ -804,3 +824,4 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
      overall_error = sum(error_dictionary.values())/nfolds #average of all the runs
      #print(overall_error)
      return overall_error
+
