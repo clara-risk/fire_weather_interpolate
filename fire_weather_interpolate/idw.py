@@ -266,11 +266,11 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      if group_type == 'blocks': 
 
           folds25 = mbk.make_block(idw_example_grid,25)
-          dictionaryGroups25 = mbk.sorting_stations(folds25,shapefile,Cvar_dict)
+          dictionaryGroups25 = mbk.sorting_stations(folds25,shapefile,loc_dict,Cvar_dict)
           folds16 = mbk.make_block(idw_example_grid,16)
-          dictionaryGroups16 = mbk.sorting_stations(folds16,shapefile,Cvar_dict)
+          dictionaryGroups16 = mbk.sorting_stations(folds16,shapefile,loc_dict,Cvar_dict)
           folds9 = mbk.make_block(idw_example_grid,9)
-          dictionaryGroups9 = mbk.sorting_stations(folds9,shapefile,Cvar_dict)
+          dictionaryGroups9 = mbk.sorting_stations(folds9,shapefile,loc_dict,Cvar_dict)
 
      elif group_type == 'clusters':
           
