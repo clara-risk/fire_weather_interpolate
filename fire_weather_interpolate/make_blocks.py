@@ -145,11 +145,12 @@ def make_block(idw_grid,blocknum):
      return blocks
 
 
-def sorting_stations(blocks,shapefile,Cvar_dict):
+def sorting_stations(blocks,shapefile,loc_dict,Cvar_dict):
      '''Find the stations in each block and create a reference dictionary for this information 
      Parameters
          blocks (numpy array): output of the make_block function 
          shapefile (str): path to shapefile of study area 
+         loc_dict (dict): dictionary with weather station locations
          Cvar_dict (dict): the dictionary keyed by station with the weather data inside 
      Returns 
          groups (dict): dictionary of the block for each station 
@@ -163,11 +164,11 @@ def sorting_stations(blocks,shapefile,Cvar_dict):
 
      for station_name in Cvar_dict.keys():
           
-          if station_name in latlon_dict.keys():
+          if station_name in loc_dict.keys():
                
              station_name_list.append(station_name)
 
-             loc = latlon_dict[station_name]
+             loc = loc_dict[station_name]
              latitude = loc[0]
              longitude = loc[1]
              Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
