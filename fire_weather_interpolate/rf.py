@@ -23,6 +23,9 @@ from sklearn import metrics
 
 import get_data as GD
 import cluster_3d as c3d
+import make_blocks as mbk
+import Eval as Eval
+import statistics 
 
 def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,file_path_elev,idx_list): 
     lat = []
@@ -521,7 +524,7 @@ def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,i
     return overall_error
         
 
-def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,clusterNum):
+def spatial_kfold_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,clusterNum,blocking_type):
     '''Spatially blocked k-folds cross-validation procedure for rf
     Parameters
         loc_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -545,9 +548,15 @@ def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_
     projected_lat_lon = {}
 
     #Selecting blocknum
-
-    cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,clusterNum,file_path_elev,idx_list,False,False,False)
-
+    if blocking_type == 'cluster':
+        cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,clusterNum,file_path_elev,idx_list,False,False,False)
+    elif blocking_type == 'block':
+        np_array_blocks = mbk.make_block(idw_example_grid,clusterNum) #Get the numpy array that delineates the blocks
+        cluster = mbk.sorting_stations(np_array_blocks,shapefile,loc_dict,Cvar_dict) #Now get the dictionary
+    else:
+        print('That is not a valid blocking method')
+        sys.exit()
+        
     for group in cluster.values():
         if group not in groups_complete:
             station_list = [k for k,v in cluster.items() if v == group]
@@ -696,7 +705,6 @@ def spatial_kfold_rf(loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_
     MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
      
     return clusterNum,MAE
-
 
 def select_block_size_rf(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
