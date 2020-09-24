@@ -595,8 +595,6 @@ def spatial_kfold_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,file_pat
 
         x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
         y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
-        x_origin_list.append(x_orig)
-        y_origin_list.append(y_orig)
 
         interpolated_val = spline[y_orig][x_orig] 
 
@@ -701,7 +699,8 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
      error_dictionary = {} 
      while count <= nfolds: 
           x_origin_list = []
-          y_origin_list = [] 
+          y_origin_list = []
+          z_origin_list = []
 
           absolute_error_dictionary = {} 
           projected_lat_lon = {}
@@ -742,6 +741,9 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
                          lat.append(float(latitude))
                          lon.append(float(longitude))
                          Cvar.append(cvar_val)
+                         x_origin_list.append(x_orig)
+                         y_origin_list.append(y_orig)
+                         z_origin_list.append(Cvar_dict[station_name])
                     else:
                          pass #Skip the station 
                      
@@ -795,8 +797,6 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
 
                x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
                y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
-               x_origin_list.append(x_orig)
-               y_origin_list.append(y_orig)
 
                interpolated_val = spline[y_orig][x_orig] 
 
