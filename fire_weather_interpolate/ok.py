@@ -15,11 +15,14 @@ import pyproj
 from pykrige.ok import OrdinaryKriging
 from skgstat import Variogram
 import matplotlib.pyplot as plt
+import statistics
 
 from sklearn.model_selection import ShuffleSplit
 from sklearn import metrics
 
 import cluster_3d as c3d
+import Eval as Eval
+import make_blocks as mbk
 
 import warnings
 warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the /0 warning
@@ -215,7 +218,6 @@ def OKriging(latlon_dict,Cvar_dict,input_date,var_name,shapefile,model,show):
                 
     num_col = int((xmax - xmin) / pixelHeight)
     num_row = int((ymax - ymin) / pixelWidth)
-    
 
     source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
     xProj, yProj = pyproj.Proj('esri:102001')(x,y)
@@ -389,7 +391,7 @@ def cross_validate_OK(latlon_dict,Cvar_dict,shapefile,model):
 
         OK = OrdinaryKriging(xProj,yProj,z,variogram_model=model,verbose=False,enable_plotting=False)
         try: 
-            z1,ss1 = OK.execute('grid',Xi1,Yi1,n_closest_points=10,backend='C') #n_closest_points=10
+            z1,ss1 = OK.execute('grid',Xi1,Yi1,backend='C') #n_closest_points=10
     
             kriging_surface = z1.reshape(num_row,num_col)
 
@@ -408,6 +410,7 @@ def cross_validate_OK(latlon_dict,Cvar_dict,shapefile,model):
             absolute_error = abs(interpolated_val-original_val)
             absolute_error_dictionary[station_name_hold_back] = absolute_error
         except:
+            print('Alert! Kriging failed when we removed %s'%station_name_hold_back) 
             pass 
 
 
@@ -718,7 +721,7 @@ def shuffle_split_OK(latlon_dict,Cvar_dict,shapefile,model,rep):
 
         OK = OrdinaryKriging(xProj,yProj,z,variogram_model=model,verbose=False,enable_plotting=False)
         try: 
-            z1,ss1 = OK.execute('grid',Xi1,Yi1,n_closest_points=10,backend='C') #n_closest_points=10
+            z1,ss1 = OK.execute('grid',Xi1,Yi1,backend='C') #n_closest_points=10
     
             kriging_surface = z1.reshape(num_row,num_col)
 
@@ -740,12 +743,13 @@ def shuffle_split_OK(latlon_dict,Cvar_dict,shapefile,model,rep):
             error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
             count+=1
         except:
+            print('Alert! Kriging Failed!') 
             pass 
 
     overall_error = sum(error_dictionary.values())/rep
     return overall_error
 
-def spatial_kfold_OK(loc_dict,Cvar_dict,shapefile,model,file_path_elev,idx_list,clusterNum):
+def spatial_kfold_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,model,file_path_elev,idx_list,clusterNum,blocking_type):
     '''Cross_validate the ordinary kriging 
     Parameters 
         latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
@@ -798,9 +802,15 @@ def spatial_kfold_OK(loc_dict,Cvar_dict,shapefile,model,file_path_elev,idx_list,
         z_origin_list.append(Cvar_dict[station])
             
     #Selecting blocknum
-
-    cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,clusterNum,file_path_elev,idx_list,False,False,False)
-
+    if blocking_type == 'cluster':
+        cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,clusterNum,file_path_elev,idx_list,False,False,False)
+    elif blocking_type == 'block':
+        np_array_blocks = mbk.make_block(idw_example_grid,clusterNum) #Get the numpy array that delineates the blocks
+        cluster = mbk.sorting_stations(np_array_blocks,shapefile,loc_dict,Cvar_dict) #Now get the dictionary
+    else:
+        print('That is not a valid blocking method')
+        sys.exit()
+        
     for group in cluster.values():
         if group not in groups_complete:
             station_list = [k for k,v in cluster.items() if v == group]
@@ -864,7 +874,7 @@ def spatial_kfold_OK(loc_dict,Cvar_dict,shapefile,model,file_path_elev,idx_list,
 
     OK = OrdinaryKriging(xProj,yProj,z,variogram_model=model,verbose=False,enable_plotting=False)
     try: 
-        z1,ss1 = OK.execute('grid',Xi1,Yi1,n_closest_points=10,backend='C') #n_closest_points=10
+        z1,ss1 = OK.execute('grid',Xi1,Yi1,backend='C') #n_closest_points=10
 
         kriging_surface = z1.reshape(num_row,num_col)
 
@@ -885,6 +895,7 @@ def spatial_kfold_OK(loc_dict,Cvar_dict,shapefile,model,file_path_elev,idx_list,
             absolute_error_dictionary[loc] = absolute_error
 
     except:
+        print('Alert! Kriging failed.') 
         pass
 
     MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values())
@@ -892,7 +903,7 @@ def spatial_kfold_OK(loc_dict,Cvar_dict,shapefile,model,file_path_elev,idx_list,
     return clusterNum,MAE
 
 
-def select_block_size_OK(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list):
+def select_block_size_OK(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list,model):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
      in order to select the block/cluster size
      Parameters
@@ -940,13 +951,13 @@ def select_block_size_OK(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,sh
      
      for n in range(0,nruns):
 
-          block25 = spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,25,5,True,False,dictionaryGroups25)
+          block25 = spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,25,5,True,dictionaryGroups25,model)
           block25_error.append(block25) 
 
-          block16 = spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,16,8,True,False,dictionaryGroups16)
+          block16 = spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,16,8,True,dictionaryGroups16,model)
           block16_error.append(block16)
           
-          block9 = spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,9,14,True,False,dictionaryGroups9)
+          block9 = spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,9,14,True,dictionaryGroups9,model)
           block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
@@ -966,7 +977,7 @@ def select_block_size_OK(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,sh
      return lowest_stdev,ave_MAE
                
           
-def spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nfolds,replacement,dictionary_Groups):
+def spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nfolds,replacement,dictionary_Groups,model):
      '''Spatially blocked bagging cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
@@ -985,7 +996,7 @@ def spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nfo
      error_dictionary = {} 
      while count <= nfolds: 
           x_origin_list = []
-          y_origin_list = [] 
+          y_origin_list = []
 
           absolute_error_dictionary = {} 
           projected_lat_lon = {}
@@ -1046,56 +1057,43 @@ def spatial_groups_OK(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nfo
           num_row = int((ymax - ymin) / pixelWidth)
 
 
-    #We need to project to a projected system before making distance matrix
-    source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
-    xProj, yProj = pyproj.Proj('esri:102001')(x,y)
+        #We need to project to a projected system before making distance matrix
+          source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume
+          xProj, yProj = pyproj.Proj('esri:102001')(x,y)
+          yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+          xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+          Yi1 = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
+          Xi1 = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
 
-    yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
-    xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+          OK = OrdinaryKriging(xProj,yProj,z,variogram_model=model,verbose=False,enable_plotting=False)
+          try:
+              z1,ss1 = OK.execute('grid',Xi1,Yi1,backend='C') #n_closest_points=10
+              kriging_surface = z1.reshape(num_row,num_col)
 
-    Yi1 = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
-    Xi1 = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+        #Calc the RMSE, MAE at the pixel loc
+        #Delete at a certain point
+              for statLoc in station_list:
+                  coord_pair = projected_lat_lon[statLoc]
 
-    Xi,Yi = np.meshgrid(Xi1,Yi1)
-    
-    empty_grid = np.empty((num_row,num_col,))*np.nan
+                  x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+                  y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+                  x_origin_list.append(x_orig)
+                  y_origin_list.append(y_orig)
 
-    for x3,y3,z3 in zip(x_origin_list,y_origin_list,z_origin_list):
-        empty_grid[y3][x3] = z3
+                  interpolated_val = kriging_surface[y_orig][x_orig] 
 
+                  original_val = Cvar_dict[statLoc]
+                  absolute_error = abs(interpolated_val-original_val)
+                  absolute_error_dictionary[statLoc] = absolute_error
 
+              error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
+            #print(absolute_error_dictionary)
+              count+=1
 
-    vals = ~np.isnan(empty_grid)
+          except:
+              print('Alert! Failure of kriging') 
+              pass #KEEP TRYING UNTIL IT WORKS! THIS IS WHY WE DONT COUNT +=1 HERE
+     overall_error = sum(error_dictionary.values())/len(error_dictionary.values()) #average of all the runs, different b/c a fold could fail...
+     #print(overall_error)
+     return overall_error
 
-    OK = OrdinaryKriging(xProj,yProj,z,variogram_model=model,verbose=False,enable_plotting=False)
-    try: 
-        z1,ss1 = OK.execute('grid',Xi1,Yi1,n_closest_points=10,backend='C') #n_closest_points=10
-
-        kriging_surface = z1.reshape(num_row,num_col)
-
-    #Calc the RMSE, MAE at the pixel loc
-    #Delete at a certain point
-        for statLoc in station_list:
-
-               coord_pair = projected_lat_lon[statLoc]
-
-               x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
-               y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
-               x_origin_list.append(x_orig)
-               y_origin_list.append(y_orig)
-
-               interpolated_val = kriging_surface[y_orig][x_orig] 
-
-               original_val = Cvar_dict[statLoc]
-               absolute_error = abs(interpolated_val-original_val)
-               absolute_error_dictionary[statLoc] = absolute_error
-        error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
-        #print(absolute_error_dictionary)
-        count+=1
-
-    except:
-        count+=1
-        pass
-    overall_error = sum(error_dictionary.values())/len(error_dictionary.values()) #average of all the runs, different b/c a fold could fail...
-    #print(overall_error)
-    return overall_error
