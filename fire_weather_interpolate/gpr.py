@@ -33,7 +33,7 @@ import Eval as Eval
 import statistics 
 
 def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,file_path_elev,idx_list,alpha_input):
-        '''Base interpolator function for gaussian process regression 
+    '''Base interpolator function for gaussian process regression 
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
         .json file
