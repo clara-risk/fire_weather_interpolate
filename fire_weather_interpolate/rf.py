@@ -754,13 +754,13 @@ def select_block_size_rf(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,sh
      
      for n in range(0,nruns):
 
-          block25 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,25,5,True,False,dictionaryGroups25)
+          block25 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,25,5,True,False,dictionaryGroups25,file_path_elev,idx_list)
           block25_error.append(block25) 
 
-          block16 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,16,8,True,False,dictionaryGroups16)
+          block16 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,16,8,True,False,dictionaryGroups16,file_path_elev,idx_list)
           block16_error.append(block16)
           
-          block9 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,9,14,True,False,dictionaryGroups9)
+          block9 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,9,14,True,False,dictionaryGroups9,file_path_elev,idx_list)
           block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
@@ -779,7 +779,7 @@ def select_block_size_rf(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,sh
      print(ave_MAE) 
      return lowest_stdev,ave_MAE
     
-def spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nfolds,replacement,dictionary_Groups):
+def spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nfolds,replacement,dictionary_Groups,file_path_elev,idx_list):
      '''Spatially blocked bagging cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
@@ -960,3 +960,5 @@ def spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nfo
      overall_error = sum(error_dictionary.values())/nfolds #average of all the runs
      #print(overall_error)
      return overall_error
+
+
