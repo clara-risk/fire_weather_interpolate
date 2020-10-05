@@ -760,7 +760,7 @@ def select_block_size_rf(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,sh
           block16 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,16,8,True,dictionaryGroups16,file_path_elev,idx_list)
           block16_error.append(block16)
           
-          block9 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,9,14,True,,dictionaryGroups9,file_path_elev,idx_list)
+          block9 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,9,14,True,dictionaryGroups9,file_path_elev,idx_list)
           block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
