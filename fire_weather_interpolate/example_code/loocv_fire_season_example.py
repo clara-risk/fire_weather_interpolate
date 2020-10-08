@@ -40,12 +40,6 @@ if __name__ == "__main__":
     file_path_elev = os.path.join(dirname,'datasets/lookup_files/elev_csv.csv')
     idx_list = GD.get_col_num_list(file_path_elev,'elev')
 
-    file_path_slope = os.path.join(dirname,'datasets/lookup_files/slope_csv.csv')
-    idx_slope = GD.get_col_num_list(file_path_slope,'slope')
-
-    file_path_drainage = os.path.join(dirname,'datasets/lookup_files/drainage_csv.csv')
-    idx_drainage = GD.get_col_num_list(file_path_drainage,'drainage')
-
     with open(dirname+'datasets/json/daily_lookup_file_TEMP.json', 'r') as fp:
         date_dictionary = json.load(fp) #Get the lookup file for the stations with data on certain months/years
 
