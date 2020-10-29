@@ -298,6 +298,12 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           fold_num1 = int(round(target_stations/cluster_num1)) 
           fold_num2 = int(round(target_stations/cluster_num2))
           fold_num3 = int(round(target_stations/cluster_num3)) 
+            
+          #For our first project, this is what we did 
+          #fold_num1 = 5
+          #fold_num2 = 8
+          #fold_num3 = 14 
+          #Just so there is a record of that
           
 
           block25 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,cluster_num1,fold_num1,True,False,dictionaryGroups25)
