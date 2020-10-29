@@ -179,20 +179,24 @@ def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,phi):
     return spline, maxmin
 
 
-def cross_validate_tps(latlon_dict,Cvar_dict,shapefile,phi):
+def cross_validate_tps(latlon_dict,Cvar_dict,shapefile,phi,pass_to_plot):
     '''Leave-one-out cross-validation for thin plate splines 
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
         .json file
         Cvar_dict (dict): dictionary of weather variable values for each station 
         shapefile (str): path to the study area shapefile 
-        phi (float): smoothing parameter for the thin plate spline, if 0 no smoothing 
+        phi (float): smoothing parameter for the thin plate spline, if 0 no smoothing
+        pass_to_plot (bool): whether or not you will use the error dictionary to plot the spatial
+        distribution of error 
     Returns 
         absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
         was left out 
      '''
 
     absolute_error_dictionary = {} #for plotting
+    no_absolute_value_dict = {} #Whether there is over or under estimation 
+    
     station_name_list = []
     projected_lat_lon = {}
 
@@ -240,7 +244,7 @@ def cross_validate_tps(latlon_dict,Cvar_dict,shapefile,phi):
                     y_origin_list.append(y_orig)
                     z_origin_list.append(Cvar_dict[station_name])
                 else:
-                    print(station_name)
+                    #print(station_name)
                     pass
                     
         y = np.array(lat)
@@ -302,7 +306,10 @@ def cross_validate_tps(latlon_dict,Cvar_dict,shapefile,phi):
         absolute_error = abs(interpolated_val-original_val)
         absolute_error_dictionary[station_name_hold_back] = absolute_error
 
-    return absolute_error_dictionary
+    if pass_to_plot:
+        return absolute_error_dictionary, no_absolute_value_dict
+    else:
+        return absolute_error_dictionary
 
 def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
     '''Shuffle-split cross-validation for thin plate splines 
