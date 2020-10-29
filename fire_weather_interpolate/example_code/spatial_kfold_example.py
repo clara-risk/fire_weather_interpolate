@@ -91,16 +91,16 @@ for var in variables:
          phi_input = int(num_stations_w)-(math.sqrt(2*num_stations_w))
          if var != 'pcp':
             #Can use 'cluster' or 'block' here 
-            #cluster_size,MAE = tps.spatial_kfold_tps(idw1_grid,hourly_dictionary,temperature,shapefile,phi_input,file_path_elev,elev_array,idx_list,blockingNumber,'cluster')
+            #cluster_size,MAE = tps.spatial_kfold_tps(idw1_grid,hourly_dictionary,temperature,shapefile,phi_input,file_path_elev,elev_array,idx_list,blockingNumber,'cluster',False)
             cluster_size,MAE = idew.spatial_kfold_IDEW(idw1_grid,hourly_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,2,blockingNumber,'block')
-            #cluster_size,MAE = rf.spatial_kfold_rf(idw1_grid,hourly_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,blockingNumber,'block')
-            #cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,hourly_dictionary,temperature,shapefile,2,file_path_elev,idx_list,blockingNumber,'block')
+            #cluster_size,MAE = rf.spatial_kfold_rf(idw1_grid,hourly_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,blockingNumber,'block',False)
+            #cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,hourly_dictionary,temperature,shapefile,2,file_path_elev,idx_list,blockingNumber,'block',False)
 
          if var == 'pcp':
             cluster_size,MAE = idew.spatial_kfold_IDEW(idw1_grid,daily_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,2,blockingNumber,'block')
-            #cluster_size,MAE = rf.spatial_kfold_rf(idw1_grid,daily_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,blockingNumber,'block')
-            #cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,daily_dictionary,temperature,shapefile,2,file_path_elev,idx_list,blockingNumber,'block')
-            #cluster_size,MAE = tps.spatial_kfold_tps(idw1_grid,daily_dictionary,temperature,shapefile,phi_input,file_path_elev,elev_array,idx_list,blockingNumber,'cluster')
+            #cluster_size,MAE = rf.spatial_kfold_rf(idw1_grid,daily_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,blockingNumber,'block',False)
+            #cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,daily_dictionary,temperature,shapefile,2,file_path_elev,idx_list,blockingNumber,'block',False)
+            #cluster_size,MAE = tps.spatial_kfold_tps(idw1_grid,daily_dictionary,temperature,shapefile,phi_input,file_path_elev,elev_array,idx_list,blockingNumber,'cluster',False)
 
 
          #Uncomment for GPR specifically
