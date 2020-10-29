@@ -31,6 +31,56 @@ from scipy.spatial import distance
 from scipy.spatial.distance import cdist
 
 #functions 
+
+def plot_LOOCV_error(loc_dict,error_dictionary,shapefile,var_name):
+     '''Print a map of the LOOCV error (not absolute valued) so we can see the variation in error
+    accross the study area 
+     Parameters
+         error_dictionary (dict): a dictionary of the error, produced by the cross-validate function
+         shapefile (str): path to the study area shapefile
+         var_name (str): variable name, for example, Start Day (Days since March 1) 
+     Returns 
+         Prints a map 
+     '''
+     print(error_dictionary) 
+     lat = []
+     lon = []
+     error = []
+     for station_name in error_dictionary.keys():
+
+        if station_name in loc_dict.keys():
+
+            loc = loc_dict[station_name]
+            latitude = loc[0]
+            longitude = loc[1]
+            error_val = error_dictionary[station_name]
+            lat.append(float(latitude))
+            lon.append(float(longitude))
+            error.append(error_val)
+     y = np.array(lat)
+     x = np.array(lon)
+     z = np.array(error)
+
+     source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') 
+     xProj, yProj = pyproj.Proj('esri:102001')(x,y)
+
+     fig, ax = plt.subplots(figsize= (15,15))
+     crs = {'init': 'esri:102001'}
+     plt.rcParams.update({'font.size': 16})
+     plt.rcParams['image.cmap']='RdBu'
+     na_map = gpd.read_file(shapefile)
+     na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
+     plt.scatter(xProj,yProj,c=z,edgecolors='k')
+     cbar = plt.colorbar()
+     cbar.set_label(var_name)
+     title = 'Spatial distribution of error for %s'%(var_name)
+     fig.suptitle(title, fontsize=14)
+     plt.xlabel('Longitude')
+     plt.ylabel('Latitude')
+     ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+     ax.ticklabel_format(useOffset=False, style='plain')
+     plt.show()
+        
 def get_interpolated_val_in_fire(fire_shapefile,shapefile,latlon_dict,interpolated_surface):
     '''This is a function to get the FWI metric value inside the fire.
     We will use to calculate the max FWI metrics for a fire.
