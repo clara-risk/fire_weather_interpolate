@@ -488,7 +488,7 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
      return overall_error
 
 
-def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_elev,idx_list,BlockNum):
+def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_elev,idx_list,BlockNum,return_error):
      '''Spatially blocked k-folds cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
@@ -497,7 +497,6 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
          Cvar_dict (dict): dictionary of weather variable values for each station 
          shapefile (str): path to the study area shapefile 
          d (int): the weighting function for IDW interpolation
-         BlockNum (int): number of clusters you want to form 
      Returns 
          error_dictionary (dict): a dictionary of the absolute error at each fold when it
          was left out 
@@ -610,8 +609,10 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
           absolute_error_dictionary[statLoc] = absolute_error
 
      MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
-
-     return BlockNum,MAE
+     if return_error:
+         return BlockNum,MAE,absolute_error_dictionary
+     else:
+         return BlockNum,MAE
 
 def shuffle_split(loc_dict,Cvar_dict,shapefile,d,rep,show):
      '''Shuffle-split cross-validation with 50/50 training test split 
