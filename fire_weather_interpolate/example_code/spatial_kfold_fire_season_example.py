@@ -89,7 +89,7 @@ if __name__ == "__main__":
                 if interpolator == 'IDW2': 
                     num_stations = int(len(days_dict.keys()))
                     cluster_num = round(num_stations/10)
-                    cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,2,file_path_elev,idx_list,cluster_num,'cluster')
+                    cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,2,file_path_elev,idx_list,cluster_num,'cluster',False)
                     
 
 
@@ -97,25 +97,25 @@ if __name__ == "__main__":
 
                     num_stations = int(len(days_dict.keys()))
                     cluster_num = round(num_stations/10)
-                    cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,3,file_path_elev,idx_list,cluster_num,'cluster')
+                    cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,3,file_path_elev,idx_list,cluster_num,'cluster',False)
 
                 elif interpolator == 'IDW4':
 
                     num_stations = int(len(days_dict.keys()))
                     cluster_num = round(num_stations/10)
-                    cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,4,file_path_elev,idx_list,cluster_num,'cluster')
+                    cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,4,file_path_elev,idx_list,cluster_num,'cluster',False)
                     
                 elif interpolator == 'RF':
 
                     num_stations = int(len(days_dict.keys()))
                     cluster_num = round(num_stations/10)
-                    cluster_size,MAE = rf.spatial_kfold_rf(idw1_grid,latlon_station,days_dict,shapefile,file_path_elev,elev_array,idx_list,cluster_num,'cluster')
+                    cluster_size,MAE = rf.spatial_kfold_rf(idw1_grid,latlon_station,days_dict,shapefile,file_path_elev,elev_array,idx_list,cluster_num,'cluster',False)
 
                 elif interpolator == 'TPSS':
                     num_stations = int(len(days_dict.keys()))
                     phi_input = int(num_stations)-(math.sqrt(2*num_stations))
                     cluster_num = round(num_stations/10)
-                    cluster_size,MAE = tps.spatial_kfold_tps(idw1_grid,latlon_station,days_dict,shapefile,phi_input,file_path_elev,elev_array,idx_list,cluster_num,'cluster')
+                    cluster_size,MAE = tps.spatial_kfold_tps(idw1_grid,latlon_station,days_dict,shapefile,phi_input,file_path_elev,elev_array,idx_list,cluster_num,'cluster',False)
 
 
                 print(MAE)
