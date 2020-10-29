@@ -126,14 +126,16 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d):
 
      return idw_grid, maxmin
 
-def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d):
+def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot):
      '''Leave-one-out cross-validation procedure for IDW 
      Parameters
          latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
          .json file
          Cvar_dict (dict): dictionary of weather variable values for each station 
          shapefile (str): path to the study area shapefile 
-         d (int): the weighting function for IDW interpolation 
+         d (int): the weighting function for IDW interpolation
+         pass_to_plot (bool):whether you will be plotting the error and need a version without absolute
+         value error 
      Returns 
          absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
          was left out 
@@ -142,6 +144,7 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d):
      y_origin_list = [] 
 
      absolute_error_dictionary = {} #for plotting
+     no_absolute_value_dict = {} 
      station_name_list = []
      projected_lat_lon = {}
 
@@ -238,9 +241,11 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d):
         original_val = Cvar_dict[station_name_hold_back]
         absolute_error = abs(interpolated_val-original_val)
         absolute_error_dictionary[station_name_hold_back] = absolute_error
-
-
-     return absolute_error_dictionary
+        no_absolute_value_dict[station_name_hold_back] = interpolated_val-original_val
+     if pass_to_plot:
+         return absolute_error_dictionary, no_absolute_value_dict
+     else:
+         return absolute_error_dictionary
      
 
 def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list,d,cluster_num1,cluster_num2,cluster_num3):
