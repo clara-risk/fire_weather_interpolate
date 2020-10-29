@@ -160,99 +160,99 @@ def start_date_calendar_csv(file_path_hourly,year):
         Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
         temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
         count=0
-        for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder 
-            if year in csv: #Only open if it is the csv for the year of interest (this is contained in the csv name)
-
-                with open(file_path_hourly+station_name+'/'+csv, encoding='latin1') as year_information: #Open the file - for CAN data we use latin 1 due to à, é etc. 
-                    for row in year_information: #Look at each row 
-                        information = row.rstrip('\n').split(',') #Split each row into a list so we can loop through 
-                        information_stripped = [i.replace('"','') for i in information] #Get rid of extra quotes in the header
-                        if count==0: #This is getting the first row 
-                            
-                            header= information_stripped
-
-
-                            keyword = 'temp (' #Look for this keyword in the header 
-                            filter_out_keyword = 'dew' #We don't want dewpoint temperature, we want to skip over it 
-                            idx_list1 = [i for i, x in enumerate(header) if keyword in x.lower() and filter_out_keyword not in x.lower()] #Get the index of the temperature column
-
-                            if len(idx_list1) > 1: # There should only be one field 
-                                print('The program is confused because there is more than one field name that could \
-                                contain the temp data. Please check on this.')
-                                sys.exit()
-                            keyword2 = 'date/time' #Getting the index of the datetime object so we can later make sure we are using 13h00 value 
-                            idx_list2 = [i for i, x in enumerate(header) if keyword2 in x.lower()]
-
-                            if len(idx_list2) > 1: # There should only be one field 
-                                print('The program is confused because there is more than one field name that could \
-                                contain the date. Please check on this.')
-                                sys.exit()
-
-                            keyword3 = 'latitude' #Here we use the same methods to get the latitude and longitude 
-                            idx_list3 = [i for i, x in enumerate(header) if keyword3 in x.lower()]
-                            if len(idx_list3) > 1: # There should only be one field 
-                                print('The program is confused because there is more than one field name that could \
-                                contain the latitude. Please check on this.')
-                                sys.exit()
-                            keyword4 = 'longitude'
-                            idx_list4 = [i for i, x in enumerate(header) if keyword4 in x.lower()]
-                            if len(idx_list4) > 1: # There should only be one field 
-                                print('The program is confused because there is more than one field name that could \
-                                contain the latitude. Please check on this.')
-                                sys.exit()
-                                
-                        if count > 0: #Now we are looking at the rest of the file, after the header 
-
-                            if count == 1: #Lat/lon will be all the same so only record it once
-                                try: #If the file is corrupted (it usually looks like a bunch of random characters) we will get an error, so we need a try/except loop
-                                    lat =float(information_stripped[idx_list3[0]])
-                                    lon =float(information_stripped[idx_list4[0]])
-                                    latlon_dictionary[station_name] = tuple((lat,lon)) #Get the lat lon and send the tuple to the dictionary 
-                                except:
-                                    print('Something is wrong with the lat/lon header names for %s!'%(station_name))
-                                    break 
- 
-          
-                                try:
-                                    if information_stripped[idx_list2[0]][0:4] == year: #Make sure we have the right year 
-                                        if information_stripped[idx_list2[0]][5:7] == '03' or information_stripped[idx_list2[0]][5:7] == '04' or \
-                                           information_stripped[idx_list2[0]][5:7] == '05' or information_stripped[idx_list2[0]][5:7] == '06' or \
-                                           information_stripped[idx_list2[0]][5:7] == '07': #Make sure we are only considering months since March in case of heat wave in another month
-                                            if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
-                                                Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
-                                                temp_list.append(float(information_stripped[idx_list1[0]])) #Get the 13h00 temperature, send to temp list
-                                            
+        #for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder 
+            #if year in csv: #Only open if it is the csv for the year of interest (this is contained in the csv name)
+                #+'/'+csv
+        with open(file_path_hourly+station_name, encoding='latin1') as year_information: #Open the file - for CAN data we use latin 1 due to à, é etc. 
+            for row in year_information: #Look at each row 
+                information = row.rstrip('\n').split(',') #Split each row into a list so we can loop through 
+                information_stripped = [i.replace('"','') for i in information] #Get rid of extra quotes in the header
+                if count==0: #This is getting the first row 
+                    
+                    header= information_stripped
 
 
-                                except: #In the case of a nodata value
-                                    Temp_subdict[information_stripped[idx_list2[0]]] = 'NA'
-                                    temp_list.append('NA')
+                    keyword = 'max_temp' #Look for this keyword in the header 
+                    filter_out_keyword = 'flag' #We don't want flag temperature, we want to skip over it 
+                    idx_list1 = [i for i, x in enumerate(header) if keyword in x.lower() and filter_out_keyword not in x.lower()] #Get the index of the temperature column
+
+                    if len(idx_list1) > 1: # There should only be one field 
+                        print('The program is confused because there is more than one field name that could \
+                        contain the temp data. Please check on this.')
+                        sys.exit()
+                    keyword2 = 'date' #Getting the index of the datetime object so we can later make sure we are using 13h00 value 
+                    idx_list2 = [i for i, x in enumerate(header) if keyword2 in x.lower()]
+
+                    if len(idx_list2) > 1: # There should only be one field 
+                        print('The program is confused because there is more than one field name that could \
+                        contain the date. Please check on this.')
+                        sys.exit()
+
+                    keyword3 = 'lat' #Here we use the same methods to get the latitude and longitude 
+                    idx_list3 = [i for i, x in enumerate(header) if keyword3 in x.lower()]
+                    if len(idx_list3) > 1: # There should only be one field 
+                        print('The program is confused because there is more than one field name that could \
+                        contain the latitude. Please check on this.')
+                        sys.exit()
+                    keyword4 = 'lon'
+                    idx_list4 = [i for i, x in enumerate(header) if keyword4 in x.lower()]
+                    if len(idx_list4) > 1: # There should only be one field 
+                        print('The program is confused because there is more than one field name that could \
+                        contain the latitude. Please check on this.')
+                        sys.exit()
+                        
+                if count > 0: #Now we are looking at the rest of the file, after the header 
+
+                    if count == 1: #Lat/lon will be all the same so only record it once
+                        try: #If the file is corrupted (it usually looks like a bunch of random characters) we will get an error, so we need a try/except loop
+                            lat =float(information_stripped[idx_list3[0]])
+                            lon =float(information_stripped[idx_list4[0]])
+                            latlon_dictionary[station_name[:-4]] = tuple((lat,lon)) #Get the lat lon and send the tuple to the dictionary 
+                        except:
+                            print('Something is wrong with the lat/lon header names for %s!'%(station_name))
+                            break 
+
+  
+                        try:
+                            if information_stripped[idx_list2[0]][0:4] == year: #Make sure we have the right year 
+                                if information_stripped[idx_list2[0]][5:7] == '03' or information_stripped[idx_list2[0]][5:7] == '04' or \
+                                   information_stripped[idx_list2[0]][5:7] == '05' or information_stripped[idx_list2[0]][5:7] == '06' or \
+                                   information_stripped[idx_list2[0]][5:7] == '07' or information_stripped[idx_list2[0]][5:7] == '08': #Make sure we are only considering months since March in case of heat wave in another month
+                                    #if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
+                                    Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
+                                    temp_list.append(float(information_stripped[idx_list1[0]])) #Get the 13h00 temperature, send to temp list
                                     
 
-                            else: #Proceed down the rows 
-                                try:
 
-                                    if information_stripped[idx_list2[0]][0:4] == year: 
-                                        if information_stripped[idx_list2[0]][5:7] == '03' or information_stripped[idx_list2[0]][5:7] == '04' or information_stripped[idx_list2[0]][5:7] == '05'\
-                                           or information_stripped[idx_list2[0]][5:7] == '06' or information_stripped[idx_list2[0]][5:7] == '07':
-                                            if information_stripped[idx_list2[0]][11:13] == '13':
-                                                Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
-                                                temp_list.append(float(information_stripped[idx_list1[0]]))
+                        except: #In the case of a nodata value
+                            Temp_subdict[information_stripped[idx_list2[0]]] = 'NA'
+                            temp_list.append('NA')
+                            
+
+                    else: #Proceed down the rows 
+                        try:
+
+                            if information_stripped[idx_list2[0]][0:4] == year: 
+                                if information_stripped[idx_list2[0]][5:7] == '03' or information_stripped[idx_list2[0]][5:7] == '04' or information_stripped[idx_list2[0]][5:7] == '05'\
+                                   or information_stripped[idx_list2[0]][5:7] == '06' or information_stripped[idx_list2[0]][5:7] == '07' or information_stripped[idx_list2[0]][5:7] == '08':
+                                    #if information_stripped[idx_list2[0]][11:13] == '13':
+                                    Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
+                                    temp_list.append(float(information_stripped[idx_list1[0]]))
 
 
 
-                                except:
-                                    Temp_subdict[information_stripped[idx_list2[0]]] = 'NA'
-                                    temp_list.append('NA')
+                        except:
+                            Temp_subdict[information_stripped[idx_list2[0]]] = 'NA'
+                            temp_list.append('NA')
 
-                        count+=1   
+                count+=1   
 
-        maxTemp_dictionary[station_name] = Temp_subdict
-        maxTempList_dict[station_name] = temp_list #Store the information for each station in the permanent dictionary 
+        maxTemp_dictionary[station_name[:-4]] = Temp_subdict
+        maxTempList_dict[station_name[:-4]] = temp_list #Store the information for each station in the permanent dictionary 
 
-        vals = maxTempList_dict[station_name]
+        vals = maxTempList_dict[station_name[:-4]]
 
-        if 'NA' not in vals and len(vals) == 153: #only consider the stations with unbroken records, num_days between March-July is 153
+        if 'NA' not in vals and len(vals) == 184: #only consider the stations with unbroken records, num_days between March-August is 153
 
             varray = np.array(vals)
             where_g12 = np.array(varray >= 12) #Where is the temperature >=12? 
@@ -261,6 +261,8 @@ def start_date_calendar_csv(file_path_hourly,year):
             groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
 
             length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
+
+
             if len(length) > 0: 
 
                 index = groups.index(length[0]) #Get the index of the group
@@ -269,31 +271,24 @@ def start_date_calendar_csv(file_path_hourly,year):
                 for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
                     length_sofar += group_len[i]
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+2] #Go two days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+2] #Go two days ahead for the third day 
 
                 d0 = date(int(year), 3, 1) #March 1, Year 
                 d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
                 delta = d1 - d0
                 day = int(delta.days) #Convert to integer 
-                date_dict[station_name] = day #Store the integer in the dictionary
+                date_dict[station_name[:-4]] = day #Store the integer in the dictionary
                 
-            else: 
-                #Uncomment this block of code to force start up on July 31 if the conditions are not met... 
-                #d0 = date(int(year), 3, 1)
-                #d1 = date(int(year), 7, 31) #July 31 is the last day we can start up on 
-                #delta = d1 - d0
-                #day = int(delta.days)
-                #date_dict[station_name] = day #Here we are forcing the start up day to occur on July 31 
-                
-                print('Station %s did not start up by August 1.'%station_name) 
-                pass #Do not include the station
+            else:
+                print('Station %s did not start up by September 1.'%station_name[:-4]) 
+                pass #Do not include the station 
 
 
-            #print('The start date for %s for %s is %s'%(station_name,year,Sdate))
+            #print('The start date for %s for %s is %s'%(station_name[:-4],year,Sdate))
 
-    #Return the dates for each station 
+    #Return the dates for each station
+    #print(date_dict)
     return date_dict, latlon_dictionary 
-
 def end_date_calendar(file_path_hourly,year):
     '''Returns a dictionary of where each station meets the start up criteria, 
     plus a reference dictionary for the lat lon of the stations
