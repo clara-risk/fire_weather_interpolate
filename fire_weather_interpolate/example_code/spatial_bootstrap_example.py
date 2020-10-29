@@ -79,17 +79,17 @@ for var in varlist:
       phi_input = int(num_stations_w)-(math.sqrt(2*num_stations_w))
       start = time.time()
       if var == 'pcp': 
-         #cluster_size, MAE = gpr.select_block_size_gpr(10,'clusters',daily_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,0.3)
-         #cluster_size, MAE = idw.select_block_size_IDW(10,'clusters',daily_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,1)
-         #cluster_size, MAE = tps.select_block_size_tps(10,'clusters',daily_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,phi_input)
-         #cluster_size, MAE = idew.select_block_size_IDEW(10,'clusters',daily_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,elev_array,1)
-         cluster_size, MAE = rf.select_block_size_rf(10,'clusters',daily_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list)
+         #cluster_size, MAE = gpr.select_block_size_gpr(10,'clusters',daily_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,0.3,25,16,9)
+         #cluster_size, MAE = idw.select_block_size_IDW(10,'clusters',daily_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,1,25,16,9)
+         #cluster_size, MAE = tps.select_block_size_tps(10,'clusters',daily_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,phi_input,25,16,9)
+         #cluster_size, MAE = idew.select_block_size_IDEW(10,'clusters',daily_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,elev_array,1,25,16,9)
+         cluster_size, MAE = rf.select_block_size_rf(10,'clusters',daily_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,25,16,9)
       #elif var == 'temp':
       else: 
-         #cluster_size, MAE = gpr.select_block_size_gpr(10,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,0.1)
-         #cluster_size, MAE = idw.select_block_size_IDW(10,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,1)
-         #cluster_size, MAE = tps.select_block_size_tps(10,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,phi_input)
-         #cluster_size, MAE = idew.select_block_size_IDEW(10,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,elev_array,1)
+         #cluster_size, MAE = gpr.select_block_size_gpr(10,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,0.1,25,16,9)
+         #cluster_size, MAE = idw.select_block_size_IDW(10,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,1,25,16,9)
+         #cluster_size, MAE = tps.select_block_size_tps(10,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,phi_input,25,16,9)
+         #cluster_size, MAE = idew.select_block_size_IDEW(10,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,elev_array,1,25,16,9)
          cluster_size, MAE = rf.select_block_size_rf(10,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list)
       #else:
         #cluster_size, MAE = gpr.select_block_size_gpr(10,'clusters',hourly_dictionary,temperature,idw1_grid,shapefile,file_path_elev,idx_list,0.3)
