@@ -243,7 +243,7 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d):
      return absolute_error_dictionary
      
 
-def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list,d):
+def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list,d,cluster_num1,cluster_num2,cluster_num3):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
      in order to select the block/cluster size
      Parameters
@@ -256,6 +256,8 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
          shapefile (str): path to the study area shapefile 
          file_path_elev (str): path to the elevation lookup file
          idx_list (int): position of the elevation column in the lookup file
+         cluster_num: three cluster numbers to test, for blocking this must be one of three:25, 16, 9 
+         For blocking you can enter 'None' and it will automatically test 25, 16, 9 
      Returns 
          lowest_stdev,ave_MAE (int,float): block/cluster number w/ lowest stdev, associated
          ave_MAE of all the runs 
@@ -274,9 +276,9 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
 
      elif group_type == 'clusters':
 
-          dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,False)
-          dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,False)
-          dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,False)
+          dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,file_path_elev,idx_list,False,False,False)
+          dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,file_path_elev,idx_list,False,False,False)
+          dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,file_path_elev,idx_list,False,False,False)
 
      else:
           print('Thats not a valid group type')
@@ -290,14 +292,21 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           sys.exit() 
      
      for n in range(0,nruns):
+          #We want same number of stations selected for each cluster number
+          #We need to calculate, 5 folds x 25 clusters = 125 stations; 8 folds x 16 clusters = 128 stations, etc. 
+          target_stations = len(Cvar_dict.keys())*0.3 # What is 30% of the stations
+          fold_num1 = int(round(target_stations/cluster_num1)) 
+          fold_num2 = int(round(target_stations/cluster_num2))
+          fold_num3 = int(round(target_stations/cluster_num3)) 
+          
 
-          block25 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,25,5,True,False,dictionaryGroups25)
+          block25 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,cluster_num1,fold_num1,True,False,dictionaryGroups25)
           block25_error.append(block25) 
 
-          block16 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,16,8,True,False,dictionaryGroups16)
+          block16 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,cluster_num2,fold_num2,True,False,dictionaryGroups16)
           block16_error.append(block16)
           
-          block9 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,9,14,True,False,dictionaryGroups9)
+          block9 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,cluster_num3,fold_num3,True,False,dictionaryGroups9)
           block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
@@ -305,7 +314,7 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      stdev9 = statistics.stdev(block9_error)
 
      list_stdev = [stdev25,stdev16,stdev9]
-     list_block_name = [25,16,9]
+     list_block_name = [cluster_num1,cluster_num2,cluster_num3]
      list_error = [block25_error,block16_error,block9_error]
      index_min = list_stdev.index(min(list_stdev))
      lowest_stdev = list_block_name[index_min]
@@ -313,7 +322,7 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      ave_MAE = sum(list_error[index_min])/len(list_error[index_min]) 
 
      print(lowest_stdev)
-     print(ave_MAE) 
+     #print(ave_MAE) 
      return lowest_stdev,ave_MAE
                
           
@@ -346,7 +355,7 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
 
           if replacement == False: 
                station_list_used.append(list(station_list))
-                    
+     
           for station_name in Cvar_dict.keys():
                
                if station_name in loc_dict.keys():
