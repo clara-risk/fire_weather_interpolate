@@ -82,7 +82,7 @@ if __name__ == "__main__":
                 
                     #daysurface, maxmin= idw.IDW(latlon_station,days_dict,year,'# Days Since March 1',shapefile,False,2) #Interpolate the start date
                     #endsurface, maxmin = idw.IDW(latlon_station,end_dict,year,'# Days Since Oct 1',shapefile,True,2) #Interpolate the end date
-                    absolute_error_dictionary = idw.cross_validate_IDW(latlon_station,days_dict,shapefile,2)
+                    absolute_error_dictionary = idw.cross_validate_IDW(latlon_station,days_dict,shapefile,2,False)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
                     #Get the standard deviation 
                     error_at_station = absolute_error_dictionary.values() 
@@ -90,19 +90,19 @@ if __name__ == "__main__":
                     
 
                 elif interpolator == 'IDW3':
-                    absolute_error_dictionary = idw.cross_validate_IDW(latlon_station,days_dict,shapefile,3)
+                    absolute_error_dictionary = idw.cross_validate_IDW(latlon_station,days_dict,shapefile,3,False)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
                     error_at_station = absolute_error_dictionary.values() 
                     stdev_stations = statistics.stdev(error_at_station)
 
                 elif interpolator == 'IDW4':
-                    absolute_error_dictionary = idw.cross_validate_IDW(latlon_station,days_dict,shapefile,4)
+                    absolute_error_dictionary = idw.cross_validate_IDW(latlon_station,days_dict,shapefile,4,False)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
                     error_at_station = absolute_error_dictionary.values() 
                     stdev_stations = statistics.stdev(error_at_station)
 
                 elif interpolator == 'RF':
-                    absolute_error_dictionary = rf.cross_validate_rf(latlon_station,days_dict,shapefile,file_path_elev,elev_array,idx_list)
+                    absolute_error_dictionary = rf.cross_validate_rf(latlon_station,days_dict,shapefile,file_path_elev,elev_array,idx_list,False)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
                     error_at_station = absolute_error_dictionary.values() 
                     stdev_stations = statistics.stdev(error_at_station)
@@ -110,7 +110,7 @@ if __name__ == "__main__":
                 elif interpolator == 'TPSS':
                     num_stations = int(len(days_dict.keys()))
                     phi_input = int(num_stations)-(math.sqrt(2*num_stations))
-                    absolute_error_dictionary = tps.cross_validate_tps(latlon_station,days_dict,shapefile,phi_input)
+                    absolute_error_dictionary = tps.cross_validate_tps(latlon_station,days_dict,shapefile,phi_input,False)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
                     error_at_station = absolute_error_dictionary.values() 
                     stdev_stations = statistics.stdev(error_at_station)
