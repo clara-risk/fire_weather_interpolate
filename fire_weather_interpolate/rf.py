@@ -161,7 +161,7 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
 
     return rf_grid, maxmin    
 
-def cross_validate_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list):
+def cross_validate_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,pass_to_plot):
     '''Leave-one-out cross-validation procedure for IDEW
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -180,6 +180,7 @@ def cross_validate_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
     y_origin_list = [] 
 
     absolute_error_dictionary = {} #for plotting
+    no_absolute_value_dict = {} #to see whether under or over estimation 
     station_name_list = []
     projected_lat_lon = {}
 
@@ -325,9 +326,11 @@ def cross_validate_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
         original_val = Cvar_dict[station_name_hold_back]
         absolute_error = abs(interpolated_val-original_val)
         absolute_error_dictionary[station_name_hold_back] = absolute_error
-
-
-    return absolute_error_dictionary
+        no_absolute_value_dict[station_name_hold_back] = interpolated_val-original_val
+    if pass_to_plot:
+        return absolute_error_dictionary, no_absolute_value_dict
+    else:
+        return absolute_error_dictionary
 
 def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,rep):
     '''Shuffle split cross-validation procedure for rf
