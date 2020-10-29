@@ -90,10 +90,10 @@ for var in variables:
          phi_input = int(num_stations_w)-(math.sqrt(2*num_stations_w))
          if var != 'pcp': #and var != 'temp': 
 
-            #absolute_error_dictionary = tps.cross_validate_tps(hourly_dictionary,temperature,shapefile,phi_input)
+            #absolute_error_dictionary = tps.cross_validate_tps(hourly_dictionary,temperature,shapefile,phi_input,False)
             #absolute_error_dictionary = gpr.cross_validate_gpr(hourly_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,0.3)
-            #absolute_error_dictionary = rf.cross_validate_rf(hourly_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list)
-            #absolute_error_dictionary = idw.cross_validate_IDW(hourly_dictionary,rainfall,shapefile,2)
+            #absolute_error_dictionary = rf.cross_validate_rf(hourly_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,False)
+            #absolute_error_dictionary = idw.cross_validate_IDW(hourly_dictionary,rainfall,shapefile,2,False)
             absolute_error_dictionary = idew.cross_validate_IDEW(hourly_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,2)
             
             MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
@@ -103,9 +103,9 @@ for var in variables:
             #MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
          if var == 'pcp':
 
-            #absolute_error_dictionary = tps.cross_validate_tps(daily_dictionary,temperature,shapefile,phi_input)
-            #absolute_error_dictionary = idw.cross_validate_IDW(daily_dictionary,rainfall,shapefile,2)
-            #absolute_error_dictionary = rf.cross_validate_rf(daily_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list)
+            #absolute_error_dictionary = tps.cross_validate_tps(daily_dictionary,temperature,shapefile,phi_input,False)
+            #absolute_error_dictionary = idw.cross_validate_IDW(daily_dictionary,rainfall,shapefile,2,False)
+            #absolute_error_dictionary = rf.cross_validate_rf(daily_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,False)
             #absolute_error_dictionary = gpr.cross_validate_gpr(daily_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,0.3)
             absolute_error_dictionary = idew.cross_validate_IDEW(daily_dictionary,temperature,shapefile,file_path_elev,elev_array,idx_list,2)
             MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
