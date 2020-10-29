@@ -527,7 +527,8 @@ def shuffle_split_rf(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,i
     return overall_error
         
 
-def spatial_kfold_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,clusterNum,blocking_type):
+def spatial_kfold_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,\
+                     clusterNum,blocking_type,return_error):
     '''Spatially blocked k-folds cross-validation procedure for rf
     Parameters
         loc_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -538,6 +539,7 @@ def spatial_kfold_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_ele
         elev_array (np_array): the elevation array for the study area 
         idx_list (list): the index of the elevation data column in the lookup file 
         clusterNum (int): number of clusters to form
+        return_error (bool): whether or not to return the error dictionary for stdev calculation
     Returns 
         overall_error (float): average MAE value of all the reps 
     '''
@@ -706,8 +708,10 @@ def spatial_kfold_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_ele
         absolute_error_dictionary[statLoc] = absolute_error
         
     MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
-     
-    return clusterNum,MAE
+    if return_error:
+        return clusterNum,MAE,absolute_error_dictionary
+    else:
+        return clusterNum,MAE    
 
 def select_block_size_rf(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
