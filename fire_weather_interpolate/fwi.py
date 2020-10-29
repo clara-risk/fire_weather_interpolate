@@ -271,7 +271,7 @@ def start_date_calendar_csv(file_path_hourly,year):
                 for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
                     length_sofar += group_len[i]
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+2] #Go two days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day 
 
                 d0 = date(int(year), 3, 1) #March 1, Year 
                 d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
@@ -505,7 +505,7 @@ def end_date_calendar_csv(file_path_hourly,year):
                 for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
                     length_sofar += group_len[i]
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+2] #Go two days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day (end day) 
 
                 d0 = date(int(year), 9, 1) #Oct 1, Year 
                 d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
