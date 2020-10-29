@@ -89,34 +89,47 @@ if __name__ == "__main__":
                 if interpolator == 'IDW2': 
                     num_stations = int(len(days_dict.keys()))
                     cluster_num = round(num_stations/10)
-                    cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,2,file_path_elev,idx_list,cluster_num,'cluster',False)
+                    cluster_size,MAE,absolute_error_dictionary = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,2,file_path_elev,idx_list,cluster_num,'cluster',False)
                     
-
+                    #Get the standard deviation 
+                    error_at_station = absolute_error_dictionary.values() 
+                    stdev_stations = statistics.stdev(error_at_station)
 
                 elif interpolator == 'IDW3':
 
                     num_stations = int(len(days_dict.keys()))
                     cluster_num = round(num_stations/10)
-                    cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,3,file_path_elev,idx_list,cluster_num,'cluster',False)
-
+                    cluster_size,MAE,absolute_error_dictionary = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,3,file_path_elev,idx_list,cluster_num,'cluster',True)
+                    #Get the standard deviation 
+                    error_at_station = absolute_error_dictionary.values() 
+                    stdev_stations = statistics.stdev(error_at_station)
+                    
                 elif interpolator == 'IDW4':
 
                     num_stations = int(len(days_dict.keys()))
                     cluster_num = round(num_stations/10)
-                    cluster_size,MAE = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,4,file_path_elev,idx_list,cluster_num,'cluster',False)
+                    cluster_size,MAE,absolute_error_dictionary = idw.spatial_kfold_idw(idw1_grid,latlon_station,days_dict,shapefile,4,file_path_elev,idx_list,cluster_num,'cluster',True)
+                    #Get the standard deviation 
+                    error_at_station = absolute_error_dictionary.values() 
+                    stdev_stations = statistics.stdev(error_at_station)
                     
                 elif interpolator == 'RF':
 
                     num_stations = int(len(days_dict.keys()))
                     cluster_num = round(num_stations/10)
-                    cluster_size,MAE = rf.spatial_kfold_rf(idw1_grid,latlon_station,days_dict,shapefile,file_path_elev,elev_array,idx_list,cluster_num,'cluster',False)
-
+                    cluster_size,MAE,absolute_error_dictionary = rf.spatial_kfold_rf(idw1_grid,latlon_station,days_dict,shapefile,file_path_elev,elev_array,idx_list,cluster_num,'cluster',True)
+                    #Get the standard deviation 
+                    error_at_station = absolute_error_dictionary.values() 
+                    stdev_stations = statistics.stdev(error_at_station)
+                    
                 elif interpolator == 'TPSS':
                     num_stations = int(len(days_dict.keys()))
                     phi_input = int(num_stations)-(math.sqrt(2*num_stations))
                     cluster_num = round(num_stations/10)
-                    cluster_size,MAE = tps.spatial_kfold_tps(idw1_grid,latlon_station,days_dict,shapefile,phi_input,file_path_elev,elev_array,idx_list,cluster_num,'cluster',False)
-
+                    cluster_size,MAE,absolute_error_dictionary = tps.spatial_kfold_tps(idw1_grid,latlon_station,days_dict,shapefile,phi_input,file_path_elev,elev_array,idx_list,cluster_num,'cluster',True)
+                    #Get the standard deviation 
+                    error_at_station = absolute_error_dictionary.values() 
+                    stdev_stations = statistics.stdev(error_at_station)
 
                 print(MAE)
                 error_dict[year] = [MAE]
