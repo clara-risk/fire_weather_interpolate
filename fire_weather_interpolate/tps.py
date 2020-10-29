@@ -470,7 +470,7 @@ def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
     
     return overall_error
 
-def spatial_kfold_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,file_path_elev,elev_array,idx_list,clusterNum,blocking_type):
+def spatial_kfold_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,file_path_elev,elev_array,idx_list,clusterNum,blocking_type,return_error):
     '''Spatially blocked k-folds cross-validation procedure for thin plate splines 
     Parameters
         loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
@@ -479,6 +479,7 @@ def spatial_kfold_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,file_pat
         shapefile (str): path to the study area shapefile 
         phi (float): smoothing parameter for the thin plate spline, if 0 no smoothing
         clusterNum (int): the number of clusters you want to hold back
+        return_error (bool): whether you want to return the error dictionary or not (to calculate stdev)
     Returns 
         MAE (float): MAE average of all the replications
      '''
@@ -610,8 +611,10 @@ def spatial_kfold_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,file_pat
         absolute_error_dictionary[statLoc] = absolute_error
         
     MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
-     
-    return clusterNum,MAE
+    if return_error:
+         return clusterNum,MAE,absolute_error_dictionary
+    else:
+        return clusterNum,MAE
 
 def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list,phi):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
