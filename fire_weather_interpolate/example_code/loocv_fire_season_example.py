@@ -25,7 +25,7 @@ import tps as tps
 import fwi as fwi
 import Eval as Eval
 import rf as rf
-import math
+import math, statistics
 
 
 if __name__ == "__main__":
@@ -84,30 +84,43 @@ if __name__ == "__main__":
                     #endsurface, maxmin = idw.IDW(latlon_station,end_dict,year,'# Days Since Oct 1',shapefile,True,2) #Interpolate the end date
                     absolute_error_dictionary = idw.cross_validate_IDW(latlon_station,days_dict,shapefile,2)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
+                    #Get the standard deviation 
+                    error_at_station = absolute_error_dictionary.values() 
+                    stdev_stations = statistics.stdev(error_at_station)
+                    
 
                 elif interpolator == 'IDW3':
                     absolute_error_dictionary = idw.cross_validate_IDW(latlon_station,days_dict,shapefile,3)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
+                    error_at_station = absolute_error_dictionary.values() 
+                    stdev_stations = statistics.stdev(error_at_station)
 
                 elif interpolator == 'IDW4':
                     absolute_error_dictionary = idw.cross_validate_IDW(latlon_station,days_dict,shapefile,4)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
+                    error_at_station = absolute_error_dictionary.values() 
+                    stdev_stations = statistics.stdev(error_at_station)
 
                 elif interpolator == 'RF':
                     absolute_error_dictionary = rf.cross_validate_rf(latlon_station,days_dict,shapefile,file_path_elev,elev_array,idx_list)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
+                    error_at_station = absolute_error_dictionary.values() 
+                    stdev_stations = statistics.stdev(error_at_station)
 
                 elif interpolator == 'TPSS':
                     num_stations = int(len(days_dict.keys()))
                     phi_input = int(num_stations)-(math.sqrt(2*num_stations))
                     absolute_error_dictionary = tps.cross_validate_tps(latlon_station,days_dict,shapefile,phi_input)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
+                    error_at_station = absolute_error_dictionary.values() 
+                    stdev_stations = statistics.stdev(error_at_station)
                 else: 
                     print('That is not a valid interpolator')
             
                 
-                print(MAE)
-                error_dict[year] = [MAE]
+                print('MAE:'+str(MAE)) 
+                print('STDEV:'+str(stdev_stations)) 
+                error_dict[year] = [MAE, stdev_stations]
                 end = time.time()
                 time_elapsed = (end-start)/60
                 print('Completed LOOCV operation, it took %s minutes..'%(time_elapsed)) 
@@ -115,7 +128,7 @@ if __name__ == "__main__":
             df = pd.DataFrame(error_dict)
             df = df.transpose()
             df.iloc[:,0] = df.iloc[:,0].astype(str).str.strip('[|]')
-            #df.iloc[:,1]= df.iloc[:,1].astype(str).str.strip('[|]')
+            df.iloc[:,1]= df.iloc[:,1].astype(str).str.strip('[|]')
             file_out = '' #Where you want to save the output csv
 
             df.to_csv(file_out+interpolator+'_'+var+'_fire_season.csv', header=None, sep=',', mode='a')
