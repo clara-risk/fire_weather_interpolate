@@ -103,6 +103,18 @@ def finding_data_frm_lookup(projected_coordinates_list,file_path,idx_list):
         
     
     return min_distance_L
+  
+def is_station_in_boreal(loc_dict,days_dict,boreal_shapefile):
+    '''For the fire season code, we are only interested in stations within the boreal zone,
+    so we need to get a list of stations that are located there.
+    Parameters
+        loc_dict (dict): locations of the stations
+        days_dict (dict): stations we are interested in, output of get_start_date_calendar_csv/end_date
+        boreal_shapefile (str): file path leading to the .shp file that delineates the boreal forest 
+    Returns
+        boreal_dict (dict): dictionary, organized boreal_dict[station_name] = True (or False)
+    '''
+    
     
     
 def get_b(latlon_dict,file_path_slope,idx_slope,file_path_drainage,idx_drainage,shapefile):
