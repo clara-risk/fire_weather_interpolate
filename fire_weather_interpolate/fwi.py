@@ -290,6 +290,116 @@ def start_date_calendar_csv(file_path_daily,year):
     #print(date_dict)
     return date_dict, latlon_dictionary 
 
+def start_date_add_hourly(file_path_hourly, year):
+    ''' There are not enough daily stations for accurate calculation of the fire season duration in years after about 1996(?) so we need to add in some of the hourly ones. 
+    This is computationally more intensive so should only be used if necessary (ie not for years that already have enough daily stations). 
+    Parameters
+        file_path_hourly (str): path to the hourly feather files
+        year (str): str of the year of interest
+    Returns
+        date_dict (dict): start up date dictionary 
+        latlon_dictionary (dict): dictionary of the station locations
+    '''
+    maxTempList_dict = {} #Locations where we will store the data
+    maxTemp_dictionary = {}
+    date_dict = {}
+    latlon_dictionary = {}
+
+    for station_name in os.listdir(file_path_hourly): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
+        print(station_name) 
+        Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
+        temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
+        for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder
+            if csv[-16:-12] == year and (csv[-19:-17] == '03' or csv[-19:-17] == '04'or csv[-19:-17] == '05'\
+               or csv[-19:-17] == '06' or csv[-19:-17] == '07' or csv[-19:-17] == '08'): #Only open if it is the csv for the year of interest (this is contained in the csv name)
+                file = file_path_hourly+station_name+'/'+csv  #Open the file - for CAN data we use latin 1 due to à, é etc.
+                df = feather.read_dataframe(file)
+                unique_dates = set([x[0:10] for x in df['Date/Time'].unique()]) 
+                count = 0
+                for dat in sorted(unique_dates): #We need dictionary insertion order maintained
+                    if dat in Temp_subdict.keys():
+                        #print('Date is already in the sub-dictionary')
+                        break
+                    temp_24 = {} 
+                
+                    for index, row in df.iterrows():
+                        if count == 0:
+                            
+                            try: 
+                            
+                                latlon_dictionary[station_name] = (row['Latitude (y)'], row['ï»¿"Longitude (x)"']) #unicode characters at beginning, not sure why 
+                                
+                            except KeyError: 
+                                latlon_dictionary[station_name] = (row['Latitude (y)'], row[0]) #The start unicode problem changes based on the computer... lon should always be in place 0 anyways
+
+                        if str(row['Year']) == year:
+
+                            if str(row['Month']) == '3' or str(row['Month']) == '4' or str(row['Month']) == '5' or \
+                               str(row['Month']) == '6' or str(row['Month']) == '7' or str(row['Month']) == '8':
+                                #if str(row['Time']) == '13:00':
+                                if str(row['Date/Time'])[0:10] == dat:
+                                    if pd.notnull(row['Temp (Â°C)']):
+                                        #print(float(row['Temp (Â°C)']))
+                                        temp_24[str(row['Date/Time'])] = float(row['Temp (Â°C)'])
+                                        #temp_list.append(float(row['Temp (Â°C)']))
+                                    else:
+                                        pass
+                        else:
+                             break
+                            
+                            
+                    if len(temp_24.values()) == 24: #Make sure unbroken record
+                    
+                                
+                        Temp_subdict[dat] = max(temp_24.values()) #Send max temp to dictionary 
+                        temp_list.append(max(temp_24.values())) #Get the 13h00 temperature, send to temp list
+                    else:
+                        Temp_subdict[dat] = 'NA'
+                        temp_list.append('NA')
+                    count +=1 
+
+        maxTemp_dictionary[station_name] = Temp_subdict
+        maxTempList_dict[station_name] = temp_list #Store the information for each station in the permanent dictionary 
+
+        vals = maxTempList_dict[station_name]
+
+        if 'NA' not in vals and len(vals) == 184: #only consider the stations with unbroken records, num_days between March-July is 153
+
+            varray = np.array(vals)
+            where_g12 = np.array(varray >= 12) #Where is the temperature >=12? 
+
+
+            groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+
+            length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
+
+
+            if len(length) > 0: 
+                index = groups.index(length[0]) #Get the index of the group
+                group_len = [len(x) for x in groups] #Get length of each group
+                length_sofar = 0 #We need to get the number of days up to where the criteria is met 
+                for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+                    length_sofar += group_len[i]
+
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+2] #Go two days ahead for the third day 
+
+                d0 = date(int(year), 3, 1) #March 1, Year 
+                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
+                delta = d1 - d0
+                day = int(delta.days) #Convert to integer 
+                date_dict[station_name] = day #Store the integer in the dictionary
+
+            else:
+                print('Station %s did not start up by August 1.'%station_name) 
+                pass #Do not include the station - no start up by August 1 is pretty unrealistic I think... (?) 
+
+
+
+            #print('The start date for %s for %s is %s'%(station_name,year,Sdate))
+
+    #Return the dates for each station
+    return date_dict, latlon_dictionary  
+
 def end_date_calendar(file_path_daily,year):
     '''Returns a dictionary of where each station meets the start up criteria, 
     plus a reference dictionary for the lat lon of the stations
