@@ -114,7 +114,37 @@ def is_station_in_boreal(loc_dict,days_dict,boreal_shapefile):
     Returns
         boreal_dict (dict): dictionary, organized boreal_dict[station_name] = True (or False)
     '''
+
     
+    
+def calc_season_duration(start_surface,end_surface,year): 
+    '''For fire season, once we have created the continuous surfaces, we need to calculate for 
+    each pixel what is the estimated duration (for the year).
+    Parameters
+        start_surface (np_array): the array of the start dates generated from a function such as IDW()
+        end_surface (np_array): the array of the end dates 
+        *these need to be the same size and should automatically be 
+        year (int): the year that we are calculating the duration for, mostly needed to account for
+        a leap year
+    Returns
+        season_duration (np_array): an array of the study area for the estimated fire season in the array
+    '''
+    #Convert to days since January 1
+    dJ = date(int(year), 1, 1)
+    d0 = date(int(year), 3, 1) #March 1, Year 
+    d1 = date(int(year), 9, 1) #Sep 1, Year
+    d_between = d0-dJ 
+    d2_between = d1-dJ 
+    array_size = start_surface.shape
+    Mar1_array = np.full(shape, d0)
+    Sdate_array = Mar1_array + start_surface + d_between 
+    Sep1_array = np.full(shape, d1)
+    Edate_array = Sep1_array + end_surface + d2_between 
+
+    #Now we have an array of dates, we can end date-start date
+    season_duration = Edate_array - Sdate_array 
+    #We have created a new array 
+    return season_duration 
     
     
 def get_b(latlon_dict,file_path_slope,idx_slope,file_path_drainage,idx_drainage,shapefile):
