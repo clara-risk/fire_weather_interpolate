@@ -143,18 +143,14 @@ def calc_season_duration(start_surface,end_surface,year):
     dJ = date(int(year), 1, 1)
     d0 = date(int(year), 3, 1) #March 1, Year 
     d1 = date(int(year), 9, 1) #Sep 1, Year
-    d_between = d0-dJ 
-    d2_between = d1-dJ 
-    array_size = start_surface.shape
-    Mar1_array = np.full(shape, d0)
-    Sdate_array = Mar1_array + start_surface + d_between 
-    Sep1_array = np.full(shape, d1)
-    Edate_array = Sep1_array + end_surface + d2_between 
-
+    d_between = int((d0-dJ).days) 
+    d2_between = int((d1-dJ).days) 
+    Sdate_array = start_surface + d_between
+    Edate_array = end_surface + d2_between
     #Now we have an array of dates, we can end date-start date
-    season_duration = Edate_array - Sdate_array 
+    season_duration = Edate_array - Sdate_array
     #We have created a new array 
-    return season_duration 
+    return season_duration
     
     
 def get_b(latlon_dict,file_path_slope,idx_slope,file_path_drainage,idx_drainage,shapefile):
