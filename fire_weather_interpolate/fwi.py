@@ -745,6 +745,17 @@ def end_date_calendar_csv(file_path_daily,year):
     #print(date_dict)
     return date_dict, latlon_dictionary
 
+def calc_season_change(earlier_array,later_array):
+    '''Calculate the change between seasons so we can evaluate how much the season has changed over time.
+    Parameters
+        earlier_array (np_array): array of fire season duration values for the earlier year, ex 1919
+        later_array (np_array): array of fire season duration values for the later year, ex 2019
+    Returns
+        change_array (np_array): array containing the difference for each pixel
+    '''
+    change_array = earlier_array-later_array
+    return change_array 
+
 def get_date_index(year,input_date,month):
     '''Get the number of days for the date of interest from the first of the month of interest
     Example, convert to days since March 1 
