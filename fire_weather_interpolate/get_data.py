@@ -152,7 +152,19 @@ def calc_season_duration(start_surface,end_surface,year):
     #We have created a new array 
     return season_duration
     
-    
+def combine_stations(dictionary_daily,dictionary_hourly):
+    '''Combine dictionaries with station names as keys.For example, hourly stations
+    & daily stations for the fire season calculations.'''
+    #Which dictionary takes priority? For now, the daily dictionary will take priority over
+    #the hourly dictionary, which means that an overlapping key will be dropped from the
+    #hourly one
+
+    for i, j in enumerate(dictionary_daily, start=len(dictionary_hourly) + 1):    
+        dictionary_hourly[i] = dictionary_daily[j]
+
+    combined_dict = dictionary_daily #Daily is the dictionary with the merged values
+    return combined_dict
+
 def get_b(latlon_dict,file_path_slope,idx_slope,file_path_drainage,idx_drainage,shapefile):
     '''Create a permanent lookup file for b for study area for future processing
     This is used in overwinter dc procedure 
