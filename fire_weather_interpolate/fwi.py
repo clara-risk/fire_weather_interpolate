@@ -44,7 +44,7 @@ import rf as rf
 #functions 
 #Using the feather fires, which are copied faster to another computer, but the code is slower than
 #if we use the csv files 
-def start_date_calendar(file_path_hourly,year):
+def start_date_calendar(file_path_daily,year):
     '''Returns a dictionary of where each station meets the start up criteria, plus a reference dictionary for the lat lon of the stations
     Parameters
         file_path (str): path to the feather files containing the hourly data from Environment & 
@@ -139,7 +139,7 @@ def start_date_calendar(file_path_hourly,year):
 
     return date_dict, latlon_dictionary
 
-def start_date_calendar_csv(file_path_hourly,year):
+def start_date_calendar_csv(file_path_daily,year):
     '''Returns a dictionary of where each station meets the start up criteria, plus a reference dictionary for the lat lon of the stations
     Parameters
         file_path (str): path to the csv files containing the hourly data from Environment & 
@@ -289,7 +289,8 @@ def start_date_calendar_csv(file_path_hourly,year):
     #Return the dates for each station
     #print(date_dict)
     return date_dict, latlon_dictionary 
-def end_date_calendar(file_path_hourly,year):
+
+def end_date_calendar(file_path_daily,year):
     '''Returns a dictionary of where each station meets the start up criteria, 
     plus a reference dictionary for the lat lon of the stations
     Parameters
@@ -374,7 +375,7 @@ def end_date_calendar(file_path_hourly,year):
     #Return the dates for each station
     return date_dict, latlon_dictionary
 
-def end_date_calendar_csv(file_path_hourly,year):
+def end_date_calendar_csv(file_path_daily,year):
     '''Returns a dictionary of where each station meets the end criteria see 
     Wotton & Flannigan 1993, plus a reference dictionary for the lat lon of the stations
     Parameters
