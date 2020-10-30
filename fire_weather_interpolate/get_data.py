@@ -114,8 +114,18 @@ def is_station_in_boreal(loc_dict,days_dict,boreal_shapefile):
     Returns
         boreal_dict (dict): dictionary, organized boreal_dict[station_name] = True (or False)
     '''
-
-    
+    boreal_dict = {}
+    boreal_zone = gpd.read_file(boreal_shapefile)
+    borealDF = gpd.GeoDataFrame(boreal_zone)
+    for location in loc_dict.keys(): 
+        station_loc = Point(loc_dict[location])
+        pointDF = pd.DataFrame([station_loc])
+        gdf = gpd.GeoDataFrame(pointDF, geometry=[station_loc])
+        if len(gpd.overlay(gdf,borealDF,how='intersection'))>0: #Point is inside shapefile
+            boreal_dict[location] = True
+        else:
+            boreal_dict[location] = False 
+    return boreal_dict 
     
 def calc_season_duration(start_surface,end_surface,year): 
     '''For fire season, once we have created the continuous surfaces, we need to calculate for 
