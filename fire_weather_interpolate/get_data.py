@@ -22,6 +22,7 @@ import json, feather
 import pandas as pd
 from scipy.spatial.distance import cdist
 import pyproj
+from shapely.ops import unary_union
 
 
 def get_col_num_list(file_path,col_name): 
@@ -112,19 +113,37 @@ def is_station_in_boreal(loc_dict,days_dict,boreal_shapefile):
         days_dict (dict): stations we are interested in, output of get_start_date_calendar_csv/end_date
         boreal_shapefile (str): file path leading to the .shp file that delineates the boreal forest 
     Returns
-        boreal_dict (dict): dictionary, organized boreal_dict[station_name] = True (or False)
+        boreal_dict (dict): dictionary, organized boreal_dict[station_name] = True 
     '''
     boreal_dict = {}
     boreal_zone = gpd.read_file(boreal_shapefile)
     borealDF = gpd.GeoDataFrame(boreal_zone)
-    for location in loc_dict.keys(): 
-        station_loc = Point(loc_dict[location])
+    borealDF_union = borealDF.geometry.unary_union #It is a multipolygon
+    pols = []
+    for index in boreal_zone.geometry:
+        for subval in index:
+            pols.append(subval)
+    polygon = unary_union(pols)
+    boreal_zone['geometry'] = [polygon]
+
+    for location in loc_dict.keys():
+        #We need to project the latlon b/c the shapefile is projected
+        latitude = float(loc_dict[location][0])
+        longitude = float(loc_dict[location][1])
+
+        source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83')
+        xProj, yProj = pyproj.Proj('esri:102001')(longitude,latitude)        
+
+        
+        station_loc = Point((yProj,xProj))
+        #print(station_loc)
         pointDF = pd.DataFrame([station_loc])
         gdf = gpd.GeoDataFrame(pointDF, geometry=[station_loc])
-        if len(gpd.overlay(gdf,borealDF,how='intersection'))>0: #Point is inside shapefile
+    
+        if len(gpd.overlay(gdf,boreal_zone,how='intersection'))>0: #Point is inside shapefile
             boreal_dict[location] = True
         else:
-            boreal_dict[location] = False 
+            pass
     return boreal_dict 
     
 def calc_season_duration(start_surface,end_surface,year): 
