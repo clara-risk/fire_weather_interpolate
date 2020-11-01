@@ -184,6 +184,33 @@ def combine_stations(dictionary_daily,dictionary_hourly):
     combined_dict = dictionary_daily #Daily is the dictionary with the merged values
     return combined_dict
 
+def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile):
+    '''Get the fire season duration for every year in between the two input years
+    and average them. Output the average array.
+    '''
+    list_of_arrays = [] 
+    for year in range(int(year1),int(year2)+1):
+        days_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily,str(year))
+        end_dict, latlon_station2 = fwi.end_date_calendar_csv(file_path_daily,str(year))
+        if year >= 1994: 
+            hourly_dict, latlon_stationH = fwi.start_date_add_hourly(file_path_hourlyf, str(year))
+            hourly_end, latlon_stationE = fwi.end_date_add_hourly(file_path_hourlyf, str(year))
+
+            days_dict = GD.combine_stations(days_dict,hourly_dict)
+            latlon_station = GD.combine_stations(latlon_station,latlon_stationH)
+
+            end_dict = GD.combine_stations(end_dict,hourly_end)
+            latlon_station2 = GD.combine_stations(latlon_station2,latlon_stationE)
+
+        start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 4)
+        end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 4)
+        
+        dur_array = calc_season_duration(start_surface,end_surface,year)
+        list_of_arrays.append(dur_array)
+    voxels = np.dstack(list_of_arrays) #stack arrays based on depth
+    averaged_voxels = np.array([[np.mean(x) for x in group] for group in voxels])
+    return averaged_voxels 
+
 def get_b(latlon_dict,file_path_slope,idx_slope,file_path_drainage,idx_drainage,shapefile):
     '''Create a permanent lookup file for b for study area for future processing
     This is used in overwinter dc procedure 
