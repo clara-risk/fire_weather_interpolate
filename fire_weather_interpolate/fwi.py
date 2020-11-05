@@ -302,11 +302,11 @@ def start_date_add_hourly(file_path_hourly, year):
     '''
     maxTempList_dict = {} #Locations where we will store the data
     maxTemp_dictionary = {}
-    date_dict = {}
+    date_dictH = {}
     latlon_dictionary = {}
-
+    
     for station_name in os.listdir(file_path_hourly): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-        print(station_name) 
+
         Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
         temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
         for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder
@@ -364,15 +364,17 @@ def start_date_add_hourly(file_path_hourly, year):
         vals = maxTempList_dict[station_name]
 
         if 'NA' not in vals and len(vals) == 184: #only consider the stations with unbroken records, num_days between March-July is 153
+            
 
             varray = np.array(vals)
             where_g12 = np.array(varray >= 12) #Where is the temperature >=12? 
 
 
-            groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+            groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False]
+            
 
             length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
-
+            
 
             if len(length) > 0: 
                 index = groups.index(length[0]) #Get the index of the group
@@ -381,24 +383,25 @@ def start_date_add_hourly(file_path_hourly, year):
                 for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
                     length_sofar += group_len[i]
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+2] #Go two days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go two days ahead for the third day 
 
                 d0 = date(int(year), 3, 1) #March 1, Year 
                 d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
                 delta = d1 - d0
-                day = int(delta.days) #Convert to integer 
-                date_dict[station_name] = day #Store the integer in the dictionary
+                day = int(delta.days) #Convert to integer
+                if station_name in os.listdir(file_path_hourly): #avoid some hidden files 
+                    date_dictH[station_name] = day #Store the integer in the dictionary
+                    print(station_name)
+                    print(day)
 
             else:
-                print('Station %s did not start up by August 1.'%station_name) 
+                print('Station %s did not start up by September 1.'%station_name) 
                 pass #Do not include the station - no start up by August 1 is pretty unrealistic I think... (?) 
-
-
-
-            #print('The start date for %s for %s is %s'%(station_name,year,Sdate))
-
-    #Return the dates for each station
-    return date_dict, latlon_dictionary  
+=
+    if len(date_dictH.keys()) == 0:
+        return None, None #Save overhead associated with creating an empty dictionary 
+    else:
+        return date_dictH, latlon_dictionary 
 
 def end_date_calendar(file_path_daily,year):
     '''Returns a dictionary of where each station meets the start up criteria, 
