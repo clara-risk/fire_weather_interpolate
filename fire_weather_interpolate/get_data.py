@@ -119,12 +119,6 @@ def is_station_in_boreal(loc_dict,days_dict,boreal_shapefile):
     boreal_zone = gpd.read_file(boreal_shapefile)
     borealDF = gpd.GeoDataFrame(boreal_zone)
     borealDF_union = borealDF.geometry.unary_union #It is a multipolygon
-    pols = []
-    for index in boreal_zone.geometry:
-        for subval in index:
-            pols.append(subval)
-    polygon = unary_union(pols)
-    boreal_zone['geometry'] = [polygon]
 
     for location in loc_dict.keys():
         #We need to project the latlon b/c the shapefile is projected
@@ -135,12 +129,11 @@ def is_station_in_boreal(loc_dict,days_dict,boreal_shapefile):
         xProj, yProj = pyproj.Proj('esri:102001')(longitude,latitude)        
 
         
-        station_loc = Point((yProj,xProj))
-        #print(station_loc)
+        station_loc = Point((xProj,yProj))
         pointDF = pd.DataFrame([station_loc])
         gdf = gpd.GeoDataFrame(pointDF, geometry=[station_loc])
     
-        if len(gpd.overlay(gdf,boreal_zone,how='intersection'))>0: #Point is inside shapefile
+        if (boreal_zone.geometry.contains(gdf.geometry)).any():
             boreal_dict[location] = True
         else:
             pass
