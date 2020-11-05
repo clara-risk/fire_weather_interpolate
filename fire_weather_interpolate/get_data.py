@@ -178,11 +178,11 @@ def combine_stations(dictionary_daily,dictionary_hourly):
     #the hourly dictionary, which means that an overlapping key will be dropped from the
     #hourly one
 
-    for i, j in enumerate(dictionary_daily, start=len(dictionary_hourly) + 1):    
-        dictionary_hourly[i] = dictionary_daily[j]
+    for key in dictionary_hourly:
+        if key not in dictionary_daily.keys():
+            dictionary_daily[key] = dictionary_hourly[key]
 
-    combined_dict = dictionary_daily #Daily is the dictionary with the merged values
-    return combined_dict
+    return dictionary_daily 
 
 def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile):
     '''Get the fire season duration for every year in between the two input years
