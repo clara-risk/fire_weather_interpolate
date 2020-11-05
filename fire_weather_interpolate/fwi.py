@@ -591,12 +591,10 @@ def end_date_add_hourly(file_path_hourly, year):
                 print('Station %s did not end by December 31.'%station_name[:-4]) 
                 pass #Do not include the station 
 
-
-            #print('The end date for %s for %s is %s'%(station_name,year,Sdate))
-
-    #Return the dates for each station
-    #print(date_dict)
-    return date_dict, latlon_dictionary
+    if len(date_dict.keys()) == 0:
+        return None, None #Save overhead associated with creating an empty dictionary 
+    else:
+        return date_dict, latlon_dictionary
 
 def end_date_calendar_csv(file_path_daily,year):
     '''Returns a dictionary of where each station meets the end criteria see 
