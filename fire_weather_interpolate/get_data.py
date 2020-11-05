@@ -183,17 +183,18 @@ def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile):
     '''
     list_of_arrays = [] 
     for year in range(int(year1),int(year2)+1):
+        print('Processing...'+str(year))
         days_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily,str(year))
         end_dict, latlon_station2 = fwi.end_date_calendar_csv(file_path_daily,str(year))
         if year >= 1994: 
-            hourly_dict, latlon_stationH = fwi.start_date_add_hourly(file_path_hourlyf, str(year))
-            hourly_end, latlon_stationE = fwi.end_date_add_hourly(file_path_hourlyf, str(year))
+            hourly_dict, latlon_stationH = fwi.start_date_add_hourly(file_path_hourly, str(year))
+            hourly_end, latlon_stationE = fwi.end_date_add_hourly(file_path_hourly, str(year))
 
-            days_dict = GD.combine_stations(days_dict,hourly_dict)
-            latlon_station = GD.combine_stations(latlon_station,latlon_stationH)
+            days_dict = combine_stations(days_dict,hourly_dict)
+            latlon_station = combine_stations(latlon_station,latlon_stationH)
 
-            end_dict = GD.combine_stations(end_dict,hourly_end)
-            latlon_station2 = GD.combine_stations(latlon_station2,latlon_stationE)
+            end_dict = combine_stations(end_dict,hourly_end)
+            latlon_station2 = combine_stations(latlon_station2,latlon_stationE)
 
         start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 4)
         end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 4)
