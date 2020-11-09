@@ -474,9 +474,9 @@ def end_date_calendar(file_path_daily,year):
             for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
                 length_sofar += group_len[i]
 
-            Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+2] #Go two days ahead for the third day 
+            Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go two days ahead for the third day 
 
-            d0 = date(int(year), 10, 1) #Oct 1, Year 
+            d0 = date(int(year), 9, 1) #Sep 1, Year 
             d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
             delta = d1 - d0
             day = int(delta.days) #Convert to integer 
