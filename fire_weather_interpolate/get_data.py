@@ -14,6 +14,7 @@ get_b relies on information from Lawson & Armitage (2008)
 """
 
 #import
+from shapely.geometry import Point
 import geopandas as gpd
 import os, sys
 from datetime import datetime, timedelta, date
@@ -23,6 +24,7 @@ import pandas as pd
 from scipy.spatial.distance import cdist
 import pyproj
 from shapely.ops import unary_union
+import matplotlib.pyplot as plt
 
 
 def get_col_num_list(file_path,col_name): 
@@ -632,3 +634,92 @@ def convert_to_feather(file_path,out_path):
         file = file_path+station_name
         df = pd.read_csv(file, sep=',', engine='c', low_memory=False,encoding='latin1')
         feather.write_dataframe(df,out_path+station_name[:-4]+'.feather')
+
+
+def get_intersect_boolean_array(ecozone_shapefile,shapefile):
+    study_map = gpd.read_file(shapefile)
+    eco_map = gpd.read_file(ecozone_shapefile)
+
+    #First, study area 
+
+    bounds = study_map.bounds #Get the bounding box of the shapefile 
+    xmax = bounds['maxx']
+    xmin= bounds['minx']
+    ymax = bounds['maxy']
+    ymin = bounds['miny']
+    pixelHeight = 10000 #We want a 10 by 10 pixel, or as close as we can get 
+    pixelWidth = 10000
+            
+    num_col = int((xmax - xmin) / pixelHeight) #Calculate the number of rows cols to fill the bounding box at that resolution 
+    num_row = int((ymax - ymin) / pixelWidth)
+
+    Yi = np.linspace(float(bounds['miny']),float(bounds['maxy']),num_row+1) #Get the value for lat lon in each cell we just made 
+    Xi = np.linspace(float(bounds['minx']),float(bounds['maxx']),num_col+1) #+1 otherwise we get banding on the image
+
+    Xi,Yi = np.meshgrid(Xi,Yi)
+    concat = np.array((Xi.flatten(), Yi.flatten())).T #Because we are not using the lookup file, send in X,Y order 
+    send_to_list = concat.tolist() #List of points inside the study area using the generated grid
+    meshPoints = [Point(item) for item in send_to_list]
+    study_df = pd.DataFrame(meshPoints) #our point dataframe
+    study_gdf = gpd.GeoDataFrame(study_df, geometry=meshPoints)
+
+    #Second, ecozone get points in the list we made that are inside the geodataframe
+    pointList = [] 
+    for location in meshPoints: 
+        if (eco_map.geometry.contains(location)).any(): #if contained in any polygon in multipolygon
+            pointList.append(location)
+    
+    #Make a grid of zeros in the right shape
+    bool_initiate = np.zeros((num_row,num_col))
+
+    #Fill in the ones in the correct places
+    for loc in pointList: 
+        pair = list(loc.coords)
+        coord_pair = (pair[0][0],pair[0][1],)#lat,lon
+        x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
+        y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+        bool_initiate[y_orig][x_orig] = 1
+
+    #Plot to make sure everything is ok
+    fig, ax = plt.subplots(figsize= (15,15))
+    crs = {'init': 'esri:102001'}
+
+        
+    plt.imshow(bool_initiate,extent=(float(xmin)-1,float(xmax)+1,float(ymax)+1,float(ymin)-1)) 
+    study_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.2)
+    plt.gca().invert_yaxis()        
+    plt.xlabel('Longitude')
+    plt.ylabel('Latitude')
+    ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+    ax.ticklabel_format(useOffset=False, style='plain')
+
+    plt.show()
+
+
+    #return the array
+    return bool_initiate 
+
+    
+def get_average_in_ecozone(ecozone_shapefile,continuous_surface):
+    '''This is a function to get the average of the array cells with centroids that are within an ecozone
+    Parameters
+        ecozone_shapefile (str): path to the ecozone shapefile 
+        continuous_surface (np_array): an array of values for the study area
+    Returns 
+        average_value (float): the average if the array values that fall inside the ecozone
+    '''
+
+    #Create a boolean array of the overall shapefile vs. the ecozone one
+    #Ecozone has 1s, other parts of map assigned 0
+
+
+
+    #Use numpy to get only the values in the array that have 1 in the reference one
+
+
+
+    #Average the selected cells
+
+
+    #Return the average 
+ 
