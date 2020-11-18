@@ -700,26 +700,19 @@ def get_intersect_boolean_array(ecozone_shapefile,shapefile):
     return bool_initiate 
 
     
-def get_average_in_ecozone(ecozone_shapefile,continuous_surface):
+def get_average_in_ecozone(boolean_ecozone,continuous_surface):
     '''This is a function to get the average of the array cells with centroids that are within an ecozone
     Parameters
-        ecozone_shapefile (str): path to the ecozone shapefile 
+        boolean_ecozone (np_array): a boolean array delineating the raster cells belonging to the ecozone
         continuous_surface (np_array): an array of values for the study area
     Returns 
         average_value (float): the average if the array values that fall inside the ecozone
     '''
 
-    #Create a boolean array of the overall shapefile vs. the ecozone one
-    #Ecozone has 1s, other parts of map assigned 0
+    continuous_surface[boolean_ecozone == 0] = -9999
+    mean_value = np.mean(list(continuous_surface[continuous_surface > -9999].flatten())) #Mask out values not in ecozone
+
+    return mean_value
 
 
-
-    #Use numpy to get only the values in the array that have 1 in the reference one
-
-
-
-    #Average the selected cells
-
-
-    #Return the average 
  
