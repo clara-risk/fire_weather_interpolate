@@ -54,16 +54,18 @@ if __name__ == "__main__":
                 
 
     #Get example elev array
+    #Get example elev array
     temperature = GD.get_noon_temp('1956-07-01 13:00',file_path_hourlyf)
     idw1_grid, maxmin, elev_array = idew.IDEW(hourly_dictionary,temperature,'2018-07-01 13:00','temp',shapefile,False,file_path_elev,idx_list,1)
    
 
     varlist = ['start','end']
-    interpolator_list = ['IDW2','IDW3','IDW4','RF','TPSS'] 
+    interpolator_list = ['IDW2','IDW3','IDW4','RF','TPSS']
+    ecozones = ['boreal1_ecozone61','boreal2_easternC5','hudson','taiga_shield'] 
     for var in varlist:
         for interpolator in interpolator_list:
             error_dict = {}
-            for year in range(1954,2020):
+            for year in range(1890,1891):
                 start = time.time() 
                 year = str(year) #Year of interest, right now we do not have an overwinter procedure so each year is run separately 
 
@@ -74,7 +76,7 @@ if __name__ == "__main__":
                     
                     days_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily,year) #Get two things: start date for each station and the lat lon of the station
                     if int(year) >= 1994: #When many hourly stations are added
-                        hourly_dictH, latlon_stationH = fwi.start_date_add_hourly(file_path_daily,year)
+                        hourly_dictH, latlon_stationH = fwi.start_date_add_hourly(file_path_hourlyf,year)
                         if hourly_dictH is not None: #Sometimes there are no stations with unbroken records
                             days_dict = GD.combine_stations(days_dict,hourly_dictH)
                             latlon_station = GD.combine_stations(latlon_station,latlon_stationH)                                   
@@ -82,7 +84,7 @@ if __name__ == "__main__":
                 elif var == 'end': 
                     days_dict, latlon_station = fwi.end_date_calendar_csv(file_path_daily,year)
                     if int(year) >= 1994: #When many hourly stations are added
-                        hourly_dictH, latlon_stationH = fwi.end_date_add_hourly(file_path_daily,year)
+                        hourly_dictH, latlon_stationH = fwi.end_date_add_hourly(file_path_hourlyf,year)
                         if hourly_dictH is not None: #Sometimes there are no stations with unbroken records
                             days_dict = GD.combine_stations(days_dict,hourly_dictH)
                             latlon_station = GD.combine_stations(latlon_station,latlon_stationH) 
@@ -98,25 +100,56 @@ if __name__ == "__main__":
                     #Get the standard deviation 
                     error_at_station = absolute_error_dictionary.values() 
                     stdev_stations = statistics.stdev(error_at_station)
-                    
-
+                    ecozone_values = [] 
+                    for zone in ecozones:
+                        cwd = os.getcwd() #Must be located in this directory
+                        ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp'
+                        boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False)
+                        surface, maxmin = idw.IDW(latlon_station,days_dict,year,'# Days',shapefile,False,2)
+                        AvVal = GD.get_average_in_ecozone(boolean_map,surface)
+                        ecozone_values.append(AvVal)
+                        
                 elif interpolator == 'IDW3':
                     absolute_error_dictionary = idw.cross_validate_IDW(latlon_station,days_dict,shapefile,3,False)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
                     error_at_station = absolute_error_dictionary.values() 
                     stdev_stations = statistics.stdev(error_at_station)
+                    ecozone_values = [] 
+                    for zone in ecozones:
+                        cwd = os.getcwd()
+                        ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp'
+                        boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False)
+                        surface, maxmin = idw.IDW(latlon_station,days_dict,year,'# Days',shapefile,False,3)
+                        AvVal = GD.get_average_in_ecozone(boolean_map,surface)
+                        ecozone_values.append(AvVal)
 
                 elif interpolator == 'IDW4':
                     absolute_error_dictionary = idw.cross_validate_IDW(latlon_station,days_dict,shapefile,4,False)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
                     error_at_station = absolute_error_dictionary.values() 
                     stdev_stations = statistics.stdev(error_at_station)
+                    ecozone_values = [] 
+                    for zone in ecozones:
+                        cwd = os.getcwd()
+                        ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp'
+                        boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False)
+                        surface, maxmin = idw.IDW(latlon_station,days_dict,year,'# Days',shapefile,False,4)
+                        AvVal = GD.get_average_in_ecozone(boolean_map,surface)
+                        ecozone_values.append(AvVal)
 
                 elif interpolator == 'RF':
                     absolute_error_dictionary = rf.cross_validate_rf(latlon_station,days_dict,shapefile,file_path_elev,elev_array,idx_list,False)
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
                     error_at_station = absolute_error_dictionary.values() 
                     stdev_stations = statistics.stdev(error_at_station)
+                    ecozone_values = [] 
+                    for zone in ecozones:
+                        cwd = os.getcwd()
+                        ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp'
+                        boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False)
+                        surface, maxmin = rf.random_forest_interpolator(latlon_station,days_dict,year,'# Days',shapefile,False,file_path_elev,idx_list)
+                        AvVal = GD.get_average_in_ecozone(boolean_map,surface)
+                        ecozone_values.append(AvVal)
 
                 elif interpolator == 'TPSS':
                     num_stations = int(len(days_dict.keys()))
@@ -125,13 +158,21 @@ if __name__ == "__main__":
                     MAE, MAE_max = Eval.get_MAE(absolute_error_dictionary)
                     error_at_station = absolute_error_dictionary.values() 
                     stdev_stations = statistics.stdev(error_at_station)
+                    for zone in ecozones:
+                        cwd = os.getcwd()
+                        ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp'
+                        boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False)
+                        surface, maxmin = tps.TPS(latlon_station,days_dict,year,'# Days',shapefile,False,phi_input)
+                        AvVal = GD.get_average_in_ecozone(boolean_map,surface)
+                        ecozone_values.append(AvVal)
                 else: 
                     print('That is not a valid interpolator')
             
                 
                 print('MAE:'+str(MAE)) 
-                print('STDEV:'+str(stdev_stations)) 
-                error_dict[year] = [MAE, stdev_stations]
+                print('STDEV:'+str(stdev_stations))
+                print('AVERAGE VALS IN ECOZONES - BOREAL WEST - BOREAL EAST - HUDSON - TAIGA:'+str(ecozone_values))
+                error_dict[year] = [MAE, stdev_stations,ecozone_values[0],ecozone_values[1],ecozone_values[2],ecozone_values[3]]
                 end = time.time()
                 time_elapsed = (end-start)/60
                 print('Completed LOOCV operation, it took %s minutes..'%(time_elapsed)) 
@@ -140,6 +181,10 @@ if __name__ == "__main__":
             df = df.transpose()
             df.iloc[:,0] = df.iloc[:,0].astype(str).str.strip('[|]')
             df.iloc[:,1]= df.iloc[:,1].astype(str).str.strip('[|]')
+            df.iloc[:,2]= df.iloc[:,2].astype(str).str.strip('[|]')
+            df.iloc[:,3]= df.iloc[:,3].astype(str).str.strip('[|]')
+            df.iloc[:,4]= df.iloc[:,4].astype(str).str.strip('[|]')
+            df.iloc[:,5]= df.iloc[:,5].astype(str).str.strip('[|]')
             file_out = '' #Where you want to save the output csv
 
             df.to_csv(file_out+interpolator+'_'+var+'_fire_season.csv', header=None, sep=',', mode='a')
