@@ -636,7 +636,15 @@ def convert_to_feather(file_path,out_path):
         feather.write_dataframe(df,out_path+station_name[:-4]+'.feather')
 
 
-def get_intersect_boolean_array(ecozone_shapefile,shapefile):
+def get_intersect_boolean_array(ecozone_shapefile,shapefile,show):
+    '''Obtain a boolean array of where the ecozone is 0 = pixel NOT in ecozone, otherwise 1
+    Parameters
+        ecozone_shapefile (str): path to ecozone shapefile, inc name
+        shapefile (str): path to shapefile
+        show (bool): show a map if you want to check it has rasterized the shapefile correctly
+    Returns
+        bool_initiate (np_array): array 1/0 if pixel was inside ecozone
+    '''
     study_map = gpd.read_file(shapefile)
     eco_map = gpd.read_file(ecozone_shapefile)
 
@@ -680,20 +688,21 @@ def get_intersect_boolean_array(ecozone_shapefile,shapefile):
         y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
         bool_initiate[y_orig][x_orig] = 1
 
-    #Plot to make sure everything is ok
-    fig, ax = plt.subplots(figsize= (15,15))
-    crs = {'init': 'esri:102001'}
+    #Plot to make sure everything is ok  if new study area and you want to be sure
+    if show: 
+        fig, ax = plt.subplots(figsize= (15,15))
+        crs = {'init': 'esri:102001'}
 
-        
-    plt.imshow(bool_initiate,extent=(float(xmin)-1,float(xmax)+1,float(ymax)+1,float(ymin)-1)) 
-    study_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.2)
-    plt.gca().invert_yaxis()        
-    plt.xlabel('Longitude')
-    plt.ylabel('Latitude')
-    ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
-    ax.ticklabel_format(useOffset=False, style='plain')
+            
+        plt.imshow(bool_initiate,extent=(float(xmin)-1,float(xmax)+1,float(ymax)+1,float(ymin)-1)) 
+        study_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.2)
+        plt.gca().invert_yaxis()        
+        plt.xlabel('Longitude')
+        plt.ylabel('Latitude')
+        ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+        ax.ticklabel_format(useOffset=False, style='plain')
 
-    plt.show()
+        plt.show()
 
 
     #return the array
