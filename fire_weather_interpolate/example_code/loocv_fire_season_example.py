@@ -74,7 +74,7 @@ if __name__ == "__main__":
                     
                     days_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily,year) #Get two things: start date for each station and the lat lon of the station
                     if int(year) >= 1994: #When many hourly stations are added
-                        hourly_dictH, latlon_stationH = fwi.start_date_add_hourly(file_path_daily,year)
+                        hourly_dictH, latlon_stationH = fwi.start_date_add_hourly(file_path_hourlyf,year)
                         if hourly_dictH is not None: #Sometimes there are no stations with unbroken records
                             days_dict = GD.combine_stations(days_dict,hourly_dictH)
                             latlon_station = GD.combine_stations(latlon_station,latlon_stationH)                                   
@@ -82,7 +82,7 @@ if __name__ == "__main__":
                 elif var == 'end': 
                     days_dict, latlon_station = fwi.end_date_calendar_csv(file_path_daily,year)
                     if int(year) >= 1994: #When many hourly stations are added
-                        hourly_dictH, latlon_stationH = fwi.end_date_add_hourly(file_path_daily,year)
+                        hourly_dictH, latlon_stationH = fwi.end_date_add_hourly(file_path_hourlyf,year)
                         if hourly_dictH is not None: #Sometimes there are no stations with unbroken records
                             days_dict = GD.combine_stations(days_dict,hourly_dictH)
                             latlon_station = GD.combine_stations(latlon_station,latlon_stationH) 
