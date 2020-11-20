@@ -179,7 +179,7 @@ def combine_stations(dictionary_daily,dictionary_hourly):
 
     return dictionary_daily 
 
-def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile):
+def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile,file_path_elev,idx_list,method):
     '''Get the fire season duration for every year in between the two input years
     and average them. Output the average array.
     '''
@@ -198,9 +198,36 @@ def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile):
             end_dict = combine_stations(end_dict,hourly_end)
             latlon_station2 = combine_stations(latlon_station2,latlon_stationE)
 
-        start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 4)
-        end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 4)
-        
+        if method == 'IDW2': 
+
+            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 2)
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 2)
+
+        elif method == 'IDW3':
+            
+            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 3)
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 3)
+
+        elif method == 'IDW4':
+
+            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 3)
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 3)
+
+        elif method == 'TPSS':
+            num_stationsS = int(len(days_dict.keys()))
+            phi_inputS = int(num_stations)-(math.sqrt(2*num_stations))
+            num_stationsE = int(len(end_dict.keys()))
+            phi_inputE = int(num_stations)-(math.sqrt(2*num_stations))
+            start_surface,maxmin = tps.TPS(latlon_station,days_dict,str(year),'Start',shapefile,False,phi_inputS)
+            end_surface,maxmin = tps.TPS(latlon_station2,end_dict,str(year),'End',shapefile,False,phi_inputE)
+
+        elif method == 'RF':
+            start_surface,maxmin = rf.random_forest_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list)
+            end_surface,maxmin = rf.random_forest_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list)
+
+        else:
+            print('Either that method does not exist or there is no support for it. You can use IDW2-4, TPSS, or RF') 
+            
         dur_array = calc_season_duration(start_surface,end_surface,year)
         list_of_arrays.append(dur_array)
     voxels = np.dstack(list_of_arrays) #stack arrays based on depth
