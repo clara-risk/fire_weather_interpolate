@@ -142,7 +142,7 @@ def start_date_calendar(file_path_daily,year):
 def start_date_calendar_csv(file_path_daily,year):
     '''Returns a dictionary of where each station meets the start up criteria, plus a reference dictionary for the lat lon of the stations
     Parameters
-        file_path (str): path to the csv files containing the hourly data from Environment & 
+        file_path_daily (str): path to the csv files containing the hourly data from Environment & 
         Climate Change Canada 
         year (str): year we want to find the fire season start up date for 
     Returns 
@@ -156,14 +156,14 @@ def start_date_calendar_csv(file_path_daily,year):
     date_dict = {}
     latlon_dictionary = {}
 
-    for station_name in os.listdir(file_path_hourly): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
+    for station_name in os.listdir(file_path_daily): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
         Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
         temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
         count=0
         #for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder 
             #if year in csv: #Only open if it is the csv for the year of interest (this is contained in the csv name)
                 #+'/'+csv
-        with open(file_path_hourly+station_name, encoding='latin1') as year_information: #Open the file - for CAN data we use latin 1 due to à, é etc. 
+        with open(file_path_daily+station_name, encoding='latin1') as year_information: #Open the file - for CAN data we use latin 1 due to à, é etc. 
             for row in year_information: #Look at each row 
                 information = row.rstrip('\n').split(',') #Split each row into a list so we can loop through 
                 information_stripped = [i.replace('"','') for i in information] #Get rid of extra quotes in the header
@@ -397,7 +397,7 @@ def start_date_add_hourly(file_path_hourly, year):
             else:
                 print('Station %s did not start up by September 1.'%station_name) 
                 pass #Do not include the station - no start up by August 1 is pretty unrealistic I think... (?) 
-=
+
     if len(date_dictH.keys()) == 0:
         return None, None #Save overhead associated with creating an empty dictionary 
     else:
@@ -755,7 +755,85 @@ def calc_season_change(earlier_array,later_array):
         change_array (np_array): array containing the difference for each pixel
     '''
     change_array = earlier_array-later_array
-    return change_array 
+    return change_array
+
+def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx_list,shapefile,list_of_ecozone_names,year1,year2,method):
+    '''Calculation the yearly duration between years 1-2 and output to dictionary for graphing
+    Parameters
+        file_path_daily (str): path to the daily files 
+        file_path_hourly (str): path to the files containing the hourly data from Environment & 
+        Climate Change Canada
+        file_path_elev (str): path to the elevation lookup file
+        idx_list (list): the index of the elevation data column in the lookup file
+        shapefile (str): path to the shapefile of the study area
+        list_of_ecozone_names (list of str): list of ecozone names you want to calculate duration for, ex ['taiga','hudson'],
+        must correspond to the names of the shapefiles in the folder ecozone_shp in the working directory 
+        year1 (int,str): start year
+        year2 (int,str): end year
+        method (str): spatial model, one of: IDW2,IDW3,IDW4,TPSS,RF
+    Returns
+        duration_dict (dict): dictionary keyed by year then ecozone that contains a list of durations from year1-year2 (not inc. year2)
+    '''
+    duration_dict = {}
+    for year in range(int(year1),int(year2)+1):
+        print('Processing...'+str(year))
+        days_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily,str(year))
+        end_dict, latlon_station2 = fwi.end_date_calendar_csv(file_path_daily,str(year))
+        if year >= 1994: 
+            hourly_dict, latlon_stationH = fwi.start_date_add_hourly(file_path_hourly, str(year))
+            hourly_end, latlon_stationE = fwi.end_date_add_hourly(file_path_hourly, str(year))
+
+            days_dict = combine_stations(days_dict,hourly_dict)
+            latlon_station = combine_stations(latlon_station,latlon_stationH)
+
+            end_dict = combine_stations(end_dict,hourly_end)
+            latlon_station2 = combine_stations(latlon_station2,latlon_stationE)
+
+        if method == 'IDW2': 
+
+            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 2)
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 2)
+
+        elif method == 'IDW3':
+            
+            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 3)
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 3)
+
+        elif method == 'IDW4':
+
+            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 3)
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 3)
+
+        elif method == 'TPSS':
+            num_stationsS = int(len(days_dict.keys()))
+            phi_inputS = int(num_stations)-(math.sqrt(2*num_stations))
+            num_stationsE = int(len(end_dict.keys()))
+            phi_inputE = int(num_stations)-(math.sqrt(2*num_stations))
+            start_surface,maxmin = tps.TPS(latlon_station,days_dict,str(year),'Start',shapefile,False,phi_inputS)
+            end_surface,maxmin = tps.TPS(latlon_station2,end_dict,str(year),'End',shapefile,False,phi_inputE)
+
+        elif method == 'RF':
+            start_surface,maxmin = rf.random_forest_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list)
+            end_surface,maxmin = rf.random_forest_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list)
+
+        else:
+            print('Either that method does not exist or there is no support for it. You can use IDW2-4, TPSS, or RF') 
+            
+        dur_array = calc_season_duration(start_surface,end_surface,year)
+        ecozones = list_of_ecozone_names
+        yearly_dict = {} 
+        for zone in ecozones:
+            cwd = os.getcwd() #get the working directory 
+            ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp' #For this to work, the shapefiles MUST be in this location
+            boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False)
+            AvVal = GD.get_average_in_ecozone(boolean_map,dur_array)
+            yearly_dict[zone] = AvVal
+    
+        duration_dict[year] = yearly_dict
+
+    print(duration_dict)
+    return duration_dict 
+
 
 def get_date_index(year,input_date,month):
     '''Get the number of days for the date of interest from the first of the month of interest
