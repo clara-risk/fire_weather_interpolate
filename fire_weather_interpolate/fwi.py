@@ -785,7 +785,7 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
             if hourly_dict is not None: 
                 days_dict = GD.combine_stations(days_dict,hourly_dict)
                 latlon_station = GD.combine_stations(latlon_station,latlon_stationH)
-            if end_dict is not None: 
+            if hourly_end is not None: 
                 end_dict = GD.combine_stations(end_dict,hourly_end)
                 latlon_station2 = GD.combine_stations(latlon_station2,latlon_stationE)
 
