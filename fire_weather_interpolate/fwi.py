@@ -613,14 +613,14 @@ def end_date_calendar_csv(file_path_daily,year):
     date_dict = {}
     latlon_dictionary = {}
 
-    for station_name in os.listdir(file_path_hourly): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
+    for station_name in os.listdir(file_path_daily): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
         Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
         temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
         count=0
         #for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder 
             #if year in csv: #Only open if it is the csv for the year of interest (this is contained in the csv name)
 
-        with open(file_path_hourly+station_name, encoding='latin1') as year_information: #Open the file - for CAN data we use latin 1 due to à, é etc. 
+        with open(file_path_daily+station_name, encoding='latin1') as year_information: #Open the file - for CAN data we use latin 1 due to à, é etc. 
             for row in year_information: #Look at each row 
                 information = row.rstrip('\n').split(',') #Split each row into a list so we can loop through 
                 information_stripped = [i.replace('"','') for i in information] #Get rid of extra quotes in the header
@@ -772,22 +772,22 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
         year2 (int,str): end year
         method (str): spatial model, one of: IDW2,IDW3,IDW4,TPSS,RF
     Returns
-        duration_dict (dict): dictionary keyed by year then ecozone that contains a list of durations from year1-year2 (not inc. year2)
+        duration_dict (dict): dictionary keyed by year then ecozone that contains a list of durations from year1-year2 (year2 inclusive)
     '''
     duration_dict = {}
     for year in range(int(year1),int(year2)+1):
         print('Processing...'+str(year))
-        days_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily,str(year))
-        end_dict, latlon_station2 = fwi.end_date_calendar_csv(file_path_daily,str(year))
+        days_dict, latlon_station = start_date_calendar_csv(file_path_daily,str(year))
+        end_dict, latlon_station2 = end_date_calendar_csv(file_path_daily,str(year))
         if year >= 1994: 
-            hourly_dict, latlon_stationH = fwi.start_date_add_hourly(file_path_hourly, str(year))
-            hourly_end, latlon_stationE = fwi.end_date_add_hourly(file_path_hourly, str(year))
+            hourly_dict, latlon_stationH = start_date_add_hourly(file_path_hourly, str(year))
+            hourly_end, latlon_stationE = end_date_add_hourly(file_path_hourly, str(year))
 
-            days_dict = combine_stations(days_dict,hourly_dict)
-            latlon_station = combine_stations(latlon_station,latlon_stationH)
+            days_dict = GD.combine_stations(days_dict,hourly_dict)
+            latlon_station = GD.combine_stations(latlon_station,latlon_stationH)
 
-            end_dict = combine_stations(end_dict,hourly_end)
-            latlon_station2 = combine_stations(latlon_station2,latlon_stationE)
+            end_dict = GD.combine_stations(end_dict,hourly_end)
+            latlon_station2 = GD.combine_stations(latlon_station2,latlon_stationE)
 
         if method == 'IDW2': 
 
@@ -819,19 +819,20 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
         else:
             print('Either that method does not exist or there is no support for it. You can use IDW2-4, TPSS, or RF') 
             
-        dur_array = calc_season_duration(start_surface,end_surface,year)
         ecozones = list_of_ecozone_names
-        yearly_dict = {} 
+        yearly_dict = {}
+        cwd = os.getcwd()#get the working directory 
         for zone in ecozones:
-            cwd = os.getcwd() #get the working directory 
+            print(zone) 
             ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp' #For this to work, the shapefiles MUST be in this location
             boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False)
-            AvVal = GD.get_average_in_ecozone(boolean_map,dur_array)
+            dur_matrix = GD.calc_season_duration(start_surface,end_surface,year)
+            AvVal = GD.get_average_in_ecozone(boolean_map,dur_matrix)
             yearly_dict[zone] = AvVal
+            print(AvVal) 
     
         duration_dict[year] = yearly_dict
 
-    print(duration_dict)
     return duration_dict 
 
 
