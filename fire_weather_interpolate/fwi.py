@@ -505,7 +505,7 @@ def end_date_add_hourly(file_path_hourly, year):
     latlon_dictionary = {}
 
     for station_name in os.listdir(file_path_hourly): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-        print(station_name) 
+        #print(station_name) 
         Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
         temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
         for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder
@@ -782,12 +782,12 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
         if year >= 1994: 
             hourly_dict, latlon_stationH = start_date_add_hourly(file_path_hourly, str(year))
             hourly_end, latlon_stationE = end_date_add_hourly(file_path_hourly, str(year))
-
-            days_dict = GD.combine_stations(days_dict,hourly_dict)
-            latlon_station = GD.combine_stations(latlon_station,latlon_stationH)
-
-            end_dict = GD.combine_stations(end_dict,hourly_end)
-            latlon_station2 = GD.combine_stations(latlon_station2,latlon_stationE)
+            if hourly_dict is not None: 
+                days_dict = GD.combine_stations(days_dict,hourly_dict)
+                latlon_station = GD.combine_stations(latlon_station,latlon_stationH)
+            if end_dict is not None: 
+                end_dict = GD.combine_stations(end_dict,hourly_end)
+                latlon_station2 = GD.combine_stations(latlon_station2,latlon_stationE)
 
         if method == 'IDW2': 
 
