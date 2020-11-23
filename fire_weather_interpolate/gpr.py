@@ -142,7 +142,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,fi
     df_testX = pd.DataFrame({'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
     
     kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-    reg = GaussianProcessRegressor(kernel=kernels[0])
+    reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=3) #Updated Nov 23 for fire season manuscript to make 3 restarts
     
     
     y = np.array(df_trainX['var']).reshape(-1,1)
@@ -319,7 +319,7 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
     
     
         kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-        reg = GaussianProcessRegressor(kernel=kernels[0])     
+        reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=3)     
     
     
         y = np.array(df_trainX['var']).reshape(-1,1)
@@ -510,7 +510,7 @@ def shuffle_split_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
     
     
         kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-        reg = GaussianProcessRegressor(kernel=kernels[0])     
+        reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True)     
     
     
         y = np.array(df_trainX['var']).reshape(-1,1)
@@ -699,7 +699,7 @@ def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_el
 
 
     kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-    reg = GaussianProcessRegressor(kernel=kernels[0])    
+    reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=3)    
 
 
     y = np.array(df_trainX['var']).reshape(-1,1)
@@ -952,7 +952,7 @@ def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nf
           df_testX = pd.DataFrame({'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
 
           kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-          reg = GaussianProcessRegressor(kernel=kernels[0])    
+          reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=3)    
 
 
           y = np.array(df_trainX['var']).reshape(-1,1)
