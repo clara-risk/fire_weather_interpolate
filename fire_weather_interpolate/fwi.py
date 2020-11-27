@@ -816,6 +816,12 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
             start_surface,maxmin = rf.random_forest_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list)
             end_surface,maxmin = rf.random_forest_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list)
 
+
+        elif method == 'GPR':
+            start_surface,maxmin = gpr.GPR_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list,0.3)
+            end_surface,maxmin = gpr.GPR_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list,0.3)    
+
+
         else:
             print('Either that method does not exist or there is no support for it. You can use IDW2-4, TPSS, or RF') 
             
