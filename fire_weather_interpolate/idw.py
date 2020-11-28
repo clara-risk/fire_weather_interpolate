@@ -49,10 +49,10 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d):
      source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83')
      na_map = gpd.read_file(shapefile)
      bounds = na_map.bounds
-     xmax = bounds['maxx']
-     xmin= bounds['minx']
-     ymax = bounds['maxy']
-     ymin = bounds['miny']
+     xmax = bounds['maxx']+200000 
+     xmin= bounds['minx']-200000 
+     ymax = bounds['maxy']+200000 
+     ymin = bounds['miny']-200000
      
      for station_name in Cvar_dict.keys():
 
@@ -84,8 +84,8 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d):
      xProj, yProj = pyproj.Proj('esri:102001')(x,y)
                
 
-     yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
-     xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+     yProj_extent=np.append(yProj,[bounds['maxy']+200000,bounds['miny']-200000])
+     xProj_extent=np.append(xProj,[bounds['maxx']+200000,bounds['minx']-200000])
 
      Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
      Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
