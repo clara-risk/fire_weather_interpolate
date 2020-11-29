@@ -36,9 +36,9 @@ import feather
 import get_data as GD
 import idw as idw
 import idew as idew
+import gpr as gpr
 import tps as tps
 import rf as rf
-import gpr as gpr
 
 
 #functions 
@@ -581,7 +581,7 @@ def end_date_add_hourly(file_path_hourly, year):
 
                 Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+2] #Go two days ahead for the third day 
 
-                d0 = date(int(year), 10, 1) #Oct 1, Year 
+                d0 = date(int(year), 9, 1) #Oct 1, Year 
                 d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
                 delta = d1 - d0
                 day = int(delta.days) #Convert to integer 
@@ -592,6 +592,115 @@ def end_date_add_hourly(file_path_hourly, year):
                 pass #Do not include the station 
 
     if len(date_dict.keys()) == 0:
+        return None, None #Save overhead associated with creating an empty dictionary 
+    else:
+        return date_dict, latlon_dictionary
+
+def end_date_add_hourly_csv(file_path_hourly, year):
+    '''Returns a dictionary of where each station meets the end criteria, 
+    plus a reference dictionary for the lat lon of the stations
+    Parameters
+        file_path (str): path to the feather files containing the hourly data from Environment & 
+        Climate Change Canada 
+        year (str): year we want to find the fire season end date for 
+    Returns 
+        date_dict (dict): dictionary containing the end date for each station (days since Oct 1)
+        latlon_dictionary (dict): the latitude and longitude of those stations 
+    '''
+    maxTempList_dict = {} #Locations where we will store the data
+    maxTemp_dictionary = {}
+    date_dict = {}
+    latlon_dictionary = {}
+
+    for station_name in os.listdir(file_path_hourly): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
+        #print(station_name) 
+        Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
+        temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
+        for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder
+            if csv[-12:-8] == year and (csv[-15:-13] == '09' or csv[-15:-13] == '10'or csv[-15:-13] == '11'\
+               or csv[-15:-13] == '12'): #Only open if it is the csv for the year of interest (this is contained in the csv name)
+                file = file_path_hourly+station_name+'/'+csv  #Open the file - for CAN data we use latin 1 due to à, é etc.
+                df = pd.read_csv(file) 
+                unique_dates = set([x[0:10] for x in df['Date/Time'].unique()]) 
+                count = 0
+                for dat in sorted(unique_dates): #We need dictionary insertion order maintained
+                    if dat in Temp_subdict.keys():
+                        #print('Date is already in the sub-dictionary')
+                        break
+                    temp_24 = {} 
+                
+                    for index, row in df.iterrows():
+                        if count == 0:
+                            
+                            try: 
+                            
+                                latlon_dictionary[station_name] = (row['Latitude (y)'], row['ï»¿"Longitude (x)"']) #unicode characters at beginning, not sure why 
+                                
+                            except KeyError: 
+                                latlon_dictionary[station_name] = (row['Latitude (y)'], row[0]) #The start unicode problem changes based on the computer... lon should always be in place 0 anyways
+
+                        if str(row['Year']) == year:
+
+                            if str(row['Month']) == '9' or str(row['Month']) == '10' or str(row['Month']) == '11' or \
+                               str(row['Month']) == '12':
+                                #if str(row['Time']) == '13:00':
+                                if str(row['Date/Time'])[0:10] == dat:
+                                    if pd.notnull(row['Temp (°C)']):
+                                        #print(float(row['Temp (Â°C)']))
+                                        temp_24[str(row['Date/Time'])] = float(row['Temp (°C)'])
+                                        #temp_list.append(float(row['Temp (Â°C)']))
+                                    else:
+                                        pass
+                        else:
+                             break
+                            
+                            
+                    if len(temp_24.values()) == 24: #Make sure unbroken record
+                    
+                                
+                        Temp_subdict[dat] = max(temp_24.values()) #Send max temp to dictionary 
+                        temp_list.append(max(temp_24.values())) #Get the 13h00 temperature, send to temp list
+                    else:
+                        Temp_subdict[dat] = 'NA'
+                        temp_list.append('NA')
+                    count +=1 
+
+        maxTemp_dictionary[station_name] = Temp_subdict
+        maxTempList_dict[station_name] = temp_list #Store the information for each station in the permanent dictionary 
+
+        vals = maxTempList_dict[station_name]
+
+        if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
+
+            varray = np.array(vals)
+            where_g12 = np.array(varray < 5) #Where is the temperature < 5? 
+
+
+            groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+
+            length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
+
+            if len(length) > 0: 
+                index = groups.index(length[0]) #Get the index of the group
+                group_len = [len(x) for x in groups] #Get length of each group
+                length_sofar = 0 #We need to get the number of days up to where the criteria is met 
+                for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+                    length_sofar += group_len[i]
+
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+2] #Go two days ahead for the third day 
+
+                d0 = date(int(year), 9, 1) #Oct 1, Year 
+                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
+                delta = d1 - d0
+                day = int(delta.days) #Convert to integer 
+                date_dict[station_name] = day #Store the integer in the dictionary
+
+            else:
+                print('Station %s did not end by December 31.'%station_name[:-4]) 
+                pass #Do not include the station 
+
+    if len(date_dict.keys()) == 0:
+        print('No stations') 
         return None, None #Save overhead associated with creating an empty dictionary 
     else:
         return date_dict, latlon_dictionary
@@ -816,9 +925,11 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
             start_surface,maxmin = rf.random_forest_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list)
             end_surface,maxmin = rf.random_forest_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list)
 
+
         elif method == 'GPR':
             start_surface,maxmin = gpr.GPR_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list,0.3)
-            end_surface,maxmin = gpr.GPR_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list,0.3)            
+            end_surface,maxmin = gpr.GPR_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list,0.3)    
+
 
         else:
             print('Either that method does not exist or there is no support for it. You can use IDW2-4, TPSS, or RF') 
