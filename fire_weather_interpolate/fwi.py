@@ -36,7 +36,6 @@ import feather
 import get_data as GD
 import idw as idw
 import idew as idew
-import ok as ok 
 import tps as tps
 import rf as rf
 import gpr as gpr
