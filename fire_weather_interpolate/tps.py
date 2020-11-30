@@ -57,17 +57,26 @@ def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,phi):
     station_name_list = []
     projected_lat_lon = {}
 
+    na_map = gpd.read_file(shapefile)
+    bounds = na_map.bounds
+    xmax = bounds['maxx']+200000 
+    xmin= bounds['minx']-200000 
+    ymax = bounds['maxy']+200000 
+    ymin = bounds['miny']-200000
+
     for station_name in Cvar_dict.keys():
         if station_name in latlon_dict.keys():
-            station_name_list.append(station_name)
 
             loc = latlon_dict[station_name]
             latitude = loc[0]
             longitude = loc[1]
             Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
-            Plat = float(Plat)
-            Plon = float(Plon)
-            projected_lat_lon[station_name] = [Plat,Plon]
+            proj_coord = pyproj.Proj('esri:102001')(longitude,latitude)
+            if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                station_name_list.append(station_name)
+                Plat = float(Plat)
+                Plon = float(Plon)
+                projected_lat_lon[station_name] = [Plat,Plon]
 
     lat = []
     lon = []
@@ -77,22 +86,15 @@ def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,phi):
             loc = latlon_dict[station_name]
             latitude = loc[0]
             longitude = loc[1]
-            cvar_val = Cvar_dict[station_name]
-            lat.append(float(latitude))
-            lon.append(float(longitude))
-            Cvar.append(cvar_val)
+            proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
+            if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                 cvar_val = Cvar_dict[station_name]
+                 lat.append(float(latitude))
+                 lon.append(float(longitude))
+                 Cvar.append(cvar_val)
     y = np.array(lat)
     x = np.array(lon)
     z = np.array(Cvar)
-
-    Cvar = []
-    for station_name in Cvar_dict.keys(): #DONT use list of stations, because if there's a no data we delete that in the climate dictionary step 
-
-        cvar_val = Cvar_dict[station_name]
-
-        Cvar.append(cvar_val)
-
-    z2 = np.array(Cvar)
 
 
     for station_name in station_name_list:
@@ -100,27 +102,20 @@ def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,phi):
         na_map = gpd.read_file(shapefile)
         bounds = na_map.bounds
 
-        pixelHeight = 10000 
+        pixelHeight = 10000
         pixelWidth = 10000
-
 
         coord_pair = projected_lat_lon[station_name]
 
-        x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
-        y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+        x_orig = int((coord_pair[0] - float(xmin))/pixelHeight) #lon 
+        y_orig = int((coord_pair[1] - float(ymin))/pixelWidth) #lat
         x_origin_list.append(x_orig)
         y_origin_list.append(y_orig)
         z_origin_list.append(Cvar_dict[station_name])
 
-
-    na_map = gpd.read_file(shapefile)
-    bounds = na_map.bounds
-    xmax = bounds['maxx']
-    xmin= bounds['minx']
-    ymax = bounds['maxy']
-    ymin = bounds['miny']
-    pixelHeight = 10000 
+    pixelHeight = 10000
     pixelWidth = 10000
+
             
     num_col = int((xmax - xmin) / pixelHeight)
     num_row = int((ymax - ymin) / pixelWidth)
@@ -129,28 +124,27 @@ def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,phi):
     source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
     xProj, yProj = pyproj.Proj('esri:102001')(x,y)
 
-    yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
-    xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+    yProj_extent=np.append(yProj,[bounds['maxy']+200000,bounds['miny']-200000])
+    xProj_extent=np.append(xProj,[bounds['maxx']+200000,bounds['minx']-200000])
 
     maxmin = [np.min(yProj_extent),np.max(yProj_extent),np.max(xProj_extent),np.min(xProj_extent)]
 
-    Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
-    Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+    Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row+1)
+    Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col+1)
 
     Xi,Yi = np.meshgrid(Xi,Yi)
 
-    empty_grid = np.empty((num_row,num_col,))*np.nan
+    empty_grid = np.empty((num_row+1,num_col+1,))*np.nan
 
     for x,y,z in zip(x_origin_list,y_origin_list,z_origin_list):
         empty_grid[y][x] = z
-
 
 
     vals = ~np.isnan(empty_grid)
 
     func = interpolate.Rbf(Xi[vals],Yi[vals],empty_grid[vals], function='thin_plate',smooth=phi)
     thin_plate = func(Xi,Yi)
-    spline = thin_plate.reshape(num_row,num_col)
+    spline = thin_plate.reshape(num_row+1,num_col+1)
 
     if show: 
 
