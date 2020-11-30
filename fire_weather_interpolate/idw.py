@@ -67,8 +67,6 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d):
                  lat.append(float(latitude))
                  lon.append(float(longitude))
                  Cvar.append(cvar_val)
-            else:
-                 print(station_name) 
      y = np.array(lat)
      x = np.array(lon)
      z = np.array(Cvar) 
