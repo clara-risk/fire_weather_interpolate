@@ -663,12 +663,13 @@ def convert_to_feather(file_path,out_path):
         feather.write_dataframe(df,out_path+station_name[:-4]+'.feather')
 
 
-def get_intersect_boolean_array(ecozone_shapefile,shapefile,show):
+def get_intersect_boolean_array(ecozone_shapefile,shapefile,show,expand_area):
     '''Obtain a boolean array of where the ecozone is 0 = pixel NOT in ecozone, otherwise 1
     Parameters
         ecozone_shapefile (str): path to ecozone shapefile, inc name
         shapefile (str): path to shapefile
         show (bool): show a map if you want to check it has rasterized the shapefile correctly
+        expand_area (bool): expand study area by 200km 
     Returns
         bool_initiate (np_array): array 1/0 if pixel was inside ecozone
     '''
@@ -677,19 +678,26 @@ def get_intersect_boolean_array(ecozone_shapefile,shapefile,show):
 
     #First, study area 
 
-    bounds = study_map.bounds #Get the bounding box of the shapefile 
-    xmax = bounds['maxx']
-    xmin= bounds['minx']
-    ymax = bounds['maxy']
-    ymin = bounds['miny']
+    bounds = study_map.bounds #Get the bounding box of the shapefile
+    if expand_area:
+        xmax = bounds['maxx']+200000 
+        xmin= bounds['minx']-200000 
+        ymax = bounds['maxy']+200000 
+        ymin = bounds['miny']-200000
+    else:
+        xmax = bounds['maxx']
+        xmin= bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']    
+
     pixelHeight = 10000 #We want a 10 by 10 pixel, or as close as we can get 
     pixelWidth = 10000
             
     num_col = int((xmax - xmin) / pixelHeight) #Calculate the number of rows cols to fill the bounding box at that resolution 
     num_row = int((ymax - ymin) / pixelWidth)
 
-    Yi = np.linspace(float(bounds['miny']),float(bounds['maxy']),num_row+1) #Get the value for lat lon in each cell we just made 
-    Xi = np.linspace(float(bounds['minx']),float(bounds['maxx']),num_col+1) #+1 otherwise we get banding on the image
+    Yi = np.linspace(float(ymin),float(ymax),num_row+1) #Get the value for lat lon in each cell we just made 
+    Xi = np.linspace(float(xmin),float(xmax),num_col+1) #+1 otherwise we get banding on the image
 
     Xi,Yi = np.meshgrid(Xi,Yi)
     concat = np.array((Xi.flatten(), Yi.flatten())).T #Because we are not using the lookup file, send in X,Y order 
@@ -705,7 +713,7 @@ def get_intersect_boolean_array(ecozone_shapefile,shapefile,show):
             pointList.append(location)
     
     #Make a grid of zeros in the right shape
-    bool_initiate = np.zeros((num_row,num_col))
+    bool_initiate = np.zeros((num_row+1,num_col+1)) #?? 
 
     #Fill in the ones in the correct places
     for loc in pointList: 
