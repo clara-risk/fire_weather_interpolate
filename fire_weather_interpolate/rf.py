@@ -72,8 +72,7 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
 
     #We need to project to a projected system before making distance matrix
     source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') 
-    xProj, yProj = pyproj.Proj('esri:102001')(x,y)
-    print(xProj) 
+    xProj, yProj = pyproj.Proj('esri:102001')(x,y) 
     
     df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z})
 
