@@ -27,30 +27,43 @@ import make_blocks as mbk
 import Eval as Eval
 import statistics 
 
-def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,file_path_elev,idx_list): 
+def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,file_path_elev,idx_list,expand_area): 
     lat = []
     lon = []
     Cvar = []
+
+    na_map = gpd.read_file(shapefile)
+    bounds = na_map.bounds
+    if expand_area: 
+        xmax = bounds['maxx']+200000 
+        xmin= bounds['minx']-200000 
+        ymax = bounds['maxy']+200000 
+        ymin = bounds['miny']-200000
+    else:
+        xmax = bounds['maxx']
+        xmin= bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']
+        
     for station_name in Cvar_dict.keys():
         if station_name in latlon_dict.keys():
+            print(station_name)
             
             loc = latlon_dict[station_name]
             latitude = loc[0]
             longitude = loc[1]
-            cvar_val = Cvar_dict[station_name]
-            lat.append(float(latitude))
-            lon.append(float(longitude))
-            Cvar.append(cvar_val)
+            proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
+            if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                 cvar_val = Cvar_dict[station_name]
+                 lat.append(float(latitude))
+                 lon.append(float(longitude))
+                 Cvar.append(cvar_val)
+                 
     y = np.array(lat)
     x = np.array(lon)
-    z = np.array(Cvar) 
+    z = np.array(Cvar)
+    print(y) 
 
-    na_map = gpd.read_file(shapefile)
-    bounds = na_map.bounds
-    xmax = bounds['maxx']
-    xmin= bounds['minx']
-    ymax = bounds['maxy']
-    ymin = bounds['miny']
     pixelHeight = 10000 
     pixelWidth = 10000
             
@@ -61,11 +74,18 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
     #We need to project to a projected system before making distance matrix
     source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') 
     xProj, yProj = pyproj.Proj('esri:102001')(x,y)
+    print(xProj) 
     
     df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z})
 
-    yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
-    xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+    if expand_area: 
+
+        yProj_extent=np.append(yProj,[bounds['maxy']+200000,bounds['miny']-200000])
+        xProj_extent=np.append(xProj,[bounds['maxx']+200000,bounds['minx']-200000])
+
+    else:
+        yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+        xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])   
 
     Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
     Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
@@ -97,23 +117,24 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
 
     elev_array = np.array(elev_grd) #make an elevation array
 
-    
+    print(elev_array)
 
     elev_dict= GD.finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list) #Get the elevations for the stations 
-
+    print(elev_dict.values()) 
     xProj_input=[]
     yProj_input=[]
     e_input = []
 
 
     for keys in zip(xProj,yProj): #Repeat process for just the stations not the whole grid 
-        x= keys[0]
+        x = keys[0]
         y = keys[1]
         xProj_input.append(x)
         yProj_input.append(y)
         e_input.append(elev_dict[keys])
 
     source_elev = np.array(e_input)
+    print(source_elev)
     
     Xi1_grd = np.array(Xi1_grd)
     Yi1_grd = np.array(Yi1_grd)
