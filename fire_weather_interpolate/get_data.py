@@ -713,7 +713,7 @@ def get_intersect_boolean_array(ecozone_shapefile,shapefile,show,expand_area):
             pointList.append(location)
     
     #Make a grid of zeros in the right shape
-    bool_initiate = np.zeros((num_row+1,num_col+1)) #?? 
+    bool_initiate = np.zeros((num_row+1,num_col+1)) #Make consistent
 
     #Fill in the ones in the correct places
     for loc in pointList: 
