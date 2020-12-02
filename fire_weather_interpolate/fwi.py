@@ -942,7 +942,7 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
         for zone in ecozones:
             print(zone) 
             ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp' #For this to work, the shapefiles MUST be in this location
-            boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False)
+            boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False,expand_area)
             dur_matrix = GD.calc_season_duration(start_surface,end_surface,year)
             AvVal = GD.get_average_in_ecozone(boolean_map,dur_matrix)
             yearly_dict[zone] = AvVal
