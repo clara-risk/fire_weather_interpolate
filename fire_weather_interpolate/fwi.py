@@ -866,7 +866,8 @@ def calc_season_change(earlier_array,later_array):
     change_array = earlier_array-later_array
     return change_array
 
-def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx_list,shapefile,list_of_ecozone_names,year1,year2,method):
+def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx_list,shapefile,list_of_ecozone_names,year1,\
+                             year2,method,expand_area):
     '''Calculation the yearly duration between years 1-2 and output to dictionary for graphing
     Parameters
         file_path_daily (str): path to the daily files 
@@ -880,6 +881,7 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
         year1 (int,str): start year
         year2 (int,str): end year
         method (str): spatial model, one of: IDW2,IDW3,IDW4,TPSS,RF
+        expand_area (bool): whether or not to expand area by 200km
     Returns
         duration_dict (dict): dictionary keyed by year then ecozone that contains a list of durations from year1-year2 (year2 inclusive)
     '''
@@ -900,30 +902,30 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
 
         if method == 'IDW2': 
 
-            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 2)
-            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 2)
+            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 2, expand_area)
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 2, expand_area)
 
         elif method == 'IDW3':
             
-            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 3)
-            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 3)
+            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 3, expand_area)
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 3, expand_area)
 
         elif method == 'IDW4':
 
-            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 3)
-            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 3)
+            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 4, expand_area)
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 4, expand_area)
 
-        elif method == 'TPSS':
+        elif method == 'TPSS': 
             num_stationsS = int(len(days_dict.keys()))
             phi_inputS = int(num_stations)-(math.sqrt(2*num_stations))
             num_stationsE = int(len(end_dict.keys()))
             phi_inputE = int(num_stations)-(math.sqrt(2*num_stations))
-            start_surface,maxmin = tps.TPS(latlon_station,days_dict,str(year),'Start',shapefile,False,phi_inputS)
-            end_surface,maxmin = tps.TPS(latlon_station2,end_dict,str(year),'End',shapefile,False,phi_inputE)
+            start_surface,maxmin = tps.TPS(latlon_station,days_dict,str(year),'Start',shapefile,False,phi_inputS, expand_area)
+            end_surface,maxmin = tps.TPS(latlon_station2,end_dict,str(year),'End',shapefile,False,phi_inputE, expand_area)
 
         elif method == 'RF':
-            start_surface,maxmin = rf.random_forest_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list)
-            end_surface,maxmin = rf.random_forest_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list)
+            start_surface,maxmin = rf.random_forest_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list, expand_area)
+            end_surface,maxmin = rf.random_forest_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list, expand_area)
 
 
         elif method == 'GPR':

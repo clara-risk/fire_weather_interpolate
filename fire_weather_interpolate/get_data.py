@@ -719,8 +719,8 @@ def get_intersect_boolean_array(ecozone_shapefile,shapefile,show,expand_area):
     for loc in pointList: 
         pair = list(loc.coords)
         coord_pair = (pair[0][0],pair[0][1],)#lat,lon
-        x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
-        y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+        x_orig = int((coord_pair[0] - float(xmin))/pixelHeight) #lon 
+        y_orig = int((coord_pair[1] - float(ymin))/pixelWidth) #lat
         bool_initiate[y_orig][x_orig] = 1
 
     #Plot to make sure everything is ok  if new study area and you want to be sure
