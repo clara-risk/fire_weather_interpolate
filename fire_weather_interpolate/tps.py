@@ -27,7 +27,7 @@ from sklearn.model_selection import ShuffleSplit
 from sklearn import metrics
 import make_blocks as mbk
 import Eval as Eval
-import statistics 
+import statistics, math  
 
 import cluster_3d as c3d
 
@@ -159,7 +159,7 @@ def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,phi,expand_area
 
     if calc_phi:
         num_stations = int(len(station_name_list)) 
-        phi = int(num_stations)-(math.sqrt(2*num_stations_d))
+        phi = int(num_stations)-(math.sqrt(2*num_stations))
 
     func = interpolate.Rbf(Xi[vals],Yi[vals],empty_grid[vals], function='thin_plate',smooth=phi)
     thin_plate = func(Xi,Yi)
