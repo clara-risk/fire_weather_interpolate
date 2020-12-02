@@ -917,9 +917,10 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
 
         elif method == 'TPSS': 
             num_stationsS = int(len(days_dict.keys()))
-            phi_inputS = int(num_stations)-(math.sqrt(2*num_stations))
+            phi_inputS = None
             num_stationsE = int(len(end_dict.keys()))
-            phi_inputE = int(num_stations)-(math.sqrt(2*num_stations))
+            #phi_inputE = int(num_stationsE)-(math.sqrt(2*num_stationsS))
+            phi_inputE = None
             start_surface,maxmin = tps.TPS(latlon_station,days_dict,str(year),'Start',shapefile,False,phi_inputS, expand_area)
             end_surface,maxmin = tps.TPS(latlon_station2,end_dict,str(year),'End',shapefile,False,phi_inputE, expand_area)
 
