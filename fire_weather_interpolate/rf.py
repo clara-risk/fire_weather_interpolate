@@ -47,7 +47,6 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
         
     for station_name in Cvar_dict.keys():
         if station_name in latlon_dict.keys():
-            print(station_name)
             
             loc = latlon_dict[station_name]
             latitude = loc[0]
@@ -62,7 +61,7 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
     y = np.array(lat)
     x = np.array(lon)
     z = np.array(Cvar)
-    print(y) 
+
 
     pixelHeight = 10000 
     pixelWidth = 10000
@@ -117,10 +116,10 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
 
     elev_array = np.array(elev_grd) #make an elevation array
 
-    print(elev_array)
+
 
     elev_dict= GD.finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list) #Get the elevations for the stations 
-    print(elev_dict.values()) 
+
     xProj_input=[]
     yProj_input=[]
     e_input = []
@@ -134,7 +133,6 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
         e_input.append(elev_dict[keys])
 
     source_elev = np.array(e_input)
-    print(source_elev)
     
     Xi1_grd = np.array(Xi1_grd)
     Yi1_grd = np.array(Yi1_grd)
