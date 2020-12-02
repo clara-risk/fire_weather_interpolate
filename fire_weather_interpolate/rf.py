@@ -87,8 +87,8 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
         yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
         xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])   
 
-    Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
-    Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+    Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row+1)
+    Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col+1)
 
     Xi,Yi = np.meshgrid(Xi,Yi)
     Xi,Yi = Xi.flatten(), Yi.flatten()
@@ -154,7 +154,7 @@ def random_forest_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefi
     
     Zi = reg.predict(X_test)
     
-    rf_grid = Zi.reshape(num_row,num_col)
+    rf_grid = Zi.reshape(num_row+1,num_col+1)
 
     if show:
         fig, ax = plt.subplots(figsize= (15,15))
