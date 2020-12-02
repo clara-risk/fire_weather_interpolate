@@ -921,8 +921,8 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
             num_stationsE = int(len(end_dict.keys()))
             #phi_inputE = int(num_stationsE)-(math.sqrt(2*num_stationsS))
             phi_inputE = None
-            start_surface,maxmin = tps.TPS(latlon_station,days_dict,str(year),'Start',shapefile,False,phi_inputS, expand_area)
-            end_surface,maxmin = tps.TPS(latlon_station2,end_dict,str(year),'End',shapefile,False,phi_inputE, expand_area)
+            start_surface,maxmin = tps.TPS(latlon_station,days_dict,str(year),'Start',shapefile,False,phi_inputS, expand_area,True)
+            end_surface,maxmin = tps.TPS(latlon_station2,end_dict,str(year),'End',shapefile,False,phi_inputE, expand_area,True)
 
         elif method == 'RF':
             start_surface,maxmin = rf.random_forest_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list, expand_area)
