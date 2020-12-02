@@ -26,9 +26,10 @@ warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the
 
 import cluster_3d as c3d 
 import make_blocks as mbk
-import Eval as Eval 
+import Eval as Eval
+import get_data as GD
 
-def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d): 
+def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d,expand_area): 
      '''Inverse distance weighting interpolation
      Parameters
          latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
@@ -37,11 +38,13 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d):
          input_date (str): the date you want to interpolate for 
          shapefile (str): path to the study area shapefile 
          show (bool): whether you want to plot a map 
-         d (int): the weighting function for IDW interpolation 
+         d (int): the weighting function for IDW interpolation
+         expand_area (bool): function will expand the study area so that more stations are taken into account (200 km)
      Returns
          idw_grid (np_array): the array of values for the interpolated surface
          maxmin: the bounds of the array surface, for use in other functions 
      '''
+     plotting_dictionary ={} #if expanding the study area, we need to return a dictionary of the stations used
      lat = []
      lon = []
      Cvar = []
@@ -49,10 +52,16 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d):
      source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83')
      na_map = gpd.read_file(shapefile)
      bounds = na_map.bounds
-     xmax = bounds['maxx']+200000 
-     xmin= bounds['minx']-200000 
-     ymax = bounds['maxy']+200000 
-     ymin = bounds['miny']-200000
+     if expand_area: 
+        xmax = bounds['maxx']+200000 
+        xmin= bounds['minx']-200000 
+        ymax = bounds['maxy']+200000 
+        ymin = bounds['miny']-200000
+     else:
+        xmax = bounds['maxx']
+        xmin= bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']      
      
      for station_name in Cvar_dict.keys():
 
@@ -67,6 +76,7 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d):
                  lat.append(float(latitude))
                  lon.append(float(longitude))
                  Cvar.append(cvar_val)
+                 plotting_dictionary[station_name] = cvar_val
      y = np.array(lat)
      x = np.array(lon)
      z = np.array(Cvar) 
@@ -80,13 +90,17 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d):
 
      #We need to project to a projected system before making distance matrix
      xProj, yProj = pyproj.Proj('esri:102001')(x,y)
-               
 
-     yProj_extent=np.append(yProj,[bounds['maxy']+200000,bounds['miny']-200000])
-     xProj_extent=np.append(xProj,[bounds['maxx']+200000,bounds['minx']-200000])
+     if expand_area: 
 
-     Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
-     Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+        yProj_extent=np.append(yProj,[bounds['maxy']+200000,bounds['miny']-200000])
+        xProj_extent=np.append(xProj,[bounds['maxx']+200000,bounds['minx']-200000])
+     else:
+        yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+        xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])    
+
+     Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row+1)
+     Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col+1)
 
      Xi,Yi = np.meshgrid(Xi,Yi)
      Xi,Yi = Xi.flatten(), Yi.flatten()
@@ -104,7 +118,7 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d):
      weights /= weights.sum(axis = 0) 
 
      Zi = np.dot(weights.T, z)
-     idw_grid = Zi.reshape(num_row,num_col)
+     idw_grid = Zi.reshape(num_row+1,num_col+1) # +1 because of lines issue
 
      if show:
         fig, ax = plt.subplots(figsize= (15,15))
@@ -130,7 +144,7 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d):
         plt.show()
 
 
-     return idw_grid, maxmin
+     return idw_grid, maxmin, plotting_dictionary
 
 def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot):
      '''Leave-one-out cross-validation procedure for IDW 
@@ -254,7 +268,8 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot):
          return absolute_error_dictionary
      
 
-def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list,d,cluster_num1,cluster_num2,cluster_num3):
+def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list,d,\
+                          cluster_num1,cluster_num2,cluster_num3,expand_area,boreal_shapefile):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
      in order to select the block/cluster size
      Parameters
@@ -268,7 +283,9 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
          file_path_elev (str): path to the elevation lookup file
          idx_list (int): position of the elevation column in the lookup file
          cluster_num: three cluster numbers to test, for blocking this must be one of three:25, 16, 9 
-         For blocking you can enter 'None' and it will automatically test 25, 16, 9 
+         For blocking you can enter 'None' and it will automatically test 25, 16, 9
+         expand_area (bool): expand area by 200km
+         boreal_shapefile (str): path to shapefile with the boreal zone 
      Returns 
          lowest_stdev,ave_MAE (int,float): block/cluster number w/ lowest stdev, associated
          ave_MAE of all the runs 
@@ -286,11 +303,17 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           dictionaryGroups9 = mbk.sorting_stations(folds9,shapefile,loc_dict,Cvar_dict)
 
      elif group_type == 'clusters':
-
-          dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,file_path_elev,idx_list,False,False,False)
-          dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,file_path_elev,idx_list,False,False,False)
-          dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,file_path_elev,idx_list,False,False,False)
-
+          #if we expand the area, re-make the dictionary with only the stations in the boreal region (Project 2)
+          if expand_area: 
+               inBoreal = GD.is_station_in_boreal(loc_dict,Cvar_dict,boreal_shapefile)
+               Cvar_dict = {k: v for k, v in Cvar_dict.items() if k in inBoreal} #Overwrite cvar_dict
+               dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,file_path_elev,idx_list,False,False,False)
+               dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,file_path_elev,idx_list,False,False,False)
+               dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,file_path_elev,idx_list,False,False,False)
+          else: 
+               dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,file_path_elev,idx_list,False,False,False)
+               dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,file_path_elev,idx_list,False,False,False)
+               dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,file_path_elev,idx_list,False,False,False)
      else:
           print('Thats not a valid group type')
           sys.exit() 
@@ -317,13 +340,16 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           #Just so there is a record of that
           
 
-          block25 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,cluster_num1,fold_num1,True,False,dictionaryGroups25)
+          block25 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,cluster_num1,fold_num1,\
+                                       True,False,dictionaryGroups25,expand_area)
           block25_error.append(block25) 
 
-          block16 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,cluster_num2,fold_num2,True,False,dictionaryGroups16)
+          block16 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,cluster_num2,fold_num2,\
+                                       True,False,dictionaryGroups16,expand_area)
           block16_error.append(block16)
           
-          block9 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,cluster_num3,fold_num3,True,False,dictionaryGroups9)
+          block9 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,cluster_num3,fold_num3,\
+                                      True,False,dictionaryGroups9,expand_area)
           block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
@@ -334,16 +360,18 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      list_block_name = [cluster_num1,cluster_num2,cluster_num3]
      list_error = [block25_error,block16_error,block9_error]
      index_min = list_stdev.index(min(list_stdev))
+     stdev_number = min(list_stdev)
      lowest_stdev = list_block_name[index_min]
 
      ave_MAE = sum(list_error[index_min])/len(list_error[index_min]) 
 
      print(lowest_stdev)
      #print(ave_MAE) 
-     return lowest_stdev,ave_MAE
+     return lowest_stdev,ave_MAE,stdev_number
                
           
-def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,nfolds,replacement,show,dictionary_Groups):
+def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,nfolds,replacement,\
+                       show,dictionary_Groups,expand_area):
      '''Spatially blocked bagging cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
@@ -352,14 +380,33 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
          Cvar_dict (dict): dictionary of weather variable values for each station 
          shapefile (str): path to the study area shapefile 
          d (int): the weighting function for IDW interpolation
-         nfolds (int): # number of folds. For 10-fold we use 10, etc. 
+         nfolds (int): # number of folds. For 10-fold we use 10, etc.
+         replacement (bool): whether or not to use replacement between folds, should usually be true
+         show (bool): show the clustering procedure or not
+         dictionary_Groups (dict): dictionary of what groups (clusters) the stations belong to
+         expand_area (bool): expand the study area by 200km 
      Returns 
          error_dictionary (dict): a dictionary of the absolute error at each fold when it
          was left out 
      '''
      station_list_used = [] #If not using replacement, keep a record of what we have done 
      count = 1
-     error_dictionary = {} 
+     error_dictionary = {}
+
+     na_map = gpd.read_file(shapefile)
+     bounds = na_map.bounds
+     if expand_area: 
+        xmax = bounds['maxx']+200000 
+        xmin= bounds['minx']-200000 
+        ymax = bounds['maxy']+200000 
+        ymin = bounds['miny']-200000
+     else:
+        xmax = bounds['maxx']
+        xmin= bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']      
+
+     
      while count <= nfolds: 
           x_origin_list = []
           y_origin_list = [] 
@@ -367,8 +414,9 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
           absolute_error_dictionary = {} 
           projected_lat_lon = {}
 
-          station_list = Eval.select_random_station(dictionary_Groups,blocknum,replacement,station_list_used).values()
+          #if we expand the area, re-select station only if it is in the boreal region 
 
+          station_list = Eval.select_random_station(dictionary_Groups,blocknum,replacement,station_list_used).values()
 
           if replacement == False: 
                station_list_used.append(list(station_list))
@@ -383,7 +431,9 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
                   Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
                   Plat = float(Plat)
                   Plon = float(Plon)
-                  projected_lat_lon[station_name] = [Plat,Plon]
+                  proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
+                  if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                       projected_lat_lon[station_name] = [Plat,Plon]
 
 
           lat = []
@@ -396,9 +446,11 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
                          latitude = loc[0]
                          longitude = loc[1]
                          cvar_val = Cvar_dict[station_name]
-                         lat.append(float(latitude))
-                         lon.append(float(longitude))
-                         Cvar.append(cvar_val)
+                         proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
+                         if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                              lat.append(float(latitude))
+                              lon.append(float(longitude))
+                              Cvar.append(cvar_val)
                     else:
                          pass #Skip the station 
                      
@@ -406,12 +458,6 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
           x = np.array(lon)
           z = np.array(Cvar) 
              
-          na_map = gpd.read_file(shapefile)
-          bounds = na_map.bounds
-          xmax = bounds['maxx']
-          xmin= bounds['minx']
-          ymax = bounds['maxy']
-          ymin = bounds['miny']
           pixelHeight = 10000 
           pixelWidth = 10000
                      
@@ -426,8 +472,8 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
           yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
           xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
 
-          Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
-          Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+          Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row+1)
+          Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col+1)
 
           Xi,Yi = np.meshgrid(Xi,Yi)
           Xi,Yi = Xi.flatten(), Yi.flatten()
@@ -445,13 +491,12 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
           weights /= weights.sum(axis = 0) 
 
           Zi = np.dot(weights.T, z)
-          idw_grid = Zi.reshape(num_row,num_col)
+          idw_grid = Zi.reshape(num_row+1,num_col+1)
           if show and (count == 1):
                fig, ax = plt.subplots(figsize= (15,15))
                crs = {'init': 'esri:102001'}
 
                na_map = gpd.read_file(shapefile)
-
 
                im = plt.imshow(folds,extent=(xProj_extent.min()-1,xProj_extent.max()+1,yProj_extent.max()-1,yProj_extent.min()+1),cmap='tab20b') 
                na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
@@ -474,8 +519,8 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
 
                coord_pair = projected_lat_lon[statLoc]
 
-               x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
-               y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+               x_orig = int((coord_pair[0] - float(xmin))/pixelHeight) #lon 
+               y_orig = int((coord_pair[1] - float(ymin))/pixelWidth) #lat
                x_origin_list.append(x_orig)
                y_origin_list.append(y_orig)
 
