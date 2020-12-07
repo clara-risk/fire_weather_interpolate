@@ -173,14 +173,17 @@ def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,phi,expand_area
         na_map = gpd.read_file(shapefile)
         
       
-        plt.imshow(spline,extent=(xProj_extent.min()-1,xProj_extent.max()+1,yProj_extent.max()-1,yProj_extent.min()+1)) 
+        plt.imshow(spline,extent=(xProj_extent.min()-1,xProj_extent.max()+1,yProj_extent.max()-1,yProj_extent.min()+1)\
+                   ,vmin=0,vmax=max(z_origin_list))
         na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
             
-        plt.scatter(xProj,yProj,c=z_origin_list,edgecolors='k',linewidth=1)
+        #plt.scatter(xProj,yProj,c=z_origin_list,edgecolors='k',linewidth=1)
+        scatter = ax.scatter(xProj,yProj,c=z_origin_list,edgecolors='k',linewidth=1,s = 14)
 
         plt.gca().invert_yaxis()
-        cbar = plt.colorbar()
-        cbar.set_label(var_name) 
+        #cbar = plt.colorbar()
+        #cbar.set_label(var_name)
+        colorbar = fig.colorbar(scatter, ax=ax)
         
         title = 'Thin Plate Spline Interpolation for %s on %s'%(var_name,input_date) 
         fig.suptitle(title, fontsize=14)
