@@ -143,8 +143,8 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d,expand_area):
 
         plt.show()
 
-
-     return idw_grid, maxmin, plotting_dictionary
+     #Can return plotting dictionary if need be, add 3rd to return statement
+     return idw_grid, maxmin
 
 def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot):
      '''Leave-one-out cross-validation procedure for IDW 
