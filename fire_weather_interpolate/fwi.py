@@ -133,7 +133,7 @@ def start_date_calendar(file_path_daily,year):
                 date_dict[station_name] = day #Store the integer in the dictionary
 
         else:
-            print('Station %s did not start up by August 1.'%station_name) 
+            print('Station %s did not start up by September 1 or had NA values upstream of the start date.'%station_name) 
             pass #Do not include the station - no start up by August 1 is pretty unrealistic I think... (?) 
 
 
@@ -230,8 +230,8 @@ def start_date_calendar_csv(file_path_daily,year):
 
 
                         except: #In the case of a nodata value
-                            Temp_subdict[information_stripped[idx_list2[0]]] = 'NA'
-                            temp_list.append('NA')
+                            Temp_subdict[information_stripped[idx_list2[0]]] = -9999
+                            temp_list.append(-9999)
                             
 
                     else: #Proceed down the rows 
@@ -247,8 +247,8 @@ def start_date_calendar_csv(file_path_daily,year):
 
 
                         except:
-                            Temp_subdict[information_stripped[idx_list2[0]]] = 'NA'
-                            temp_list.append('NA')
+                            Temp_subdict[information_stripped[idx_list2[0]]] = -9999
+                            temp_list.append(-9999)
 
                 count+=1   
 
@@ -279,7 +279,7 @@ def start_date_calendar_csv(file_path_daily,year):
             #We need to filter out the stations with No Data before that point
             #So slice to the index
             vals_behind = varray[0:length_sofar]
-            if 'NA' not in vals_behind: 
+            if -9999 not in vals_behind: 
 
                 Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day 
 
@@ -290,7 +290,7 @@ def start_date_calendar_csv(file_path_daily,year):
                 date_dict[station_name[:-4]] = day #Store the integer in the dictionary
             
         else:
-            print('Station %s did not start up by September 1.'%station_name[:-4]) 
+            #print('Station %s did not start up by September 1 or had NA values upstream of the start date.'%station_name[:-4]) 
             pass #Do not include the station 
 
 
@@ -492,7 +492,7 @@ def end_date_calendar(file_path_daily,year):
         #We need to filter out the stations with No Data before that point
         #So slice to the index
         vals_behind = varray[0:length_sofar]
-        if 'NA' not in vals_behind: 
+        if -9999 not in vals_behind: 
 
             Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go two days ahead for the third day 
 
@@ -824,8 +824,8 @@ def end_date_calendar_csv(file_path_daily,year):
 
 
                         except: #In the case of a nodata value
-                            Temp_subdict[information_stripped[idx_list2[0]]] = 'NA'
-                            temp_list.append('NA')
+                            Temp_subdict[information_stripped[idx_list2[0]]] = -9999
+                            temp_list.append(-9999)
                             
 
                     else: #Proceed down the rows 
@@ -841,8 +841,8 @@ def end_date_calendar_csv(file_path_daily,year):
 
 
                         except:
-                            Temp_subdict[information_stripped[idx_list2[0]]] = 'NA'
-                            temp_list.append('NA')
+                            Temp_subdict[information_stripped[idx_list2[0]]] = -9999
+                            temp_list.append(-9999)
 
                 count+=1   
 
@@ -872,7 +872,7 @@ def end_date_calendar_csv(file_path_daily,year):
             #We need to filter out the stations with No Data before that point
             #So slice to the index
             vals_behind = varray[0:length_sofar]
-            if 'NA' not in vals_behind: 
+            if -9999 not in vals_behind: 
 
                 Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day (end day) 
 
