@@ -119,7 +119,7 @@ def start_date_calendar(file_path_daily,year):
                 for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
                     length_sofar += group_len[i]
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+2] #Go two days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go two days ahead for the third day 
 
                 d0 = date(int(year), 3, 1) #March 1, Year 
                 d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
@@ -562,24 +562,32 @@ def end_date_add_hourly(file_path_hourly, year):
 
         vals = maxTempList_dict[station_name]
 
-        if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
+        #if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
 
-            varray = np.array(vals)
-            where_g12 = np.array(varray < 5) #Where is the temperature < 5? 
+        varray = np.array(vals)
+        where_g12 = np.array(varray < 5) #Where is the temperature < 5? 
 
 
-            groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+        groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
 
-            length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
+        length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
 
-            if len(length) > 0: 
-                index = groups.index(length[0]) #Get the index of the group
-                group_len = [len(x) for x in groups] #Get length of each group
-                length_sofar = 0 #We need to get the number of days up to where the criteria is met 
-                for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
-                    length_sofar += group_len[i]
+        
+        if len(length) > 0: 
+            index = groups.index(length[0]) #Get the index of the group
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+2] #Go two days ahead for the third day 
+            group_len = [len(x) for x in groups] #Get length of each group
+            length_sofar = 0 #We need to get the number of days up to where the criteria is met 
+            for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+                length_sofar += group_len[i]
+
+            #We need to filter out the stations with No Data before that point
+            #So slice to the index
+            vals_behind = varray[0:length_sofar]
+            if 'NA' not in vals: 
+            
+
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go three days ahead for the third day 
 
                 d0 = date(int(year), 9, 1) #Oct 1, Year 
                 d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
@@ -587,9 +595,9 @@ def end_date_add_hourly(file_path_hourly, year):
                 day = int(delta.days) #Convert to integer 
                 date_dict[station_name] = day #Store the integer in the dictionary
 
-            else:
-                print('Station %s did not end by December 31.'%station_name[:-4]) 
-                pass #Do not include the station 
+        else:
+            print('Station %s did not end by December 31.'%station_name[:-4]) 
+            pass #Do not include the station 
 
     if len(date_dict.keys()) == 0:
         return None, None #Save overhead associated with creating an empty dictionary 
@@ -670,24 +678,29 @@ def end_date_add_hourly_csv(file_path_hourly, year):
 
         vals = maxTempList_dict[station_name]
 
-        if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
+        #if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
 
-            varray = np.array(vals)
-            where_g12 = np.array(varray < 5) #Where is the temperature < 5? 
+        varray = np.array(vals)
+        where_g12 = np.array(varray < 5) #Where is the temperature < 5? 
 
 
-            groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+        groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
 
-            length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
+        length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
 
-            if len(length) > 0: 
-                index = groups.index(length[0]) #Get the index of the group
-                group_len = [len(x) for x in groups] #Get length of each group
-                length_sofar = 0 #We need to get the number of days up to where the criteria is met 
-                for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
-                    length_sofar += group_len[i]
+        if len(length) > 0: 
+            index = groups.index(length[0]) #Get the index of the group
+            group_len = [len(x) for x in groups] #Get length of each group
+            length_sofar = 0 #We need to get the number of days up to where the criteria is met 
+            for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+                length_sofar += group_len[i]
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+2] #Go two days ahead for the third day 
+            #We need to filter out the stations with No Data before that point
+            #So slice to the index
+            vals_behind = varray[0:length_sofar]
+            if 'NA' not in vals: 
+
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go two days ahead for the third day 
 
                 d0 = date(int(year), 9, 1) #Oct 1, Year 
                 d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
@@ -695,9 +708,9 @@ def end_date_add_hourly_csv(file_path_hourly, year):
                 day = int(delta.days) #Convert to integer 
                 date_dict[station_name] = day #Store the integer in the dictionary
 
-            else:
-                print('Station %s did not end by December 31.'%station_name[:-4]) 
-                pass #Do not include the station 
+        else:
+            print('Station %s did not end by December 31.'%station_name[:-4]) 
+            pass #Do not include the station 
 
     if len(date_dict.keys()) == 0:
         print('No stations') 
@@ -818,38 +831,43 @@ def end_date_calendar_csv(file_path_daily,year):
 
         vals = maxTempList_dict[station_name[:-4]]
 
-        if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92, Sep1-Dec31=122
+        #if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92, Sep1-Dec31=122
 
-            varray = np.array(vals)
-            where_g12 = np.array(varray < 5) #Where is the temperature < 5? 
+        varray = np.array(vals)
+        where_g12 = np.array(varray < 5) #Where is the temperature < 5? 
 
 
-            groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+        groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
 
-            length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
+        length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
 
-            
-            if len(length) > 0: 
-                index = groups.index(length[0]) #Get the index of the group
-                group_len = [len(x) for x in groups] #Get length of each group
-                length_sofar = 0 #We need to get the number of days up to where the criteria is met 
-                for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
-                    length_sofar += group_len[i]
+        
+        if len(length) > 0: 
+            index = groups.index(length[0]) #Get the index of the group
+            group_len = [len(x) for x in groups] #Get length of each group
+            length_sofar = 0 #We need to get the number of days up to where the criteria is met 
+            for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+                length_sofar += group_len[i]
+
+            #We need to filter out the stations with No Data before that point
+            #So slice to the index
+            vals_behind = varray[0:length_sofar]
+            if 'NA' not in vals: 
 
                 Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day (end day) 
 
-                d0 = date(int(year), 9, 1) #Oct 1, Year 
+                d0 = date(int(year), 9, 1) #Sep 1, Year 
                 d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
                 delta = d1 - d0
                 day = int(delta.days) #Convert to integer 
                 date_dict[station_name[:-4]] = day #Store the integer in the dictionary
 
-            else:
-                print('Station %s did not end by December 31.'%station_name[:-4]) 
-                pass #Do not include the station 
+        else:
+            print('Station %s did not end by December 31.'%station_name[:-4]) 
+            pass #Do not include the station 
 
 
-            #print('The end date for %s for %s is %s'%(station_name,year,Sdate))
+        #print('The end date for %s for %s is %s'%(station_name,year,Sdate))
 
     #Return the dates for each station
     #print(date_dict)
