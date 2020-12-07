@@ -883,7 +883,7 @@ def end_date_calendar_csv(file_path_daily,year):
                 date_dict[station_name[:-4]] = day #Store the integer in the dictionary
 
         else:
-            print('Station %s did not end by December 31.'%station_name[:-4]) 
+            #print('Station %s did not end by December 31.'%station_name[:-4]) 
             pass #Do not include the station 
 
 
