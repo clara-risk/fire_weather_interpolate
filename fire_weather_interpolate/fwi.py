@@ -2431,6 +2431,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
     last_fire = []
     year_list = [] 
     for year in range(year1,year2+1):
+        print('Processing..........'+str(year))
         fire_locs = []
         lookup_dict = {}
         data = pd.read_csv(file_path)
@@ -2497,15 +2498,19 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                     print('...')  
         if len(updating_list_first) > 0: 
             first_fire.append(updating_list_first[0])
+            print('First fire: '+str(updating_list_first[0]))
         else:
             first_fire.append(-9999)
         if len(updating_list_last) > 0: 
             last_fire.append(updating_list_last[0])
+            print('Last fire: '+str(updating_list_last[0]))
         else:
             last_fire.append(-9999)
         year_list.append(year)
 
-    rows = zip(year,first_fire,last_fire)
+
+
+    rows = zip(year_list,first_fire,last_fire)
     #Print to a results file
     with open(out_path, "w") as f:
         writer = csv.writer(f,lineterminator = '\n')
