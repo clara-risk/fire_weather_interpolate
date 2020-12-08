@@ -21,6 +21,7 @@ https://github.com/cran/cffdrs/tree/master/R
 """
     
 #import
+from shapely.geometry import Point
 import geopandas as gpd
 import numpy as np
 import pyproj
@@ -2414,3 +2415,103 @@ def plot_july(fwi_list,maxmin,year,var,shapefile):
     fig.suptitle(title, fontsize=14)
     plt.show()
 
+def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
+    '''Get the first and last lightning-caused ignitions from the database in ecozone
+    Parameters
+        file_path (str): path to ignition lookup file
+        year1 (int): start year
+        year2 (int): end year
+        ecozone_path (str): path to the ecozone shapefile
+        out_path (str): where to save the results file 
+    Returns
+        first_date (str): first lightning caused ignition in ecozone
+        last_date (str): last lightning caused ignition in ecozone
+    '''
+    first_fire = []
+    last_fire = []
+    year_list = [] 
+    for year in range(year1,year2+1):
+        fire_locs = []
+        lookup_dict = {}
+        data = pd.read_csv(file_path)
+        df = data.loc[data['YEAR'] == year] 
+        df2 = df.loc[df['CAUSE'] == 'L'] 
+        df2 = df.loc[df['SRC_AGENCY'] == 'ON'] 
+        fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
+        initiate_dict = list(zip(df2['FIRE_ID'],df2['LATITUDE'], df2['LONGITUDE'],df2['REP_DATE']))
+        lookup_dict = {i[0]: [i[1],i[2],i[3]] for i  in initiate_dict}
+
+        proj_dict = {} 
+        #Project the latitude and longitudes
+        for k,v in lookup_dict.items():
+            lat = v[0]
+            lon = v[1]
+            x,y = pyproj.Proj('esri:102001')(lon,lat)
+            proj_dict[k] = [x,y,v[2]]
+
+        #Get fires inside the ecozone
+        eco_zone = gpd.read_file(ecozone_path)
+        ecoDF = gpd.GeoDataFrame(eco_zone)
+        ecoDF_union = ecoDF.geometry.unary_union
+
+        updating_list_first = []
+        updating_list_last = [] 
+        for k,v  in proj_dict.items():
+
+            latitude = float(v[1])
+            longitude = float(v[0])
+            #IS IT IN THE SHAPEFILE?
+            #fig, ax = plt.subplots(figsize= (15,15))
+            #crs = {'init': 'esri:102001'}
+
+            #na_map = gpd.read_file(ecozone_path)
+            #na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10)
+            #scatter = ax.scatter(longitude,latitude,edgecolors='k',linewidth=1,s = 14)
+            #plt.show()
+            
+            fire_loc = Point((longitude,latitude))
+            pointDF = pd.DataFrame([fire_loc])
+            gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
+            if (eco_zone.geometry.contains(gdf.geometry)).any():
+                
+
+                if len(updating_list_first) > 0 and len(str(v[2])) == 19: #filter out nan
+
+                    if updating_list_first[0] > v[2]:
+                        updating_list_first[0] = v[2]
+                        #print('Overwrite first!') 
+                        #print(v[2])
+                elif len(updating_list_first) == 0:
+                    updating_list_first.append(v[2])
+                else:
+                    print('...')  
+                    
+                if len(updating_list_last) > 0 and len(str(v[2])) == 19:
+                    if updating_list_last[0] < v[2]:
+                       updating_list_last[0] = v[2]
+                       #print('Overwrite last!')
+                       #print(v[2])
+                elif len(updating_list_last) == 0:
+                    updating_list_last.append(v[2])
+                else:
+                    print('...')  
+        if len(updating_list_first) > 0: 
+            first_fire.append(updating_list_first[0])
+        else:
+            first_fire.append(-9999)
+        if len(updating_list_last) > 0: 
+            last_fire.append(updating_list_last[0])
+        else:
+            last_fire.append(-9999)
+        year_list.append(year)
+
+    rows = zip(year,first_fire,last_fire)
+    #Print to a results file
+    with open(out_path, "w") as f:
+        writer = csv.writer(f,lineterminator = '\n')
+        for row in rows:
+            writer.writerow(row)
+        
+
+
+    
