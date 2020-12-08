@@ -930,7 +930,7 @@ def calc_season_change(earlier_array,later_array):
     return change_array
 
 def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx_list,shapefile,list_of_ecozone_names,year1,\
-                             year2,method,expand_area):
+                             year2,method,expand_area,add_hourly_stns):
     '''Calculation the yearly duration between years 1-2 and output to dictionary for graphing
     Parameters
         file_path_daily (str): path to the daily files 
@@ -945,6 +945,7 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
         year2 (int,str): end year
         method (str): spatial model, one of: IDW2,IDW3,IDW4,TPSS,RF
         expand_area (bool): whether or not to expand area by 200km
+        add_hourly_stns (bool): whether or not to add in hourly stations after 1994
     Returns
         duration_dict (dict): dictionary keyed by year then ecozone that contains a list of durations from year1-year2 (year2 inclusive)
     '''
@@ -953,15 +954,16 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
         print('Processing...'+str(year))
         days_dict, latlon_station = start_date_calendar_csv(file_path_daily,str(year))
         end_dict, latlon_station2 = end_date_calendar_csv(file_path_daily,str(year))
-        if year >= 1994: 
-            hourly_dict, latlon_stationH = start_date_add_hourly(file_path_hourly, str(year))
-            hourly_end, latlon_stationE = end_date_add_hourly(file_path_hourly, str(year))
-            if hourly_dict is not None: 
-                days_dict = GD.combine_stations(days_dict,hourly_dict)
-                latlon_station = GD.combine_stations(latlon_station,latlon_stationH)
-            if hourly_end is not None: 
-                end_dict = GD.combine_stations(end_dict,hourly_end)
-                latlon_station2 = GD.combine_stations(latlon_station2,latlon_stationE)
+        if add_hourly_stns: 
+            if year >= 1994: 
+                hourly_dict, latlon_stationH = start_date_add_hourly(file_path_hourly, str(year))
+                hourly_end, latlon_stationE = end_date_add_hourly(file_path_hourly, str(year))
+                if hourly_dict is not None: 
+                    days_dict = GD.combine_stations(days_dict,hourly_dict)
+                    latlon_station = GD.combine_stations(latlon_station,latlon_stationH)
+                if hourly_end is not None: 
+                    end_dict = GD.combine_stations(end_dict,hourly_end)
+                    latlon_station2 = GD.combine_stations(latlon_station2,latlon_stationE)
 
         if method == 'IDW2': 
 
