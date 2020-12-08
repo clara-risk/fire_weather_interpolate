@@ -279,15 +279,24 @@ def start_date_calendar_csv(file_path_daily,year):
             #We need to filter out the stations with No Data before that point
             #So slice to the index
             vals_behind = varray[0:length_sofar]
-            if -9999 not in vals_behind: 
+            if -9999 not in vals_behind:
+                try: 
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day 
+                    Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day 
 
-                d0 = date(int(year), 3, 1) #March 1, Year 
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
-                delta = d1 - d0
-                day = int(delta.days) #Convert to integer 
-                date_dict[station_name[:-4]] = day #Store the integer in the dictionary
+                    d0 = date(int(year), 3, 1) #March 1, Year 
+                    d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
+                    delta = d1 - d0
+                    day = int(delta.days) #Convert to integer 
+                    date_dict[station_name[:-4]] = day #Store the integer in the dictionary
+                except:
+                    print('There are no data values upstream! Need to take an alternative method.')
+                    Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar]
+                    d0 = date(int(year), 3, 1)
+                    d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) + timedelta(days=3)
+                    delta = d1 - d0
+                    day = int(delta.days) #Convert to integer 
+                    date_dict[station_name[:-4]] = day 
             
         else:
             #print('Station %s did not start up by September 1 or had NA values upstream of the start date.'%station_name[:-4]) 
@@ -492,15 +501,19 @@ def end_date_calendar(file_path_daily,year):
         #We need to filter out the stations with No Data before that point
         #So slice to the index
         vals_behind = varray[0:length_sofar]
-        if -9999 not in vals_behind: 
+        if -9999 not in vals_behind:
+            try: 
 
-            Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go two days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go two days ahead for the third day 
 
-            d0 = date(int(year), 9, 1) #Sep 1, Year 
-            d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
-            delta = d1 - d0
-            day = int(delta.days) #Convert to integer 
-            date_dict[station_name] = day #Store the integer in the dictionary 
+                d0 = date(int(year), 9, 1) #Sep 1, Year 
+                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
+                delta = d1 - d0
+                day = int(delta.days) #Convert to integer 
+                date_dict[station_name] = day #Store the integer in the dictionary
+            except:
+                print('Error!') 
+                print(sorted(maxTemp_dictionary[station_name[:-4]].keys())) 
 
 
             #print('The end date for %s for %s is %s'%(station_name,year,Sdate))
@@ -872,15 +885,25 @@ def end_date_calendar_csv(file_path_daily,year):
             #We need to filter out the stations with No Data before that point
             #So slice to the index
             vals_behind = varray[0:length_sofar]
-            if -9999 not in vals_behind: 
+            if -9999 not in vals_behind:
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day (end day) 
+                try: 
 
-                d0 = date(int(year), 9, 1) #Sep 1, Year 
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
-                delta = d1 - d0
-                day = int(delta.days) #Convert to integer 
-                date_dict[station_name[:-4]] = day #Store the integer in the dictionary
+                    Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day (end day) 
+
+                    d0 = date(int(year), 9, 1) #Sep 1, Year 
+                    d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
+                    delta = d1 - d0
+                    day = int(delta.days) #Convert to integer 
+                    date_dict[station_name[:-4]] = day #Store the integer in the dictionary
+                except:
+                    print('There are no data values upstream! Need to take an alternative method.')
+                    Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar]
+                    d0 = date(int(year), 9, 1)
+                    d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) + timedelta(days=3)
+                    delta = d1 - d0
+                    day = int(delta.days) #Convert to integer 
+                    date_dict[station_name[:-4]] = day 
 
         else:
             #print('Station %s did not end by December 31.'%station_name[:-4]) 
