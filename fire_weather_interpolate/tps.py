@@ -870,8 +870,8 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
 
                coord_pair = projected_lat_lon[statLoc]
 
-               x_orig = int((coord_pair[0] - float(xmin)/pixelHeight) #lon 
-               y_orig = int((coord_pair[1] - float(ymin)/pixelWidth) #lat
+               x_orig = int((coord_pair[0] - float(xmin))/pixelHeight) #lon 
+               y_orig = int((coord_pair[1] - float(ymin))/pixelWidth) #lat
 
                interpolated_val = spline[y_orig][x_orig] 
 
