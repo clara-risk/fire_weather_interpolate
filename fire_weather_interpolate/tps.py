@@ -341,6 +341,8 @@ def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
      '''
     count = 1
     error_dictionary = {}
+
+    
     while count <= rep:
         x_origin_list = []
         y_origin_list = [] 
@@ -486,7 +488,8 @@ def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
     
     return overall_error
 
-def spatial_kfold_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,file_path_elev,elev_array,idx_list,clusterNum,blocking_type,return_error):
+def spatial_kfold_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,file_path_elev,\
+                      elev_array,idx_list,clusterNum,blocking_type,return_error,calc_phi):
     '''Spatially blocked k-folds cross-validation procedure for thin plate splines 
     Parameters
         loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
@@ -496,6 +499,7 @@ def spatial_kfold_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,file_pat
         phi (float): smoothing parameter for the thin plate spline, if 0 no smoothing
         clusterNum (int): the number of clusters you want to hold back
         return_error (bool): whether you want to return the error dictionary or not (to calculate stdev)
+        calc_phi (bool): whether to calculate phi in the function 
     Returns 
         MAE (float): MAE average of all the replications
      '''
@@ -634,7 +638,7 @@ def spatial_kfold_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,file_pat
 
 def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,\
                           file_path_elev,idx_list,phi,cluster_num1,cluster_num2,cluster_num3,\
-                         expand_area,boreal_shapefile):
+                         expand_area,boreal_shapefile,calc_phi):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
      in order to select the block/cluster size
      Parameters
@@ -650,7 +654,8 @@ def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
          cluster_num: three cluster numbers to test, for blocking this must be one of three:25, 16, 9 
          For blocking you can enter 'None' and it will automatically test 25, 16, 9
          expand_area (bool): expand area by 200km
-         boreal_shapefile (str): path to shapefile with the boreal zone 
+         boreal_shapefile (str): path to shapefile with the boreal zone
+         calc_phi (bool): whether to calculate phi in the function 
      Returns 
          lowest_stdev,ave_MAE (int,float): block/cluster number w/ lowest stdev, associated
          ave_MAE of all the runs 
@@ -695,7 +700,8 @@ def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      block9_error = []
      if nruns <= 1:
           print('That is not enough runs to calculate the standard deviation!')
-          sys.exit() 
+          sys.exit()
+          
      
      for n in range(0,nruns):
 
@@ -778,8 +784,6 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
                station_list_used.append(list(station_list))
           #print(station_list_used) 
 
-          
-
                     
           for station_name in Cvar_dict.keys():
                
@@ -825,7 +829,11 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
                      
           y = np.array(lat)
           x = np.array(lon)
-          z = np.array(Cvar) 
+          z = np.array(Cvar)
+
+          if calc_phi:
+              num_stations = int(len(Cvar))
+              phi = int(num_stations)-(math.sqrt(2*num_stations))
              
           pixelHeight = 10000 
           pixelWidth = 10000
