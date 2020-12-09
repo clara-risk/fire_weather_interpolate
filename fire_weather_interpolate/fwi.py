@@ -2482,31 +2482,42 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                 if len(updating_list_first) > 0 and len(str(v[2])) == 19: #filter out nan
 
                     if updating_list_first[0] > v[2]:
+                        #Get days since January 1
+
                         updating_list_first[0] = v[2]
                         #print('Overwrite first!') 
                         #print(v[2])
                 elif len(updating_list_first) == 0:
+
                     updating_list_first.append(v[2])
                 else:
                     print('...')  
                     
                 if len(updating_list_last) > 0 and len(str(v[2])) == 19:
                     if updating_list_last[0] < v[2]:
-                       updating_list_last[0] = v[2]
+
+                        updating_list_last[0] = v[2]
                        #print('Overwrite last!')
                        #print(v[2])
                 elif len(updating_list_last) == 0:
+
                     updating_list_last.append(v[2])
                 else:
                     print('...')  
-        if len(updating_list_first) > 0: 
-            first_fire.append(updating_list_first[0][5:10])
-            print('First fire: '+str(updating_list_first[0][5:10]))
+        if len(updating_list_first) > 0:
+            d0 = date(int(updating_list_first[0][0:4]), 1, 1)
+            d1 = date(int(updating_list_first[0][0:4]), int(updating_list_first[0][5:7]), int(updating_list_first[0][8:10]))
+            delta = d1 - d0
+            first_fire.append(delta)
+            print('First fire: '+str(delta))
         else:
             first_fire.append(-9999)
-        if len(updating_list_last) > 0: 
-            last_fire.append(updating_list_last[0][5:10])
-            print('Last fire: '+str(updating_list_last[0][5:10]))
+        if len(updating_list_last) > 0:
+            d0 = date(int(updating_list_last[0][0:4]), 1, 1)
+            d1 = date(int(updating_list_last[0][0:4]), int(updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
+            delta = d1 - d0
+            last_fire.append(updating_list_last[0])
+            print('Last fire: '+str(delta))
         else:
             last_fire.append(-9999)
         year_list.append(year)
