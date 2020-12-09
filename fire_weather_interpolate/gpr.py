@@ -790,14 +790,22 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           dictionaryGroups9 = mbk.sorting_stations(folds9,shapefile,Cvar_dict)
 
      elif group_type == 'clusters':
-         inBoreal = GD.is_station_in_boreal(loc_dict,Cvar_dict,boreal_shapefile)
-         Cvar_dict = {k: v for k, v in Cvar_dict.items() if k in inBoreal}
-         dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,\
-                                                  file_path_elev,idx_list,False,False,False)
-         dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,\
-                                                  file_path_elev,idx_list,False,False,False)
-         dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,\
-                                                 file_path_elev,idx_list,False,False,False)
+         if expand_area: 
+               inBoreal = GD.is_station_in_boreal(loc_dict,Cvar_dict,boreal_shapefile)
+               Cvar_dict = {k: v for k, v in Cvar_dict.items() if k in inBoreal} #Overwrite cvar_dict
+               dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,\
+                                                       file_path_elev,idx_list,False,False,False)
+          else: 
+               dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,\
+                                                       file_path_elev,idx_list,False,False,False)
 
      else:
           print('Thats not a valid group type')
