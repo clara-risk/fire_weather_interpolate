@@ -32,7 +32,8 @@ import make_blocks as mbk
 import Eval as Eval
 import statistics 
 
-def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,file_path_elev,idx_list,alpha_input):
+def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
+                     file_path_elev,idx_list,alpha_input,expand_area):
     '''Base interpolator function for gaussian process regression 
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -44,12 +45,27 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,fi
         file_path_elev (str): file path to the elevation lookup file 
         idx_list (list): the index of the elevation data column in the lookup file 
         alpha_input(float): controls extent of the spatial autocorrelation modelled by the process (smaller = more)
+        expand_area (bool): function will expand the study area so that more stations are taken into account (200 km)
     Returns 
         gpr_grid (np_array): an array of the interpolated values
     '''
     lat = []
     lon = []
     Cvar = []
+
+    na_map = gpd.read_file(shapefile)
+    bounds = na_map.bounds
+    if expand_area: 
+        xmax = bounds['maxx']+200000 
+        xmin= bounds['minx']-200000 
+        ymax = bounds['maxy']+200000 
+        ymin = bounds['miny']-200000
+    else:
+        xmax = bounds['maxx']
+        xmin= bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']
+        
     for station_name in Cvar_dict.keys():
         if station_name in latlon_dict.keys():
             
@@ -64,12 +80,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,fi
     x = np.array(lon)
     z = np.array(Cvar) 
 
-    na_map = gpd.read_file(shapefile)
-    bounds = na_map.bounds
-    xmax = bounds['maxx']
-    xmin= bounds['minx']
-    ymax = bounds['maxy']
-    ymin = bounds['miny']
+
     pixelHeight = 10000 
     pixelWidth = 10000
             
@@ -83,11 +94,17 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,fi
     
     df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z})
 
-    yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
-    xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+    if expand_area: 
 
-    Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
-    Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+        yProj_extent=np.append(yProj,[bounds['maxy']+200000,bounds['miny']-200000])
+        xProj_extent=np.append(xProj,[bounds['maxx']+200000,bounds['minx']-200000])
+
+    else:
+        yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+        xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+
+    Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row+1)
+    Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col+1)
 
     Xi,Yi = np.meshgrid(Xi,Yi)
     Xi,Yi = Xi.flatten(), Yi.flatten()
@@ -153,7 +170,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,fi
     
     Zi = reg.predict(X_test)
     
-    gpr_grid = Zi.reshape(num_row,num_col)
+    gpr_grid = Zi.reshape(num_row+1,num_col+1)
 
     if show:
         fig, ax = plt.subplots(figsize= (15,15))
