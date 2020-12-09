@@ -759,4 +759,45 @@ def get_average_in_ecozone(boolean_ecozone,continuous_surface):
     return mean_value
 
 
- 
+def get_stations_plus_200km(latlon_dict,Cvar_dict,input_date,shapefile): 
+     '''Inverse distance weighting interpolation
+     Parameters
+         latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
+         .json file
+         Cvar_dict (dict): dictionary of weather variable values for each station 
+         input_date (str): the date you want to interpolate for 
+         shapefile (str): path to the study area shapefile 
+     Returns
+         plotting_dict (dict): contains values only for stations inside study area plus 200km
+         '''
+     plotting_dictionary ={} #if expanding the study area, we need to return a dictionary of the stations used
+     lat = []
+     lon = []
+     Cvar = []
+     
+     source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83')
+     na_map = gpd.read_file(shapefile)
+     bounds = na_map.bounds
+
+     xmax = bounds['maxx']+200000
+     xmin= bounds['minx']-200000
+     ymax = bounds['maxy']+200000
+     ymin = bounds['miny']-200000
+
+     for station_name in Cvar_dict.keys():
+
+        if station_name in latlon_dict.keys():
+
+            loc = latlon_dict[station_name]
+            latitude = loc[0]
+            longitude = loc[1]
+            proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
+            if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                 cvar_val = Cvar_dict[station_name]
+                 lat.append(float(latitude))
+                 lon.append(float(longitude))
+                 Cvar.append(cvar_val)
+                 plotting_dictionary[station_name] = cvar_val
+     
+     #Can return plotting dictionary if need be, add 3rd to return statement
+     return plotting_dict
