@@ -307,13 +307,19 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           if expand_area: 
                inBoreal = GD.is_station_in_boreal(loc_dict,Cvar_dict,boreal_shapefile)
                Cvar_dict = {k: v for k, v in Cvar_dict.items() if k in inBoreal} #Overwrite cvar_dict
-               dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,file_path_elev,idx_list,False,False,False)
-               dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,file_path_elev,idx_list,False,False,False)
-               dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,file_path_elev,idx_list,False,False,False)
+               dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,\
+                                                       file_path_elev,idx_list,False,False,False)
           else: 
-               dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,file_path_elev,idx_list,False,False,False)
-               dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,file_path_elev,idx_list,False,False,False)
-               dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,file_path_elev,idx_list,False,False,False)
+               dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,\
+                                                       file_path_elev,idx_list,False,False,False)
      else:
           print('Thats not a valid group type')
           sys.exit() 
@@ -469,8 +475,13 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
           source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
           xProj, yProj = pyproj.Proj('esri:102001')(x,y)
 
-          yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
-          xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+          if expand_area: 
+
+             yProj_extent=np.append(yProj,[bounds['maxy']+200000,bounds['miny']-200000])
+             xProj_extent=np.append(xProj,[bounds['maxx']+200000,bounds['minx']-200000])
+          else:
+             yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+             xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])    
 
           Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row+1)
           Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col+1)
