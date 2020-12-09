@@ -776,7 +776,7 @@ def select_block_size_rf(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,sh
                                                         file_path_elev,idx_list,False,False,False)
                dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,\
                                                        file_path_elev,idx_list,False,False,False)
-          else: 
+         else: 
                dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,\
                                                         file_path_elev,idx_list,False,False,False)
                dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,\
@@ -802,7 +802,7 @@ def select_block_size_rf(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,sh
           block25_error.append(block25) 
 
           block16 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num2,fold_num2,\
-                                      True,dictionaryGroups16,file_path_elev,idx_list,,expand_area)
+                                      True,dictionaryGroups16,file_path_elev,idx_list,expand_area)
           block16_error.append(block16)
           
           block9 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num3,fold_num3,\
