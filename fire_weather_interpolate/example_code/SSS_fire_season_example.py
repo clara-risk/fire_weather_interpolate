@@ -30,7 +30,7 @@ import math, statistics
 
 if __name__ == "__main__":
 
-    dirname = ''
+    dirname = '' #insert dirname here
 
 
     file_path_daily = os.path.join(dirname, 'datasets/weather/daily_feather/')
