@@ -799,7 +799,7 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
                                                         file_path_elev,idx_list,False,False,False)
                dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,\
                                                        file_path_elev,idx_list,False,False,False)
-          else: 
+         else: 
                dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,\
                                                         file_path_elev,idx_list,False,False,False)
                dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,\
