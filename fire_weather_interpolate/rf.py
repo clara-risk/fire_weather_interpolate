@@ -839,7 +839,6 @@ def spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nfo
          nfolds (int): # number of folds. For 10-fold we use 10, etc.
          dictionary_Groups (dict): dictionary of what groups (clusters) the stations belong to
          expand_area (bool): expand the study area by 200km
-         expand_area (bool): expand the study area by 200km 
      Returns 
          error_dictionary (dict): a dictionary of the absolute error at each fold when it
          was left out 
