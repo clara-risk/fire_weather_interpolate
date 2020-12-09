@@ -632,7 +632,9 @@ def spatial_kfold_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,file_pat
     else:
         return clusterNum,MAE
 
-def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list,phi):
+def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,\
+                          file_path_elev,idx_list,phi,cluster_num1,cluster_num2,cluster_num3,\
+                         expand_area,boreal_shapefile):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
      in order to select the block/cluster size
      Parameters
@@ -645,6 +647,10 @@ def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
          shapefile (str): path to the study area shapefile 
          file_path_elev (str): path to the elevation lookup file
          idx_list (int): position of the elevation column in the lookup file
+         cluster_num: three cluster numbers to test, for blocking this must be one of three:25, 16, 9 
+         For blocking you can enter 'None' and it will automatically test 25, 16, 9
+         expand_area (bool): expand area by 200km
+         boreal_shapefile (str): path to shapefile with the boreal zone 
      Returns 
          lowest_stdev,ave_MAE (int,float): block/cluster number w/ lowest stdev, associated
          ave_MAE of all the runs 
@@ -662,10 +668,23 @@ def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           dictionaryGroups9 = mbk.sorting_stations(folds9,shapefile,Cvar_dict)
 
      elif group_type == 'clusters':
+         if expand_area: 
+               inBoreal = GD.is_station_in_boreal(loc_dict,Cvar_dict,boreal_shapefile)
+               Cvar_dict = {k: v for k, v in Cvar_dict.items() if k in inBoreal} #Overwrite cvar_dict
+               dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,\
+                                                       file_path_elev,idx_list,False,False,False)
+         else: 
+               dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,\
+                                                        file_path_elev,idx_list,False,False,False)
+               dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,\
+                                                       file_path_elev,idx_list,False,False,False)
 
-          dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,False)
-          dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,False)
-          dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,False)
 
      else:
           print('Thats not a valid group type')
@@ -680,13 +699,16 @@ def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      
      for n in range(0,nruns):
 
-          block25 = spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,25,5,True,False,dictionaryGroups25)
+          block25 = spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,\
+                                       cluster_num1,fold_num1,True,False,dictionaryGroups25,expand_area)
           block25_error.append(block25) 
 
-          block16 = spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,16,8,True,False,dictionaryGroups16)
+          block16 = spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,cluster_num2,fold_num2,\
+                                       True,False,dictionaryGroups16,expand_area)
           block16_error.append(block16)
           
-          block9 = spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,9,14,True,False,dictionaryGroups9)
+          block9 = spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,cluster_num3,fold_num3,\
+                                      True,False,dictionaryGroups9,expand_area)
           block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
@@ -694,16 +716,17 @@ def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      stdev9 = statistics.stdev(block9_error)
 
      list_stdev = [stdev25,stdev16,stdev9]
-     list_block_name = [25,16,9]
+     list_block_name = [cluster_num1,cluster_num2,cluster_num3]
      list_error = [block25_error,block16_error,block9_error]
      index_min = list_stdev.index(min(list_stdev))
+     stdev_number = min(list_stdev)
      lowest_stdev = list_block_name[index_min]
 
      ave_MAE = sum(list_error[index_min])/len(list_error[index_min]) 
 
      print(lowest_stdev)
-     print(ave_MAE) 
-     return lowest_stdev,ave_MAE
+     #print(ave_MAE) 
+     return lowest_stdev,ave_MAE,stdev_number
                
           
 def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknum,\
