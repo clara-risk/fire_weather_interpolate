@@ -995,8 +995,8 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
 
 
         elif method == 'GPR':
-            start_surface,maxmin = gpr.GPR_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list,0.1)
-            end_surface,maxmin = gpr.GPR_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list,0.1)    
+            start_surface,maxmin = gpr.GPR_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list,0.1,expand_area)
+            end_surface,maxmin = gpr.GPR_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list,0.1,expand_area)    
 
 
         else:
