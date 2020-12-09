@@ -995,8 +995,8 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
 
 
         elif method == 'GPR':
-            start_surface,maxmin = gpr.GPR_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list,0.3)
-            end_surface,maxmin = gpr.GPR_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list,0.3)    
+            start_surface,maxmin = gpr.GPR_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list,0.1)
+            end_surface,maxmin = gpr.GPR_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list,0.1)    
 
 
         else:
@@ -2508,6 +2508,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             d0 = date(int(updating_list_first[0][0:4]), 1, 1)
             d1 = date(int(updating_list_first[0][0:4]), int(updating_list_first[0][5:7]), int(updating_list_first[0][8:10]))
             delta = d1 - d0
+            print(delta)
             first_fire.append(str(delta)[0:3])
             print('First fire: '+str(delta)[0:3])
         else:
@@ -2516,6 +2517,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             d0 = date(int(updating_list_last[0][0:4]), 1, 1)
             d1 = date(int(updating_list_last[0][0:4]), int(updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
             delta = d1 - d0
+            print(delta)
             last_fire.append(str(delta)[0:3])
             print('Last fire: '+str(delta)[0:3])
         else:
