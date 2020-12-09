@@ -832,11 +832,14 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           #fold_num3 = 14 
           #Just so there is a record of that
 
-         block25 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num1,fold_num1,True,False,dictionaryGroups25,alpha_input)
+         block25 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num1,fold_num1,\
+                                      True,False,dictionaryGroups25,alpha_input,expand_area)
          block25_error.append(block25)
-         block16 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num2,fold_num2,True,False,dictionaryGroups16,alpha_input)
+         block16 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num2,fold_num2,\
+                                      True,False,dictionaryGroups16,alpha_input,expand_area)
          block16_error.append(block16)
-         block9 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num3,fold_num3,True,False,dictionaryGroups9,alpha_input)
+         block9 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num3,fold_num3,\
+                                     True,False,dictionaryGroups9,alpha_input,expand_area)
          block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
