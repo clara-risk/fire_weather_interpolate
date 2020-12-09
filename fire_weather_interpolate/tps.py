@@ -706,7 +706,8 @@ def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      return lowest_stdev,ave_MAE
                
           
-def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknum,nfolds,replacement,show,dictionary_Groups):
+def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknum,\
+                       nfolds,replacement,show,dictionary_Groups,expand_area):
      '''Spatially blocked bagging cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
@@ -715,14 +716,30 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
          Cvar_dict (dict): dictionary of weather variable values for each station 
          shapefile (str): path to the study area shapefile 
          d (int): the weighting function for IDW interpolation
-         nfolds (int): # number of folds. For 10-fold we use 10, etc. 
+         nfolds (int): # number of folds. For 10-fold we use 10, etc.
+         dictionary_Groups (dict): dictionary of what groups (clusters) the stations belong to
+         expand_area (bool): expand the study area by 200km
      Returns 
          error_dictionary (dict): a dictionary of the absolute error at each fold when it
          was left out 
      '''
      station_list_used = [] #If not using replacement, keep a record of what we have done 
      count = 1
-     error_dictionary = {} 
+     error_dictionary = {}
+
+     na_map = gpd.read_file(shapefile)
+     bounds = na_map.bounds
+     if expand_area: 
+        xmax = bounds['maxx']+200000 
+        xmin= bounds['minx']-200000 
+        ymax = bounds['maxy']+200000 
+        ymin = bounds['miny']-200000
+     else:
+        xmax = bounds['maxx']
+        xmin= bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']
+        
      while count <= nfolds: 
           x_origin_list = []
           y_origin_list = []
@@ -751,7 +768,8 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
                   Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
                   Plat = float(Plat)
                   Plon = float(Plon)
-                  projected_lat_lon[station_name] = [Plat,Plon]
+                  if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                       projected_lat_lon[station_name] = [Plat,Plon]
 
 
           lat = []
@@ -768,15 +786,17 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
                          latitude = loc[0]
                          longitude = loc[1]
                          cvar_val = Cvar_dict[station_name]
-                         lat.append(float(latitude))
-                         lon.append(float(longitude))
-                         Cvar.append(cvar_val)
-                         coord_pair = projected_lat_lon[station_name]
-                         x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon
-                         y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
-                         x_origin_list.append(x_orig)
-                         y_origin_list.append(y_orig)
-                         z_origin_list.append(Cvar_dict[station_name])
+                         proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
+                         if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                              lat.append(float(latitude))
+                              lon.append(float(longitude))
+                              Cvar.append(cvar_val)
+                              coord_pair = projected_lat_lon[station_name]
+                              x_orig = int((coord_pair[0] - float(xmin))/pixelHeight) #lon
+                              y_orig = int((coord_pair[1] - float(ymin))/pixelWidth) #lat
+                              x_origin_list.append(x_orig)
+                              y_origin_list.append(y_orig)
+                              z_origin_list.append(Cvar_dict[station_name])
                     else:
                          pass #Skip the station 
                      
@@ -784,17 +804,11 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
           x = np.array(lon)
           z = np.array(Cvar) 
              
-          na_map = gpd.read_file(shapefile)
-          bounds = na_map.bounds
-          xmax = bounds['maxx']
-          xmin= bounds['minx']
-          ymax = bounds['maxy']
-          ymin = bounds['miny']
           pixelHeight = 10000 
           pixelWidth = 10000
                      
-          num_col = int((xmax - xmin) / pixelHeight)
-          num_row = int((ymax - ymin) / pixelWidth)
+          num_col = int((xmax - xmin) / pixelHeight) + 1
+          num_row = int((ymax - ymin) / pixelWidth) + 1
 
 
           
@@ -802,8 +816,13 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
           source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
           xProj, yProj = pyproj.Proj('esri:102001')(x,y)
 
-          yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
-          xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+          if expand_area: 
+
+             yProj_extent=np.append(yProj,[bounds['maxy']+200000,bounds['miny']-200000])
+             xProj_extent=np.append(xProj,[bounds['maxx']+200000,bounds['minx']-200000])
+          else:
+             yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+             xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])   
 
           Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
           Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
@@ -828,8 +847,8 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
 
                coord_pair = projected_lat_lon[statLoc]
 
-               x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
-               y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+               x_orig = int((coord_pair[0] - float(xmin)/pixelHeight) #lon 
+               y_orig = int((coord_pair[1] - float(ymin)/pixelWidth) #lat
 
                interpolated_val = spline[y_orig][x_orig] 
 
