@@ -72,10 +72,15 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
             loc = latlon_dict[station_name]
             latitude = loc[0]
             longitude = loc[1]
-            cvar_val = Cvar_dict[station_name]
-            lat.append(float(latitude))
-            lon.append(float(longitude))
-            Cvar.append(cvar_val)
+            proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
+            if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= \
+                float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and \
+                proj_coord[0] >= float(xmin[0])):
+                 cvar_val = Cvar_dict[station_name]
+                 lat.append(float(latitude))
+                 lon.append(float(longitude))
+                 Cvar.append(cvar_val)
+
     y = np.array(lat)
     x = np.array(lon)
     z = np.array(Cvar) 
@@ -749,7 +754,9 @@ def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_el
      
     return clusterNum,MAE
 
-def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list,alpha_input):
+def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,\
+                          file_path_elev,idx_list,cluster_num1,cluster_num2,cluster_num3,\
+                          expand_area,boreal_shapefile,alpha_input):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
      in order to select the block/cluster size
      Parameters
@@ -762,6 +769,9 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
          shapefile (str): path to the study area shapefile 
          file_path_elev (str): path to the elevation lookup file
          idx_list (int): position of the elevation column in the lookup file
+         cluster_num: three cluster numbers to test, for blocking this must be one of three:25, 16, 9 
+         For blocking you can enter 'None' and it will automatically test 25, 16, 9
+         boreal_shapefile (str): path to shapefile with the boreal zone 
          alpha_input(float): controls extent of the spatial autocorrelation modelled by the process (smaller = more)
      Returns 
          lowest_stdev,ave_MAE (int,float): block/cluster number w/ lowest stdev, associated
@@ -770,8 +780,8 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      
      #Get group dictionaries
 
-     if group_type == 'blocks': 
-
+     if group_type == 'blocks':
+         #No support for expand_area
           folds25 = mbk.make_block(idw_example_grid,25)
           dictionaryGroups25 = mbk.sorting_stations(folds25,shapefile,Cvar_dict)
           folds16 = mbk.make_block(idw_example_grid,16)
@@ -780,10 +790,14 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           dictionaryGroups9 = mbk.sorting_stations(folds9,shapefile,Cvar_dict)
 
      elif group_type == 'clusters':
-
-          dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,25,file_path_elev,idx_list,False,False,False)
-          dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,16,file_path_elev,idx_list,False,False,False)
-          dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,9,file_path_elev,idx_list,False,False,False)
+         inBoreal = GD.is_station_in_boreal(loc_dict,Cvar_dict,boreal_shapefile)
+         Cvar_dict = {k: v for k, v in Cvar_dict.items() if k in inBoreal}
+         dictionaryGroups25 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num1,\
+                                                  file_path_elev,idx_list,False,False,False)
+         dictionaryGroups16 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num2,\
+                                                  file_path_elev,idx_list,False,False,False)
+         dictionaryGroups9 = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num3,\
+                                                 file_path_elev,idx_list,False,False,False)
 
      else:
           print('Thats not a valid group type')
@@ -797,14 +811,29 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           sys.exit() 
      
      for n in range(0,nruns):
+         #We want same number of stations selected for each cluster number
+         #We need to calculate, 5 folds x 25 clusters = 125 stations; 8 folds x 16 clusters = 128 stations, etc.
+         target_stations = len(Cvar_dict.keys())*0.3 # What is 30% of the stations
+         fold_num1 = int(round(target_stations/cluster_num1))
+         fold_num2 = int(round(target_stations/cluster_num2))
+         fold_num3 = int(round(target_stations/cluster_num3)) 
+            
+          #For our first project, this is what we did 
+          #fold_num1 = 5
+          #fold_num2 = 8
+          #fold_num3 = 14 
+          #Just so there is a record of that
 
-          block25 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,25,5,True,False,dictionaryGroups25,alpha_input)
+          block25 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num1,fold_num1,\
+                                       True,False,dictionaryGroups25,alpha_input)
           block25_error.append(block25) 
 
-          block16 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,16,8,True,False,dictionaryGroups16,alpha_input)
+          block16 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num2,fold_num2,\
+                                       True,False,dictionaryGroups16,alpha_input)
           block16_error.append(block16)
           
-          block9 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,9,14,True,False,dictionaryGroups9,alpha_input)
+          block9 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num3,fold_num3,\
+                                      True,False,dictionaryGroups9,alpha_input)
           block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
@@ -812,18 +841,20 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      stdev9 = statistics.stdev(block9_error)
 
      list_stdev = [stdev25,stdev16,stdev9]
-     list_block_name = [25,16,9]
+     list_block_name = [cluster_num1,cluster_num2,cluster_num3]
      list_error = [block25_error,block16_error,block9_error]
      index_min = list_stdev.index(min(list_stdev))
+     stdev_number = min(list_stdev)
      lowest_stdev = list_block_name[index_min]
 
      ave_MAE = sum(list_error[index_min])/len(list_error[index_min]) 
 
      print(lowest_stdev)
-     print(ave_MAE) 
-     return lowest_stdev,ave_MAE
+     #print(ave_MAE) 
+     return lowest_stdev,ave_MAE,stdev_number,stdev_number
     
-def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nfolds,replacement,dictionary_Groups,alpha_input):
+def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,\
+                       nfolds,replacement,dictionary_Groups,alpha_input,expand_area):
      '''Spatially blocked bagging cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
@@ -834,13 +865,28 @@ def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nf
          d (int): the weighting function for IDW interpolation
          nfolds (int): # number of folds. For 10-fold we use 10, etc.
          alpha_input(float): controls extent of the spatial autocorrelation modelled by the process (smaller = more)
+         expand_area (bool): expand the study area by 200km 
      Returns 
          error_dictionary (dict): a dictionary of the absolute error at each fold when it
          was left out 
      '''
      station_list_used = [] #If not using replacement, keep a record of what we have done 
      count = 1
-     error_dictionary = {} 
+     error_dictionary = {}
+
+     na_map = gpd.read_file(shapefile)
+     bounds = na_map.bounds
+     if expand_area: 
+        xmax = bounds['maxx']+200000 
+        xmin= bounds['minx']-200000 
+        ymax = bounds['maxy']+200000 
+        ymin = bounds['miny']-200000
+     else:
+        xmax = bounds['maxx']
+        xmin= bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']  
+     
      while count <= nfolds: 
           x_origin_list = []
           y_origin_list = [] 
@@ -868,7 +914,9 @@ def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nf
                   Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
                   Plat = float(Plat)
                   Plon = float(Plon)
-                  projected_lat_lon[station_name] = [Plat,Plon]
+                  proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
+                  if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                       projected_lat_lon[station_name] = [Plat,Plon]
 
 
           lat = []
@@ -881,9 +929,11 @@ def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nf
                          latitude = loc[0]
                          longitude = loc[1]
                          cvar_val = Cvar_dict[station_name]
-                         lat.append(float(latitude))
-                         lon.append(float(longitude))
-                         Cvar.append(cvar_val)
+                         proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
+                         if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                              lat.append(float(latitude))
+                              lon.append(float(longitude))
+                              Cvar.append(cvar_val)
                     else:
                          pass #Skip the station 
                      
@@ -891,12 +941,7 @@ def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nf
           x = np.array(lon)
           z = np.array(Cvar) 
              
-          na_map = gpd.read_file(shapefile)
-          bounds = na_map.bounds
-          xmax = bounds['maxx']
-          xmin= bounds['minx']
-          ymax = bounds['maxy']
-          ymin = bounds['miny']
+
           pixelHeight = 10000 
           pixelWidth = 10000
                      
@@ -910,11 +955,17 @@ def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nf
 
           df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z})
 
-          yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
-          xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+          if expand_area: 
 
-          Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
-          Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
+             yProj_extent=np.append(yProj,[bounds['maxy']+200000,bounds['miny']-200000])
+             xProj_extent=np.append(xProj,[bounds['maxx']+200000,bounds['minx']-200000])
+          else:
+             yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+             xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])    
+
+
+          Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row+1)
+          Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col+1)
 
           Xi,Yi = np.meshgrid(Xi,Yi)
           Xi,Yi = Xi.flatten(), Yi.flatten()
@@ -980,7 +1031,7 @@ def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,nf
 
           Zi = reg.predict(X_test)
 
-          gpr_grid = Zi.reshape(num_row,num_col)
+          gpr_grid = Zi.reshape(num_row+1,num_col+1)
 
           #Compare at a certain point
           for statLoc in station_list:
