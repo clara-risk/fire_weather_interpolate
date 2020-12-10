@@ -2440,7 +2440,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
         data = pd.read_csv(file_path)
         df = data.loc[data['YEAR'] == year] 
         df2 = df.loc[df['CAUSE'] == 'L'] 
-        df2 = df.loc[df['SRC_AGENCY'] == 'ON'] 
+        #df2 = df.loc[df['SRC_AGENCY'] == 'ON' or df['SRC_AGENCY'] == 'ON'] 
         fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
         initiate_dict = list(zip(df2['FIRE_ID'],df2['LATITUDE'], df2['LONGITUDE'],df2['REP_DATE']))
         lookup_dict = {i[0]: [i[1],i[2],i[3]] for i  in initiate_dict}
@@ -2451,7 +2451,17 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             lat = v[0]
             lon = v[1]
             x,y = pyproj.Proj('esri:102001')(lon,lat)
-            proj_dict[k] = [x,y,v[2]]
+            #Make sure v2 is not Jan 1, which is considered unrealistic
+
+            try: 
+
+                d0 = date(int(str(v[2])[0:4]), 1, 1)
+                d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
+                if d0 != d1: 
+            
+                    proj_dict[k] = [x,y,v[2]]
+            except:
+                print('Skipping nan value!') 
 
         #Get fires inside the ecozone
         eco_zone = gpd.read_file(ecozone_path)
@@ -2473,7 +2483,8 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             #scatter = ax.scatter(longitude,latitude,edgecolors='k',linewidth=1,s = 14)
             #plt.show()
             
-            fire_loc = Point((longitude,latitude))
+            #fire_loc = Point((longitude,latitude))
+            fire_loc = Point((latitude,longitude))
             pointDF = pd.DataFrame([fire_loc])
             gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
             if (eco_zone.geometry.contains(gdf.geometry)).any():
@@ -2507,6 +2518,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
         if len(updating_list_first) > 0:
             d0 = date(int(updating_list_first[0][0:4]), 1, 1)
             d1 = date(int(updating_list_first[0][0:4]), int(updating_list_first[0][5:7]), int(updating_list_first[0][8:10]))
+
             delta = d1 - d0
             print(delta)
             first_fire.append(str(delta)[0:3])
