@@ -170,7 +170,7 @@ if __name__ == "__main__":
                         cwd = os.getcwd()
                         ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp'
                         boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False,True)
-                        surface, maxmin= idw.IDW(latlon_station,days_dict,year,'# Days',shapefile,False,4,True,True)
+                        surface, maxmin= idw.IDW(latlon_station,days_dict,year,'# Days',shapefile,False,4,True)
                         AvVal = GD.get_average_in_ecozone(boolean_map,surface)
                         ecozone_values.append(AvVal)
 
@@ -228,8 +228,6 @@ if __name__ == "__main__":
                         surface, maxmin = tps.TPS(latlon_station,days_dict,year,'# Days',shapefile,False,None,True,True)
                         AvVal = GD.get_average_in_ecozone(boolean_map,surface)
                         ecozone_values.append(AvVal)
-                else: 
-                    print('That is not a valid interpolator')
 
 
                 elif interpolator == 'GPR':
