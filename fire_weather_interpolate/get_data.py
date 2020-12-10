@@ -800,4 +800,4 @@ def get_stations_plus_200km(latlon_dict,Cvar_dict,input_date,shapefile):
                  plotting_dictionary[station_name] = cvar_val
      
      #Can return plotting dictionary if need be, add 3rd to return statement
-     return plotting_dict
+     return plotting_dictionary
