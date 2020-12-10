@@ -2516,22 +2516,38 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                 else:
                     print('...')  
         if len(updating_list_first) > 0:
-            d0 = date(int(updating_list_first[0][0:4]), 1, 1)
+            d0 = date(int(updating_list_first[0][0:4]), 3, 1)
             d1 = date(int(updating_list_first[0][0:4]), int(updating_list_first[0][5:7]), int(updating_list_first[0][8:10]))
 
             delta = d1 - d0
             print(delta)
-            first_fire.append(str(delta)[0:3])
-            print('First fire: '+str(delta)[0:3])
+            if d1 >= d0:
+                if 'd' not in str(delta)[0:3]: 
+                    first_fire.append(str(delta)[0:3])
+                    print('First fire: '+str(delta)[0:3])
+                else:
+                    first_fire.append(str(delta)[0:1])
+                    print('First fire: '+str(delta)[0:1])
+                    
+            else:
+                last_fire.append(-9999)
         else:
             first_fire.append(-9999)
         if len(updating_list_last) > 0:
-            d0 = date(int(updating_list_last[0][0:4]), 1, 1)
+            d0 = date(int(updating_list_last[0][0:4]), 9, 1)
             d1 = date(int(updating_list_last[0][0:4]), int(updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
             delta = d1 - d0
             print(delta)
-            last_fire.append(str(delta)[0:3])
-            print('Last fire: '+str(delta)[0:3])
+            if d1 >= d0:
+                if 'd' not in str(delta)[0:3]: 
+                    last_fire.append(str(delta)[0:3])
+                    print('Last fire: '+str(delta)[0:3])
+                else:
+                    last_fire.append(str(delta)[0:1])
+                    print('Last fire: '+str(delta)[0:1])
+                    
+            else:
+                last_fire.append(-9999)
         else:
             last_fire.append(-9999)
         year_list.append(year)
