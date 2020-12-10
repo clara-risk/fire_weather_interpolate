@@ -2440,7 +2440,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
         data = pd.read_csv(file_path)
         df = data.loc[data['YEAR'] == year] 
         df2 = df.loc[df['CAUSE'] == 'L'] 
-        df2 = df.loc[df['SRC_AGENCY'] == 'ON' or df['SRC_AGENCY'] == 'QC'] 
+        df2 = df.loc[(df['SRC_AGENCY'] == 'ON') | (df['SRC_AGENCY'] == 'QC')] 
         fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
         initiate_dict = list(zip(df2['FIRE_ID'],df2['LATITUDE'], df2['LONGITUDE'],df2['REP_DATE']))
         lookup_dict = {i[0]: [i[1],i[2],i[3]] for i  in initiate_dict}
@@ -2521,16 +2521,14 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
 
             delta = d1 - d0
             print(delta)
-            if d1 >= d0:
-                if 'd' not in str(delta)[0:3]: 
-                    first_fire.append(str(delta)[0:3])
-                    print('First fire: '+str(delta)[0:3])
-                else:
-                    first_fire.append(str(delta)[0:1])
-                    print('First fire: '+str(delta)[0:1])
-                    
+
+            if 'd' not in str(delta)[0:3]: 
+                first_fire.append(str(delta)[0:3])
+                print('First fire: '+str(delta)[0:3])
             else:
-                last_fire.append(-9999)
+                first_fire.append(str(delta)[0:1])
+                print('First fire: '+str(delta)[0:1])
+
         else:
             first_fire.append(-9999)
         if len(updating_list_last) > 0:
@@ -2538,16 +2536,14 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             d1 = date(int(updating_list_last[0][0:4]), int(updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
             delta = d1 - d0
             print(delta)
-            if d1 >= d0:
-                if 'd' not in str(delta)[0:3]: 
-                    last_fire.append(str(delta)[0:3])
-                    print('Last fire: '+str(delta)[0:3])
-                else:
-                    last_fire.append(str(delta)[0:1])
-                    print('Last fire: '+str(delta)[0:1])
-                    
+
+            if 'd' not in str(delta)[0:3]: 
+                last_fire.append(str(delta)[0:3])
+                print('Last fire: '+str(delta)[0:3])
             else:
-                last_fire.append(-9999)
+                last_fire.append(str(delta)[0:1])
+                print('Last fire: '+str(delta)[0:1])
+
         else:
             last_fire.append(-9999)
         year_list.append(year)
