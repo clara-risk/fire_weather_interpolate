@@ -20,15 +20,16 @@ import numpy as np
 import pyproj
 import matplotlib.pyplot as plt
 from sklearn import linear_model
-from sklearn.linear_model import RidgeCV
+from sklearn.linear_model import RidgeCV,LinearRegression
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.preprocessing import QuantileTransformer
 
-import math
+import math, statistics
 import seaborn as sns 
 
 from scipy.spatial import distance
 from scipy.spatial.distance import cdist
+from scipy import stats
 
 #functions 
 
@@ -797,106 +798,101 @@ def linear_regression(path_to_excel_spreadsheet,plot_distributions,plot_residual
     Returns 
         Prints out regression coefficients, MAE, and R2 of the model & p-values
     '''
-    df = pd.read_csv(path_to_excel_spreadsheet)
-    mod = LinearRegression()
-    y = np.array(df['NFDB_DATE']).reshape(-1, 1)
-    X = np.array(df['AV_SEASON_DATE']).reshape(-1, 1)
+     df = pd.read_csv(path_to_excel_spreadsheet)
+     mod = LinearRegression()
+     y = np.array(df['NFDB_DATE']).reshape(-1, 1)
+     X = np.array(df['AV_SEASON_DATE']).reshape(-1, 1)
+     mod.fit(X,y)
+     y_pred = mod.predict(X)
 
+     if plot_distributions:
+          dataset = df[['NFDB_DATE','AV_SEASON_DATE']]
+          _ = sns.pairplot(dataset, kind='reg', diag_kind='kde') #check for correlation
+          _.fig.set_size_inches(15,15)
     
-    mod.fit(X,y)
-    y_pred = mod.predict(X)
+     print('Coefficients: %s'%mod.coef_)
+     print('Mean squared error: %s'% mean_absolute_error(df['NFDB_DATE'], y_pred))
+     print('Coefficient of determination: %s'% r2_score(df['NFDB_DATE'], y_pred))
+
+     #Calc the significance
+     newX = np.append(np.ones((len(X),1)), X, axis=1)
+     MSE = mean_absolute_error(df['NFDB_DATE'], y_pred)
+
+     params = np.append(mod.intercept_,mod.coef_)
     
-    if plot_distributions:
-         dataset = df[['NFDB_DATE','AV_SEASON_DATE']]
+     var_b = MSE*(np.linalg.inv(np.dot(newX.T,newX)).diagonal())
+     sd_b = np.sqrt(var_b)
+     ts_b = params/ sd_b
+     p_values =[2*(1-stats.t.cdf(np.abs(i),(len(newX)-len(newX[0])))) for i in ts_b]
+     p_values = np.round(p_values,3)
 
+     print('P-values: %s'%p_values)
+     myDF3 = pd.DataFrame()
+     myDF3["Coefficients"],myDF3["Standard Errors"],myDF3["t values"],myDF3["Probabilities"] = [params,sd_b,ts_b,p_values]
+     print(myDF3)
 
-        _ = sns.pairplot(dataset, kind='reg', diag_kind='kde') #check for correlation
+     f,  ax0 = plt.subplots(1, 1)
+     ax0.scatter(df['NFDB_DATE'], y_pred)
+     ax0.plot([0, 200], [0, 200], '--k')
+     ax0.set_ylabel('Target predicted')
+     ax0.set_xlabel('True Target')
+     ax0.set_title('Linear Regression \n without target transformation')
+     ax0.set_xlim([0, 200])
+     ax0.set_ylim([0, 200])
+     plt.show()
 
-        _.fig.set_size_inches(15,15)
-    
-    print('Coefficients: %s'%mod.coef_)
-    print('Mean squared error: %s'% mean_absolute_error(df['NFDB_DATE'], y_pred))
-    print('Coefficient of determination: %s'% r2_score(df['NFDB_DATE'], y_pred))
+     if plot_residual_histogram:
+          fig, ax = plt.subplots()
+          residuals = y - mod.predict(X)
+          mu = sum(residuals)/len(residuals)
+          var  = sum(pow(x-mu,2) for x in residuals) / len(residuals)
+          sigma  = math.sqrt(var)
+          n, bins, patches = ax.hist(residuals,10,density=1,align='left')
+          line = ((1 / (np.sqrt(2 * np.pi) * sigma)) *np.exp(-0.5 * (1 / sigma * (bins - mu))**2))
+          ax.plot(bins, line, '--')
+          ax.set_xlabel('Residuals')
+          ax.set_ylabel('Frequency')
+          plt.show()
 
-    #Calc the significance
-    newX = np.append(np.ones((len(X),1)), X, axis=1)
-    MSE = mean_absolute_error(df['NFDB_DATE'], y_pred)
-    
-    var_b = MSE*(np.linalg.inv(np.dot(newX.T,newX)).diagonal())
-    sd_b = np.sqrt(var_b)
-    ts_b = params/ sd_b
-    p_values =[2*(1-stats.t.cdf(np.abs(i),(len(newX)-len(newX[0])))) for i in ts_b]
-    p_values = np.round(p_values,3)
-
-    print('P-values: %s'%p_values)
-
-    f,  ax0 = plt.subplots(1, 1)
-    ax0.scatter(df['NFDB_DATE'], y_pred)
-    ax0.plot([0, 100], [0, 100], '--k')
-    ax0.set_ylabel('Target predicted')
-    ax0.set_xlabel('True Target')
-    ax0.set_title('Linear Regression \n without target transformation')
-    ax0.set_xlim([0, 100])
-    ax0.set_ylim([0, 100])
-    plt.show()
-
-    if plot_residual_histogram:
-        fig, ax = plt.subplots()
-        residuals = y - mod.predict(X)
+     if transform:
+          mod2 = LinearRegression()
+          bc =QuantileTransformer(output_distribution='normal')
+          y_trans_bc = bc.fit(y).transform(y)
+          mod2.fit(X,y_trans_bc)
+          y_pred2 = mod2.predict(X)
+          #Make new histogram
+          fig, ax = plt.subplots()
+          residuals = y - mod2.predict(X)
         
-        mu = sum(residuals)/len(residuals)
-        var  = sum(pow(x-mu,2) for x in residuals) / len(residuals)
-        sigma  = math.sqrt(var)
-        n, bins, patches = ax.hist(residuals,50,density=1,align='left')
-        line = ((1 / (np.sqrt(2 * np.pi) * sigma)) *np.exp(-0.5 * (1 / sigma * (bins - mu))**2))
-        ax.plot(bins, line, '--')
-        ax.set_xlabel('Residuals')
-        ax.set_ylabel('Frequency')
-        plt.show()
-
-    if transform:
-        mod2 = LinearRegression()
-
-        bc =QuantileTransformer(output_distribution='normal')
-        y_trans_bc = bc.fit(y).transform(y)
-        mod2.fit(X,y_trans_bc)
-
-        y_pred2 = mod2.predict(X) 
+          mu = sum(residuals)/len(residuals)
+          var  = sum(pow(x-mu,2) for x in residuals) / len(residuals)
+          sigma  = math.sqrt(var)
+          n, bins, patches = ax.hist(residuals,50,density=1,align='left')
+          ax.set_xlabel('Residuals')
+          ax.set_ylabel('Frequency')
+          plt.show()
         
-        #Make new histogram
-        fig, ax = plt.subplots()
+          print('Coefficients (T): %s'%mod.coef_)
+          print('Mean squared error (T): %s'% mean_absolute_error(df['NFDB_DATE'], y_pred2))
+          print('Coefficient of determination (T): %s'% r2_score(df['NFDB_DATE'], y_pred2))
 
-        residuals = y - mod2.predict(X)
-        
-        mu = sum(residuals)/len(residuals)
-        var  = sum(pow(x-mu,2) for x in residuals) / len(residuals)
-        sigma  = math.sqrt(var)
-        n, bins, patches = ax.hist(residuals,50,density=1,align='left')
-        ax.set_xlabel('Residuals')
-        ax.set_ylabel('Frequency')
-        plt.show()
-        
-        print('Coefficients (T): %s'%mod.coef_)
-        print('Mean squared error (T): %s'% mean_absolute_error(df['NFDB_DATE'], y_pred2))
-        print('Coefficient of determination (T): %s'% r2_score(df['NFDB_DATE'], y_pred2))
+          f, (ax0, ax1) = plt.subplots(1, 2, sharey=True)
+          ax0.scatter(df['NFDB_DATE'], y_pred)
+          ax0.plot([0, 100], [0, 100], '--k')
+          ax0.set_ylabel('Target predicted')
+          ax0.set_xlabel('True Target')
+          ax0.set_title('Linear Regression \n without transformation')
+          ax0.set_xlim([0, 100])
+          ax0.set_ylim([0, 100])
 
-        f, (ax0, ax1) = plt.subplots(1, 2, sharey=True)
-        ax0.scatter(df['NFDB_DATE'], y_pred)
-        ax0.plot([0, 100], [0, 100], '--k')
-        ax0.set_ylabel('Target predicted')
-        ax0.set_xlabel('True Target')
-        ax0.set_title('Linear Regression \n without transformation')
-        ax0.set_xlim([0, 100])
-        ax0.set_ylim([0, 100])
+          ax1.scatter(df['NFDB_DATE'], y_pred2)
+          ax1.plot([0, 100], [0, 100], '--k')
+          ax1.set_ylabel('Target predicted')
+          ax1.set_xlabel('True Target')
+          ax1.set_title('Linear Regression \n with transformation')
+          ax1.set_xlim([0, 100])
+          ax1.set_ylim([0, 100])
 
-        ax1.scatter(df['NFDB_DATE'], y_pred2)
-        ax1.plot([0, 100], [0, 100], '--k')
-        ax1.set_ylabel('Target predicted')
-        ax1.set_xlabel('True Target')
-        ax1.set_title('Linear Regression \n with transformation')
-        ax1.set_xlim([0, 100])
-        ax1.set_ylim([0, 100])
-
-        f.tight_layout(rect=[0.05, 0.05, 0.95, 0.95])
-        plt.show()
+          f.tight_layout(rect=[0.05, 0.05, 0.95, 0.95])
+          plt.show()
      
