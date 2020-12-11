@@ -85,7 +85,7 @@ if __name__ == "__main__":
                 
                 elif var == 'end': 
                     days_dict, latlon_station = fwi.end_date_calendar_csv(file_path_daily,year)
-                    if int(year) >= 1994: #When many hourly stations are added
+                    if int(year) >= 2020: #When many hourly stations are added
                         hourly_dictH, latlon_stationH = fwi.end_date_add_hourly(file_path_hourlyf,year)
                         if hourly_dictH is not None: #Sometimes there are no stations with unbroken records
                             days_dict = GD.combine_stations(days_dict,hourly_dictH)
