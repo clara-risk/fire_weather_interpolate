@@ -30,7 +30,7 @@ import Eval as Eval
 import statistics, math  
 
 import cluster_3d as c3d
-
+import get_data as GD
 #functions 
 def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,phi,expand_area,calc_phi):
     '''Thin plate splines interpolation implemented using the interpolate radial basis function from 
