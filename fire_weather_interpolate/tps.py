@@ -716,7 +716,7 @@ def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           block25_error.append(block25) 
 
           block16 = spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,cluster_num2,fold_num2,\
-                                       True,False,dictionaryGroups16,expand_aream,calc_phi,calc_phi)
+                                       True,False,dictionaryGroups16,expand_area,calc_phi)
           block16_error.append(block16)
           
           block9 = spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,cluster_num3,fold_num3,\
