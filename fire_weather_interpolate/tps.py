@@ -712,15 +712,15 @@ def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           fold_num3 = int(round(target_stations/cluster_num3)) 
 
           block25 = spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,\
-                                       cluster_num1,fold_num1,True,False,dictionaryGroups25,expand_area)
+                                       cluster_num1,fold_num1,True,False,dictionaryGroups25,expand_area,calc_phi)
           block25_error.append(block25) 
 
           block16 = spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,cluster_num2,fold_num2,\
-                                       True,False,dictionaryGroups16,expand_area)
+                                       True,False,dictionaryGroups16,expand_aream,calc_phi,calc_phi)
           block16_error.append(block16)
           
           block9 = spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,cluster_num3,fold_num3,\
-                                      True,False,dictionaryGroups9,expand_area)
+                                      True,False,dictionaryGroups9,expand_area,calc_phi)
           block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
@@ -742,7 +742,7 @@ def select_block_size_tps(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
                
           
 def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknum,\
-                       nfolds,replacement,show,dictionary_Groups,expand_area):
+                       nfolds,replacement,show,dictionary_Groups,expand_area,calc_phi):
      '''Spatially blocked bagging cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
