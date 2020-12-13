@@ -801,6 +801,7 @@ def spatial_groups_tps(idw_example_grid,loc_dict,Cvar_dict,shapefile,phi,blocknu
                   Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
                   Plat = float(Plat)
                   Plon = float(Plon)
+                  proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
                   if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
                        projected_lat_lon[station_name] = [Plat,Plon]
 
