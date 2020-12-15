@@ -26,6 +26,8 @@ import pyproj
 from shapely.ops import unary_union
 import matplotlib.pyplot as plt
 
+import fwi as fwi
+
 
 def get_col_num_list(file_path,col_name): 
     '''Get the column in the look up file that corresponds to the correct data
