@@ -796,6 +796,12 @@ def select_block_size_rf(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,sh
           sys.exit() 
      
      for n in range(0,nruns):
+         #We want same number of stations selected for each cluster number
+          #We need to calculate, 5 folds x 25 clusters = 125 stations; 8 folds x 16 clusters = 128 stations, etc. 
+          target_stations = len(Cvar_dict.keys())*0.3 # What is 30% of the stations
+          fold_num1 = int(round(target_stations/cluster_num1)) 
+          fold_num2 = int(round(target_stations/cluster_num2))
+          fold_num3 = int(round(target_stations/cluster_num3)) 
 
           block25 = spatial_groups_rf(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num1,fold_num1,\
                                       True,dictionaryGroups25,file_path_elev,idx_list,expand_area)
