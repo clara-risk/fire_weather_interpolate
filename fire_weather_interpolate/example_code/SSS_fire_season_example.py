@@ -131,7 +131,7 @@ if __name__ == "__main__":
                         cluster_num2 = int(round(num_stations/5))
                         cluster_num3 = int(round(num_stations/10)) 
                         cluster_num,MAE,stdev_stations = idw.select_block_size_IDW(10,'clusters',latlon_station,days_dict,grd_size,shapefile,\
-                                                                                       file_path_elev,idx_list,2,cluster_num1,cluster_num2,\
+                                                                                       file_path_elev,idx_list,3,cluster_num1,cluster_num2,\
                                                                                        cluster_num3,True,boreal_shapefile)
                     except ZeroDivisionError:
                         print('There are no stations in the boreal zone!')
@@ -143,7 +143,7 @@ if __name__ == "__main__":
                         cwd = os.getcwd()
                         ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp'
                         boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False,True)
-                        surface, maxmin= idw.IDW(latlon_station,days_dict,year,'# Days',shapefile,False,2,True)
+                        surface, maxmin= idw.IDW(latlon_station,days_dict,year,'# Days',shapefile,False,3,True)
                         AvVal = GD.get_average_in_ecozone(boolean_map,surface)
                         ecozone_values.append(AvVal)
 
