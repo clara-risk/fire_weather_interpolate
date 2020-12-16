@@ -2581,7 +2581,7 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
         df = data.loc[data['FIRE_YEAR'] == year] 
         df2 = df.loc[df['GENERAL_CAUSE'] == 'LTG'] 
         fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
-        initiate_dict = list(zip(df2['LATITUDE'], df2['LONGITUDE'],df2['C_START_DATE_DayofYear']))
+        initiate_dict = list(zip(df2['UNIQUE_ID'],df2['LATITUDE'], df2['LONGITUDE'],df2['C_START_DATE_DayofYear']))
         lookup_dict = {i[0]: [i[1],i[2],i[3]] for i  in initiate_dict}
 
         proj_dict = {} 
