@@ -15,7 +15,7 @@ idx_list = GD.get_col_num_list(file_path_elev,'elev')
 
 dictionary = fwi.calc_duration_in_ecozone(file_path_daily,file_path_hourlyf,file_path_elev,\
                          idx_list,shapefile,\
-                         ['boreal1_ecozone61','boreal2_easternC5','hudson','taiga_shield'],1922,2019,'GPR',True,False)
+                         ['boreal1_ecozone61','boreal2_easternC5','hudson','taiga_shield'],1922,2019,'GPR',True,False) #IDW2-4, TPSS, RF or GPR
 print(dictionary)
 year=[]
 eco1=[]
