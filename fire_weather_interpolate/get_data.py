@@ -766,7 +766,7 @@ def get_average_in_ecozone(boolean_ecozone,continuous_surface):
 
 
 def get_stations_plus_200km(latlon_dict,Cvar_dict,input_date,shapefile): 
-     '''Inverse distance weighting interpolation
+     '''Dictionary for plotting of the stations included in the analysis 
      Parameters
          latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
          .json file
