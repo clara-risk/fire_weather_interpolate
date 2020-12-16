@@ -2627,12 +2627,17 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
             if len(updating_list_first) > 0:
                 print('First fire: '+str(updating_list_first[0]))
             if len(updating_list_last) > 0:
-                print('Last fire: '+str(updating_list_last[0]))
-
+                print('Last fire: '+str(updating_list_last[0])) 
         year_list.append(year)
-        first_fire = updating_list_first
-        last_fire = updating_list_last
-
+        try: 
+            first_fire.append(updating_list_first[0])
+        except:
+            first_fire.append(-9999)
+        try: 
+            last_fire.append(updating_list_last[0]) 
+        except:
+            last_fire.append(-9999)
+            
 
     rows = zip(year_list,first_fire,last_fire)
     #Print to a results file
