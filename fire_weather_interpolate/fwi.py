@@ -2629,3 +2629,10 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
             if len(updating_list_last) > 0:
                 print('Last fire: '+str(updating_list_last[0]))
 
+
+    rows = zip(year_list,first_fire,last_fire)
+    #Print to a results file
+    with open(out_path, "w") as f:
+        writer = csv.writer(f,lineterminator = '\n')
+        for row in rows:
+            writer.writerow(row)
