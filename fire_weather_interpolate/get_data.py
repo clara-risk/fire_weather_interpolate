@@ -27,6 +27,10 @@ from shapely.ops import unary_union
 import matplotlib.pyplot as plt
 
 import fwi as fwi
+import idw as idw
+import tps as tps
+import rf as rf
+import gpr as gpr
 
 
 def get_col_num_list(file_path,col_name): 
