@@ -2558,5 +2558,74 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             writer.writerow(row)
         
 
+def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_path,out_path):
+    '''Get the first and last lightning-caused ignitions from the extra dataset 
+    Parameters
+        file_path (str): path to ignition lookup file
+        year1 (int): start year
+        year2 (int): end year
+        ecozone_path (str): path to the ecozone shapefile
+        out_path (str): where to save the results file 
+    Returns
+        first_date (str): first lightning caused ignition in ecozone
+        last_date (str): last lightning caused ignition in ecozone
+    '''
+    first_fire = []
+    last_fire = []
+    year_list = [] 
+    for year in range(year1,year2+1):
+        print('Processing..........'+str(year))
+        fire_locs = []
+        lookup_dict = {}
+        data = pd.read_csv(file_path)
+        df = data.loc[data['FIRE_YEAR'] == year] 
+        df2 = df.loc[df['GENERAL_CAUSE'] == 'LTG'] 
+        fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
+        initiate_dict = list(zip(df2['LATITUDE'], df2['LONGITUDE'],df2['C_START_DATE_DayofYear']))
+        lookup_dict = {i[0]: [i[1],i[2],i[3]] for i  in initiate_dict}
 
-    
+        proj_dict = {} 
+        #Project the latitude and longitudes
+        for k,v in lookup_dict.items():
+            lat = v[0]
+            lon = v[1]
+            x,y = pyproj.Proj('esri:102001')(lon,lat)
+            proj_dict[k] = [x,y,v[2]]
+            
+        #Get fires inside the ecozone
+        eco_zone = gpd.read_file(ecozone_path)
+        ecoDF = gpd.GeoDataFrame(eco_zone)
+        ecoDF_union = ecoDF.geometry.unary_union
+
+        updating_list_first = []
+        updating_list_last = [] 
+        for k,v  in proj_dict.items():
+
+            latitude = float(v[1])
+            longitude = float(v[0])
+
+            fire_loc = Point((latitude,longitude))
+            pointDF = pd.DataFrame([fire_loc])
+            gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
+            if (eco_zone.geometry.contains(gdf.geometry)).any():
+                if len(updating_list_first) > 0 and updating_list_first[0] < v[2]:
+                    updating_list_first[0] = v[2]
+                elif len(updating_list_first) == 0:
+                    updating_list_first.append(v[2])
+                else:
+                    print('...')
+
+                #End date
+
+                if len(updating_list_last) > 0 and updating_list_last[0] > v[2]:
+                    updating_list_last[0] = v[2]
+                elif len(updating_list_last) == 0:
+                    updating_list_last.append(v[2])
+                else:
+                    print('...') 
+                
+            if len(updating_list_first) > 0:
+                print('First fire: '+str(updating_list_first[0]))
+            if len(updating_list_last) > 0:
+                print('Last fire: '+str(updating_list_last[0]))
+
