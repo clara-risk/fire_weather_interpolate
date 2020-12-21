@@ -2515,6 +2515,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                     updating_list_last.append(v[2])
                 else:
                     print('...')  
+
         if len(updating_list_first) > 0:
             d0 = date(int(updating_list_first[0][0:4]), 3, 1) #Mar 1
             d1 = date(int(updating_list_first[0][0:4]), int(updating_list_first[0][5:7]), int(updating_list_first[0][8:10]))
@@ -2522,14 +2523,14 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             delta = d1 - d0
             print(delta)
 
-            if delta >= 0: 
-
-                if 'd' not in str(delta)[0:3]: 
+            if 'd' not in str(delta)[0:3]:
+                if delta >= timedelta(days=0): 
                     first_fire.append(str(delta)[0:3])
-                    print('First fire: '+str(delta)[0:3])
-                else:
+                    #print('First fire: '+str(delta)[0:3])
+            else:
+                if delta >= timedelta(days=0):
                     first_fire.append(str(delta)[0:1])
-                    print('First fire: '+str(delta)[0:1])
+                    #print('First fire: '+str(delta)[0:1])
 
         else:
             first_fire.append(-9999)
@@ -2537,23 +2538,23 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             d0 = date(int(updating_list_last[0][0:4]), 9, 1) #Sep 1
             d1 = date(int(updating_list_last[0][0:4]), int(updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
             delta = d1 - d0
-            print(delta)
+            print(delta) 
 
-            if delta >= 0: 
-
-                if 'd' not in str(delta)[0:3]: 
+            if 'd' not in str(delta)[0:3]:
+                if delta >= timedelta(days=0): 
                     last_fire.append(str(delta)[0:3])
-                    print('Last fire: '+str(delta)[0:3])
-                else:
+                    #print('Last fire: '+str(delta)[0:3])
+            else:
+                if delta >= timedelta(days=0): 
                     last_fire.append(str(delta)[0:1])
-                    print('Last fire: '+str(delta)[0:1])
+                    #print('Last fire: '+str(delta)[0:1])
 
         else:
             last_fire.append(-9999)
         year_list.append(year)
 
 
-
+    
     rows = zip(year_list,first_fire,last_fire)
     #Print to a results file
     with open(out_path, "w") as f:
