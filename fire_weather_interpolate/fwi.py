@@ -34,6 +34,7 @@ import os, sys
 import gc
 import feather
 import csv
+from calendar import isleap
 
 import get_data as GD
 import idw as idw
@@ -2425,7 +2426,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
         year1 (int): start year
         year2 (int): end year
         ecozone_path (str): path to the ecozone shapefile
-        out_path (str): where to save the results file 
+        out_path (str): where to save the results file
     Returns
         first_date (str): first lightning caused ignition in ecozone
         last_date (str): last lightning caused ignition in ecozone
@@ -2457,8 +2458,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
 
                 d0 = date(int(str(v[2])[0:4]), 1, 1)
                 d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
-                if d0 != d1: 
-            
+                if d0 != d1:
                     proj_dict[k] = [x,y,v[2]]
             except:
                 print('Skipping nan value!') 
@@ -2516,33 +2516,37 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                 else:
                     print('...')  
         if len(updating_list_first) > 0:
-            d0 = date(int(updating_list_first[0][0:4]), 1, 1)
+            d0 = date(int(updating_list_first[0][0:4]), 3, 1) #Mar 1
             d1 = date(int(updating_list_first[0][0:4]), int(updating_list_first[0][5:7]), int(updating_list_first[0][8:10]))
 
             delta = d1 - d0
             print(delta)
 
-            if 'd' not in str(delta)[0:3]: 
-                first_fire.append(str(delta)[0:3])
-                print('First fire: '+str(delta)[0:3])
-            else:
-                first_fire.append(str(delta)[0:1])
-                print('First fire: '+str(delta)[0:1])
+            if delta >= 0: 
+
+                if 'd' not in str(delta)[0:3]: 
+                    first_fire.append(str(delta)[0:3])
+                    print('First fire: '+str(delta)[0:3])
+                else:
+                    first_fire.append(str(delta)[0:1])
+                    print('First fire: '+str(delta)[0:1])
 
         else:
             first_fire.append(-9999)
         if len(updating_list_last) > 0:
-            d0 = date(int(updating_list_last[0][0:4]), 1, 1)
+            d0 = date(int(updating_list_last[0][0:4]), 9, 1) #Sep 1
             d1 = date(int(updating_list_last[0][0:4]), int(updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
             delta = d1 - d0
             print(delta)
 
-            if 'd' not in str(delta)[0:3]: 
-                last_fire.append(str(delta)[0:3])
-                print('Last fire: '+str(delta)[0:3])
-            else:
-                last_fire.append(str(delta)[0:1])
-                print('Last fire: '+str(delta)[0:1])
+            if delta >= 0: 
+
+                if 'd' not in str(delta)[0:3]: 
+                    last_fire.append(str(delta)[0:3])
+                    print('Last fire: '+str(delta)[0:3])
+                else:
+                    last_fire.append(str(delta)[0:1])
+                    print('Last fire: '+str(delta)[0:1])
 
         else:
             last_fire.append(-9999)
@@ -2592,6 +2596,17 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
             lon = v[1]
             x,y = pyproj.Proj('esri:102001')(lon,lat)
             proj_dict[k] = [x,y,v[2]]
+
+
+        #check if leap
+        is_leap = isleap(int(year))
+        if is_leap:
+            num_days_to_march = 31+28
+            num_days_to_sep = 31+28+31+30+31+30+31+31
+        else:
+            num_days_to_march = 31+29
+            num_days_to_sep = 31+29+31+30+31+30+31+31
+        
             
         #Get fires inside the ecozone
         eco_zone = gpd.read_file(ecozone_path)
@@ -2609,22 +2624,23 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
             pointDF = pd.DataFrame([fire_loc])
             gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
             if (eco_zone.geometry.contains(gdf.geometry)).any():
-                if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
-                    updating_list_first[0] = v[2]
-                elif len(updating_list_first) == 0:
-                    updating_list_first.append(v[2])
-                else:
-                    print('...')
+                if v[2] >=  num_days_to_march: 
+                    if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
+                        updating_list_first[0] = v[2]
+                    elif len(updating_list_first) == 0:
+                        updating_list_first.append(v[2])
+                    else:
+                        print('...')
 
                 #End date
-
-                if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
-                    updating_list_last[0] = v[2]
-                elif len(updating_list_last) == 0:
-                    updating_list_last.append(v[2])
-                else:
-                    print('...') 
-                
+                if v[2] >= num_days_to_sep: 
+                    if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
+                        updating_list_last[0] = v[2]
+                    elif len(updating_list_last) == 0:
+                        updating_list_last.append(v[2])
+                    else:
+                        print('...') 
+                    
             if len(updating_list_first) > 0:
                 print('First fire: '+str(updating_list_first[0]))
             if len(updating_list_last) > 0:
@@ -2679,6 +2695,7 @@ def select_and_output_earliest_year(file_path1,file_path2,year1,year2,out_path):
         df2 = data2.loc[data2['YEAR'] == year]
         initiate_dict2 = list(zip(df2['YEAR'],df2['START'], df2['END']))
         lookup_dict2 = {i[0]: [i[1],i[2]] for i  in initiate_dict2}
+
         
         #which column value is smaller for the start date?
         #which column is larger for the end date?
