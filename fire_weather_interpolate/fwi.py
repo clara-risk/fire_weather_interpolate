@@ -2662,4 +2662,50 @@ def select_and_output_earliest_year(file_path1,file_path2,year1,year2,out_path):
         last_date (str): last lightning caused ignition in ecozone
         writes output to csv file
     '''   
-    
+    #Get the pandas dataframes
+    first_fire = []
+    last_fire = []
+    year_list = [] 
+    for year in range(year1,year2+1):
+        year_list.append(year)
+        print('Processing..........'+str(year))
+        fire_locs = []
+        lookup_dict = {}
+        data = pd.read_csv(file_path1)
+        df = data.loc[data['YEAR'] == year]
+        initiate_dict = list(zip(df['YEAR'],df['START '], df['END']))
+        lookup_dict = {i[0]: [i[1],i[2]] for i  in initiate_dict}
+        data2 = pd.read_csv(file_path2)
+        df2 = data2.loc[data2['YEAR'] == year]
+        initiate_dict2 = list(zip(df2['YEAR'],df2['START '], df2['END']))
+        lookup_dict2 = {i[0]: [i[1],i[2]] for i  in initiate_dict2}
+        
+        #which column value is smaller for the start date?
+        #which column is larger for the end date?
+
+
+        if lookup_dict2[year][0] == '-9999' and lookup_dict[year][0] == '-9999': #if both are NaN 
+            first_fire.append(-9999)
+        else:
+            if lookup_dict2[year][0] < lookup_dict[year][0] and lookup_dict2[year][0] != '-9999':
+                first_fire.append(lookup_dict2[year][0]) #the earlier one
+                print('check!')
+            else:
+                first_fire.append(lookup_dict[year][0])
+            
+        if lookup_dict2[year][1] == '-9999' and lookup_dict[year][1] == '-9999':
+            last_fire.append(-9999)
+        else: 
+            if lookup_dict2[year][1] > lookup_dict[year][1] and lookup_dict[year][1] != '-9999':
+                last_fire.append(lookup_dict2[year][1])
+                print('check2!')
+            else:
+                last_fire.append(lookup_dict[year][1])
+
+    #write the merged file to a new file 
+    rows = zip(year_list,first_fire,last_fire)
+    #Print to a results file
+    with open(out_path, "w") as f:
+        writer = csv.writer(f,lineterminator = '\n')
+        for row in rows:
+            writer.writerow(row)
