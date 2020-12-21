@@ -2699,6 +2699,8 @@ def select_and_output_earliest_year(file_path1,file_path2,year1,year2,out_path):
             if lookup_dict2[year][1] > lookup_dict[year][1] and lookup_dict[year][1] != '-9999':
                 last_fire.append(lookup_dict2[year][1])
                 print('check2!')
+            elif lookup_dict[year][1] == '-9999':
+                last_fire.append(lookup_dict2[year][1])
             else:
                 last_fire.append(lookup_dict[year][1])
 
