@@ -2673,34 +2673,40 @@ def select_and_output_earliest_year(file_path1,file_path2,year1,year2,out_path):
         lookup_dict = {}
         data = pd.read_csv(file_path1)
         df = data.loc[data['YEAR'] == year]
-        initiate_dict = list(zip(df['YEAR'],df['START '], df['END']))
+        initiate_dict = list(zip(df['YEAR'],df['START'], df['END']))
         lookup_dict = {i[0]: [i[1],i[2]] for i  in initiate_dict}
         data2 = pd.read_csv(file_path2)
         df2 = data2.loc[data2['YEAR'] == year]
-        initiate_dict2 = list(zip(df2['YEAR'],df2['START '], df2['END']))
+        initiate_dict2 = list(zip(df2['YEAR'],df2['START'], df2['END']))
         lookup_dict2 = {i[0]: [i[1],i[2]] for i  in initiate_dict2}
         
         #which column value is smaller for the start date?
         #which column is larger for the end date?
 
 
-        if lookup_dict2[year][0] == '-9999' and lookup_dict[year][0] == '-9999': #if both are NaN 
+        if lookup_dict2[year][0] == -9999 and lookup_dict[year][0] == -9999: #if both are NaN 
             first_fire.append(-9999)
         else:
-            if lookup_dict2[year][0] < lookup_dict[year][0] and lookup_dict2[year][0] != '-9999':
+            if (lookup_dict2[year][0] <= lookup_dict[year][0]) and lookup_dict2[year][0] != -9999:
                 first_fire.append(lookup_dict2[year][0]) #the earlier one
-                print('check!')
+
+            elif lookup_dict[year][0] == -9999:
+                first_fire.append(lookup_dict2[year][0])
+            elif lookup_dict2[year][0] == -9999:
+                first_fire.append(lookup_dict[year][0])
             else:
                 first_fire.append(lookup_dict[year][0])
             
-        if lookup_dict2[year][1] == '-9999' and lookup_dict[year][1] == '-9999':
+        if lookup_dict2[year][1] == -9999 and lookup_dict[year][1] == -9999:
             last_fire.append(-9999)
         else: 
-            if lookup_dict2[year][1] > lookup_dict[year][1] and lookup_dict[year][1] != '-9999':
+            if (lookup_dict2[year][1] >= lookup_dict[year][1]) and lookup_dict[year][1] != -9999:
                 last_fire.append(lookup_dict2[year][1])
-                print('check2!')
-            elif lookup_dict[year][1] == '-9999':
+
+            elif lookup_dict[year][1] == -9999:
                 last_fire.append(lookup_dict2[year][1])
+            elif lookup_dict2[year][1] == -9999:
+                last_fire.append(lookup_dict[year][1])
             else:
                 last_fire.append(lookup_dict[year][1])
 
