@@ -2569,6 +2569,7 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
     Returns
         first_date (str): first lightning caused ignition in ecozone
         last_date (str): last lightning caused ignition in ecozone
+        writes output to csv file 
     '''
     first_fire = []
     last_fire = []
@@ -2645,3 +2646,20 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
         writer = csv.writer(f,lineterminator = '\n')
         for row in rows:
             writer.writerow(row)
+
+
+def select_and_output_earliest_year(file_path1,file_path2,year1,year2,out_path):
+    '''Get the first and last lightning-caused ignitions from the two sources using the csv files
+    (we are basically combining them) 
+    Parameters
+        file_path1 (str): path to the output csv file from national fire database
+        file_path2 (str): path to the output csv file from the extra dataset
+        year1 (int): start year
+        year2 (int): end year
+        out_path (str): where to save the results file 
+    Returns
+        first_date (str): first lightning caused ignition in ecozone
+        last_date (str): last lightning caused ignition in ecozone
+        writes output to csv file
+    '''   
+    
