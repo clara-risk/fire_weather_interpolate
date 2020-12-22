@@ -2531,10 +2531,14 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                 if delta >= timedelta(days=0):
                     first_fire.append(str(delta_print_to_file)[0:3])
                     #print('First fire: '+str(delta)[0:3])
+                else:
+                    first_fire.append(-9999)
             else:
                 if delta >= timedelta(days=0):
                     first_fire.append(str(delta_print_to_file)[0:1])
                     #print('First fire: '+str(delta)[0:1])
+                else:
+                    first_fire.append(-9999)
 
         else:
             first_fire.append(-9999)
@@ -2552,10 +2556,14 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                 if delta >= timedelta(days=0): 
                     last_fire.append(str(delta_print_to_file)[0:3])
                     #print('Last fire: '+str(delta)[0:3])
+                else:
+                    last_fire.append(-9999)
             else:
                 if delta >= timedelta(days=0): 
                     last_fire.append(str(delta_print_to_file)[0:1])
                     #print('Last fire: '+str(delta)[0:1])
+                else:
+                    last_fire.append(-9999)
 
         else:
             last_fire.append(-9999)
@@ -2564,6 +2572,8 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
 
 
     print(year_list)
+    if len(year_list) != len(first_fire) or len(year_list) != len(last_fire):
+        print('Error! A year is missing a value!') 
     rows = zip(year_list,first_fire,last_fire)
     #Print to a results file
     with open(out_path, "w") as f:
