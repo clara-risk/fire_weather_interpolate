@@ -2458,7 +2458,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
 
                 d0 = date(int(str(v[2])[0:4]), 3, 1)
                 d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
-                if d0 != d1:
+                if d0 <= d1:
                     proj_dict[k] = [x,y,v[2]]
             except:
                 print('Skipping nan value!') 
@@ -2516,7 +2516,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                     d0 = date(int(str(v[2])[0:4]), 9, 1)
                     d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
                     if d0 < d1:
-                       updating_list_last.append(v[2])
+                        updating_list_last.append(v[2])
                 else:
                     print('...')  
 
@@ -2531,7 +2531,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             d0_jan1 = date(int(updating_list_first[0][0:4]), 1, 1)
             delta_print_to_file = d1 - d0_jan1
 
-            if 'd' not in str(delta)[0:3]:
+            if 'd' not in str(delta_print_to_file)[0:3]:
                 if delta >= timedelta(days=0):
                     first_fire.append(str(delta_print_to_file)[0:3])
                     #print('First fire: '+str(delta)[0:3])
@@ -2556,7 +2556,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             d0_jan1 = date(int(updating_list_first[0][0:4]), 1, 1)
             delta_print_to_file = d1 - d0_jan1
 
-            if 'd' not in str(delta)[0:3]:
+            if 'd' not in str(delta_print_to_file)[0:3]:
                 if delta >= timedelta(days=0): 
                     last_fire.append(str(delta_print_to_file)[0:3])
                     #print('Last fire: '+str(delta)[0:3])
@@ -2573,6 +2573,12 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             last_fire.append(-9999)
 
         year_list.append(year)
+        if int(last_fire[-1]) < 150 and int(last_fire[-1]) != -9999:
+            print('Error 1!')
+            print(last_fire[-1])
+        if int(first_fire[-1]) < 30 and int(first_fire[-1]) != -9999:
+            print('Error 2!')
+            print(first_fire[-1]) 
 
 
     print(year_list)
