@@ -2452,11 +2452,11 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
             lat = v[0]
             lon = v[1]
             x,y = pyproj.Proj('esri:102001')(lon,lat)
-            #Make sure v2 is not Jan 1, which is considered unrealistic
+            #Make sure v2 is not before Mar 1
 
             try: 
 
-                d0 = date(int(str(v[2])[0:4]), 1, 1)
+                d0 = date(int(str(v[2])[0:4]), 3, 1)
                 d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
                 if d0 != d1:
                     proj_dict[k] = [x,y,v[2]]
@@ -2494,7 +2494,6 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
 
                     if updating_list_first[0] > v[2]:
                         #Get days since January 1
-
                         updating_list_first[0] = v[2]
                         #print('Overwrite first!') 
                         #print(v[2])
@@ -2512,7 +2511,12 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                        #print(v[2])
                 elif len(updating_list_last) == 0:
 
-                    updating_list_last.append(v[2])
+                    #Make sure not before Sep 1 
+
+                    d0 = date(int(str(v[2])[0:4]), 9, 1)
+                    d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
+                    if d0 < d1:
+                       updating_list_last.append(v[2])
                 else:
                     print('...')  
 
