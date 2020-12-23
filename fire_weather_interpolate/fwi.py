@@ -2571,7 +2571,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
 
             #Calculate from Jan 1
 
-            d0_jan1 = date(int(updating_list_first[0][0:4]), 1, 1)
+            d0_jan1 = date(int(updating_list_last[0][0:4]), 1, 1)
             delta_print_to_file = d1 - d0_jan1
 
             if 'd' not in str(delta_print_to_file)[0:3]:
