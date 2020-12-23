@@ -2511,9 +2511,9 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                         #print(v[2])
                 elif len(updating_list_first) == 0:
 
-                    d1 = date(int(updating_list_last[0][0:4]), int(updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
+                    d1 = date(int(v[2][0:4]), int(v[2][5:7]), int(v[2][8:10]))
                     #Calculate from Jan 1
-                    d0 = date(int(updating_list_first[0][0:4]), 1, 1)
+                    d0 = date(int(v[2][0:4]), 1, 1)
                     delta_check = d1 - d0
 
                     if delta_check < timedelta(days=num_days_to_sep): #only if it is before sep 1
