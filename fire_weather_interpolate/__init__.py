@@ -58,7 +58,8 @@ from . import idw as idw
 from . import idew as idew
 from . import ok as ok
 from . import tps as tps
-from . import rf as rf 
+from . import rf as rf
+from . import gpr as gpr
 from . import fwi as fwi
 from . import Eval as Eval  
 from . import cluster_3d as c3d
