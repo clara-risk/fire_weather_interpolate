@@ -2673,7 +2673,7 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
             gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
             if (eco_zone.geometry.contains(gdf.geometry)).any():
                 if v[2] >=  num_days_to_march: 
-                    if len(updating_list_first) > 0 and updating_list_first[0] < v[2]:
+                    if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
                         updating_list_first[0] = v[2]
                     elif len(updating_list_first) == 0:
                         updating_list_first.append(v[2])
@@ -2682,7 +2682,7 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
 
                 #End date
                 if v[2] >= num_days_to_sep: 
-                    if len(updating_list_last) > 0 and updating_list_last[0] > v[2]:
+                    if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
                         updating_list_last[0] = v[2]
                     elif len(updating_list_last) == 0:
                         updating_list_last.append(v[2])
