@@ -754,13 +754,14 @@ def end_date_add_hourly_csv(file_path_hourly, year):
     else:
         return date_dict, latlon_dictionary
 
-def end_date_calendar_csv(file_path_daily,year):
+def end_date_calendar_csv(file_path_daily,year,search_month):
     '''Returns a dictionary of where each station meets the end criteria see 
     Wotton & Flannigan 1993, plus a reference dictionary for the lat lon of the stations
     Parameters
         file_path (str): path to the csv files containing the hourly data from Environment & 
         Climate Change Canada 
-        year (str): year we want to find the fire season end date for 
+        year (str): year we want to find the fire season end date for
+        search_month (str): the month (day 1) you want to start searching for the end date, enter 'sep' or 'oct'
     Returns 
         date_dict (dict): dictionary containing the end date for each station (days since Oct 1)
         latlon_dictionary (dict): the latitude and longitude of those stations 
@@ -830,13 +831,22 @@ def end_date_calendar_csv(file_path_daily,year):
 
   
                         try:
-                            if information_stripped[idx_list2[0]][0:4] == year: #Make sure we have the right year 
-                                if information_stripped[idx_list2[0]][5:7] == '09' or information_stripped[idx_list2[0]][5:7] == '10' or \
-                                   information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12': #Make sure we are only considering months after October 
-                                    #if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
-                                    Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
-                                    temp_list.append(float(information_stripped[idx_list1[0]])) #Get the 13h00 temperature, send to temp list
-                                    
+                            if information_stripped[idx_list2[0]][0:4] == year: #Make sure we have the right year
+                                if search_month == 'sep': 
+                                    if information_stripped[idx_list2[0]][5:7] == '09' or information_stripped[idx_list2[0]][5:7] == '10' or \
+                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12': #Make sure we are only considering months after October 
+                                        #if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
+                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
+                                        temp_list.append(float(information_stripped[idx_list1[0]])) #Get the max temperature, send to temp list
+                                elif search_month == 'oct':
+                                    if information_stripped[idx_list2[0]][5:7] == '10' or \
+                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12': #Make sure we are only considering months after October 
+                                        #if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
+                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
+                                        temp_list.append(float(information_stripped[idx_list1[0]])) #Get the max temperature, send to temp list
+                                else:
+                                    print('That is not a valid search month!')
+                                    break
 
 
                         except: #In the case of a nodata value
@@ -848,11 +858,21 @@ def end_date_calendar_csv(file_path_daily,year):
                         try:
 
                             if information_stripped[idx_list2[0]][0:4] == year: 
-                                if information_stripped[idx_list2[0]][5:7] == '09' or information_stripped[idx_list2[0]][5:7] == '10' or \
-                                   information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12':
-                                    #if information_stripped[idx_list2[0]][11:13] == '13':
-                                    Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
-                                    temp_list.append(float(information_stripped[idx_list1[0]]))
+                                if search_month == 'sep': 
+                                    if information_stripped[idx_list2[0]][5:7] == '09' or information_stripped[idx_list2[0]][5:7] == '10' or \
+                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12': #Make sure we are only considering months after October 
+                                        #if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
+                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
+                                        temp_list.append(float(information_stripped[idx_list1[0]])) #Get the max temperature, send to temp list
+                                elif search_month == 'oct':
+                                    if information_stripped[idx_list2[0]][5:7] == '10' or \
+                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12': #Make sure we are only considering months after October 
+                                        #if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
+                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
+                                        temp_list.append(float(information_stripped[idx_list1[0]])) #Get the max temperature, send to temp list
+                                else:
+                                    print('That is not a valid search month!')
+                                    break
 
 
 
@@ -893,16 +913,27 @@ def end_date_calendar_csv(file_path_daily,year):
                 try: 
 
                     Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day (end day) 
-
-                    d0 = date(int(year), 9, 1) #Sep 1, Year 
+                    if search_month == 'sep': 
+                        d0 = date(int(year), 9, 1) #Sep 1, Year
+                    elif search_month == 'oct':
+                        d0 = date(int(year), 10, 1) #Oct 1, Year
+                    else:
+                        print('That is not a valid search month!')
+                        break
                     d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
                     delta = d1 - d0
-                    day = int(delta.days) #Convert to integer 
+                    day = int(delta.days) #Convert to integer
                     date_dict[station_name[:-4]] = day #Store the integer in the dictionary
                 except:
                     print('There are no data values upstream! Need to take an alternative method.')
                     Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar]
-                    d0 = date(int(year), 9, 1)
+                    if search_month == 'sep': 
+                        d0 = date(int(year), 9, 1) #Sep 1, Year
+                    elif search_month == 'oct':
+                        d0 = date(int(year), 10, 1) #Oct 1, Year
+                    else:
+                        print('That is not a valid search month!')
+                        break
                     d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) + timedelta(days=3)
                     delta = d1 - d0
                     day = int(delta.days) #Convert to integer 
