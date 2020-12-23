@@ -2461,7 +2461,17 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                 if d0 <= d1:
                     proj_dict[k] = [x,y,v[2]]
             except:
-                print('Skipping nan value!') 
+                print('Skipping nan value!')
+
+
+        #check if leap
+        is_leap = isleap(int(year))
+        if is_leap:
+            num_days_to_march = 31+28
+            num_days_to_sep = 31+28+31+30+31+30+31+31
+        else:
+            num_days_to_march = 31+29
+            num_days_to_sep = 31+29+31+30+31+30+31+31
 
         #Get fires inside the ecozone
         eco_zone = gpd.read_file(ecozone_path)
@@ -2494,12 +2504,20 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
 
                     if updating_list_first[0] > v[2]:
                         #Get days since January 1
+
+                        
                         updating_list_first[0] = v[2]
                         #print('Overwrite first!') 
                         #print(v[2])
                 elif len(updating_list_first) == 0:
 
-                    updating_list_first.append(v[2])
+                    d1 = date(int(updating_list_last[0][0:4]), int(updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
+                    #Calculate from Jan 1
+                    d0 = date(int(updating_list_first[0][0:4]), 1, 1)
+                    delta_check = d1 - d0
+
+                    if delta_check < timedelta(days=num_days_to_sep): #only if it is before sep 1
+                        updating_list_first.append(v[2])
                 else:
                     print('...')  
                     
