@@ -2459,7 +2459,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
         ecozone_path (str): path to the ecozone shapefile
         out_path (str): where to save the results file
         search_date_end (str): 'oct' or 'sep', when to start looking for the last date
-        search_date_end (str): 'feb' or 'mar', when to start looking for the last date,
+        search_date_start (str): 'feb' or 'mar', when to start looking for the last date,
         january start dates considered unrealistic...
     Returns
         first_date (str): first lightning caused ignition in ecozone
@@ -2495,7 +2495,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
                     d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
                     if d0 <= d1:
                         proj_dict[k] = [x,y,v[2]]
-                elif search_date_end == 'feb': #Feb 1
+                elif search_date_start == 'feb': #Feb 1
                     d0 = date(int(str(v[2])[0:4]), 2, 1) #Revert to Mar 1 
                     d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
                     if d0 <= d1:
@@ -2680,7 +2680,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
             writer.writerow(row)
         
 
-def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_path,out_path,search_date):
+def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_path,out_path,search_date_end,search_date_start):
     '''Get the first and last lightning-caused ignitions from the extra dataset 
     Parameters
         file_path (str): path to ignition lookup file
@@ -2688,7 +2688,9 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
         year2 (int): end year
         ecozone_path (str): path to the ecozone shapefile
         out_path (str): where to save the results file
-        search_date (str): 'oct' or 'sep', when to start looking for the last date
+        search_date_end (str): 'oct' or 'sep', when to start looking for the last date
+        search_date_start (str): 'feb' or 'mar', when to start looking for the last date,
+        january start dates considered unrealistic...
     Returns
         first_date (str): first lightning caused ignition in ecozone
         last_date (str): last lightning caused ignition in ecozone
@@ -2720,10 +2722,12 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
         #check if leap
         is_leap = isleap(int(year))
         if is_leap:
+            num_days_to_feb = 31
             num_days_to_march = 31+28
             num_days_to_sep = 31+28+31+30+31+30+31+31
             num_days_to_oct = 31+28+31+30+31+30+31+31+30
         else:
+            num_days_to_feb = 31
             num_days_to_march = 31+29
             num_days_to_sep = 31+29+31+30+31+30+31+31
             num_days_to_oct = 31+29+31+30+31+30+31+31+30
@@ -2745,16 +2749,28 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
             pointDF = pd.DataFrame([fire_loc])
             gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
             if (eco_zone.geometry.contains(gdf.geometry)).any():
-                if v[2] >=  num_days_to_march: #1 is Jan 1, we exclude
-                    if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
-                        updating_list_first[0] = v[2]
-                    elif len(updating_list_first) == 0:
-                        updating_list_first.append(v[2])
-                    else:
-                        print('...')
+                if search_date_start == 'mar': 
+                    if v[2] >=  num_days_to_march: #1 is Jan 1, we exclude
+                        if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
+                            updating_list_first[0] = v[2]
+                        elif len(updating_list_first) == 0:
+                            updating_list_first.append(v[2])
+                        else:
+                            print('...')
+                elif search_date_start == 'feb':
+                    if v[2] >=  num_days_to_feb: #1 is Jan 1, we exclude
+                        if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
+                            updating_list_first[0] = v[2]
+                        elif len(updating_list_first) == 0:
+                            updating_list_first.append(v[2])
+                        else:
+                            print('...')
+
+                else:
+                    print('That is not a valid report date!') 
 
                 #End date
-                if search_date == 'sep': 
+                if search_date_end == 'sep': 
                     if v[2] >= num_days_to_sep: #1 is Jan 1, we exclude
                         if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
                             updating_list_last[0] = v[2]
@@ -2762,7 +2778,7 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
                             updating_list_last.append(v[2])
                         else:
                             print('...')
-                elif search_date == 'oct':
+                elif search_date_end == 'oct':
                     if v[2] >= num_days_to_oct: #1 is Jan 1, we exclude
                         if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
                             updating_list_last[0] = v[2]
