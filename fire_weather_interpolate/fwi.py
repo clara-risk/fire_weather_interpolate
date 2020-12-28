@@ -2563,12 +2563,12 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
                     d0 = date(int(v[2][0:4]), 1, 1)
                     delta_check = d1 - d0
 
-                    if search_date == 'sep': 
+                    if search_date_end == 'sep': 
 
                         if delta_check < timedelta(days=num_days_to_sep): #only if it is before sep 1
                             updating_list_first.append(v[2])
 
-                    elif search_date == 'oct':
+                    elif search_date_end == 'oct':
                         if delta_check < timedelta(days=num_days_to_oct): #only if it is before sep 1
                             updating_list_first.append(v[2])
                     else:
@@ -2594,9 +2594,9 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
                     print('...')  
 
         if len(updating_list_first) > 0:
-            if search_date == 'mar': 
+            if search_date_start == 'mar': 
                 d0 = date(int(updating_list_first[0][0:4]), 3, 1) #Jan 1 --> Mar 1 Dec 28
-            elif search_date == 'feb':
+            elif search_date_start == 'feb':
                 d0 = date(int(updating_list_first[0][0:4]), 2, 1) #Jan 1 --> Mar 1 Dec 28
             else:
                 print('That is not a valid search date!') 
@@ -2626,11 +2626,11 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
             first_fire.append(-9999)
         if len(updating_list_last) > 0:
 
-            if search_date == 'sep': 
+            if search_date_end == 'sep': 
             
                 d0 = date(int(updating_list_last[0][0:4]), 9, 1) #Sep 1- revert
 
-            elif search_date == 'oct':
+            elif search_date_end == 'oct':
                 d0 = date(int(updating_list_last[0][0:4]), 10, 1) #Sep 1- revert
 
             else:
