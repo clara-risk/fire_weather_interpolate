@@ -2662,14 +2662,15 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
             writer.writerow(row)
         
 
-def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_path,out_path):
+def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_path,out_path,search_date):
     '''Get the first and last lightning-caused ignitions from the extra dataset 
     Parameters
         file_path (str): path to ignition lookup file
         year1 (int): start year
         year2 (int): end year
         ecozone_path (str): path to the ecozone shapefile
-        out_path (str): where to save the results file 
+        out_path (str): where to save the results file
+        search_date (str): 'oct' or 'sep', when to start looking for the last date
     Returns
         first_date (str): first lightning caused ignition in ecozone
         last_date (str): last lightning caused ignition in ecozone
@@ -2703,9 +2704,11 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
         if is_leap:
             num_days_to_march = 31+28
             num_days_to_sep = 31+28+31+30+31+30+31+31
+            num_days_to_oct = 31+28+31+30+31+30+31+31+30
         else:
             num_days_to_march = 31+29
             num_days_to_sep = 31+29+31+30+31+30+31+31
+            num_days_to_oct = 31+29+31+30+31+30+31+31+30
         
             
         #Get fires inside the ecozone
@@ -2733,13 +2736,24 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
                         print('...')
 
                 #End date
-                if v[2] >= num_days_to_sep: #1 is Jan 1, we exclude
-                    if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
-                        updating_list_last[0] = v[2]
-                    elif len(updating_list_last) == 0:
-                        updating_list_last.append(v[2])
-                    else:
-                        print('...') 
+                if search_date == 'sep': 
+                    if v[2] >= num_days_to_sep: #1 is Jan 1, we exclude
+                        if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
+                            updating_list_last[0] = v[2]
+                        elif len(updating_list_last) == 0:
+                            updating_list_last.append(v[2])
+                        else:
+                            print('...')
+                elif search_date == 'oct':
+                    if v[2] >= num_days_to_oct: #1 is Jan 1, we exclude
+                        if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
+                            updating_list_last[0] = v[2]
+                        elif len(updating_list_last) == 0:
+                            updating_list_last.append(v[2])
+                        else:
+                            print('...')
+                else:
+                    print('That is not a valid report date!') 
                     
             if len(updating_list_first) > 0:
                 print('First fire: '+str(updating_list_first[0]))
