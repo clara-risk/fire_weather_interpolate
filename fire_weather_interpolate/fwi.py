@@ -2450,7 +2450,7 @@ def plot_july(fwi_list,maxmin,year,var,shapefile):
     fig.suptitle(title, fontsize=14)
     plt.show()
 
-def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,search_date):
+def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,search_date_end,search_date_start):
     '''Get the first and last lightning-caused ignitions from the database in ecozone
     Parameters
         file_path (str): path to ignition lookup file
@@ -2458,7 +2458,9 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
         year2 (int): end year
         ecozone_path (str): path to the ecozone shapefile
         out_path (str): where to save the results file
-        search_date (str): 'oct' or 'sep', when to start looking for the last date
+        search_date_end (str): 'oct' or 'sep', when to start looking for the last date
+        search_date_end (str): 'feb' or 'mar', when to start looking for the last date,
+        january start dates considered unrealistic...
     Returns
         first_date (str): first lightning caused ignition in ecozone
         last_date (str): last lightning caused ignition in ecozone
@@ -2486,12 +2488,21 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
             x,y = pyproj.Proj('esri:102001')(lon,lat)
             #Make sure v2 is not before Mar 1
 
-            try: 
+            try:
+                if search_date_start == 'mar': 
 
-                d0 = date(int(str(v[2])[0:4]), 3, 1) #Revert to Mar 1 
-                d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
-                if d0 <= d1:
-                    proj_dict[k] = [x,y,v[2]]
+                    d0 = date(int(str(v[2])[0:4]), 3, 1) #Revert to Mar 1 
+                    d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
+                    if d0 <= d1:
+                        proj_dict[k] = [x,y,v[2]]
+                elif search_date_end == 'feb': #Feb 1
+                    d0 = date(int(str(v[2])[0:4]), 2, 1) #Revert to Mar 1 
+                    d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
+                    if d0 <= d1:
+                        proj_dict[k] = [x,y,v[2]]
+                else:
+                    print('That is not a valid search date!') 
+                    
             except:
                 print('Skipping nan value!')
 
@@ -2499,10 +2510,12 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
         #check if leap
         is_leap = isleap(int(year))
         if is_leap:
+            num_days_to_feb = 31
             num_days_to_march = 31+28
             num_days_to_sep = 31+28+31+30+31+30+31+31
             num_days_to_oct = 31+28+31+30+31+30+31+31+30
         else:
+            num_days_to_feb = 31
             num_days_to_march = 31+29
             num_days_to_sep = 31+29+31+30+31+30+31+31
             num_days_to_oct = 31+29+31+30+31+30+31+31+30
@@ -2581,7 +2594,12 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
                     print('...')  
 
         if len(updating_list_first) > 0:
-            d0 = date(int(updating_list_first[0][0:4]), 3, 1) #Jan 1 --> Mar 1 Dec 28
+            if search_date == 'mar': 
+                d0 = date(int(updating_list_first[0][0:4]), 3, 1) #Jan 1 --> Mar 1 Dec 28
+            elif search_date == 'feb':
+                d0 = date(int(updating_list_first[0][0:4]), 2, 1) #Jan 1 --> Mar 1 Dec 28
+            else:
+                print('That is not a valid search date!') 
             d1 = date(int(updating_list_first[0][0:4]), int(updating_list_first[0][5:7]), int(updating_list_first[0][8:10]))
 
             delta = d1 - d0
