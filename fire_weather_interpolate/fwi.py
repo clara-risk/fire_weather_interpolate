@@ -2487,7 +2487,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
 
             try: 
 
-                d0 = date(int(str(v[2])[0:4]), 1, 1) #Change Dec 28 to Jan 1 but exclude Jan 1 (before it was Mar 1)
+                d0 = date(int(str(v[2])[0:4]), 3, 1) #Revert to Mar 1 
                 d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
                 if d0 <= d1:
                     proj_dict[k] = [x,y,v[2]]
@@ -2563,13 +2563,13 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
 
                     d0 = date(int(str(v[2])[0:4]), 1, 1)
                     d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
-                    if d0 < d1: #Exclude Jan 1 report date
+                    if d0 < d1: #Exclude jan 1
                         updating_list_last.append(v[2])
                 else:
                     print('...')  
 
         if len(updating_list_first) > 0:
-            d0 = date(int(updating_list_first[0][0:4]), 1, 1) #Mar 1 --> Jan 1 Dec 28
+            d0 = date(int(updating_list_first[0][0:4]), 3, 1) #Jan 1 --> Mar 1 Dec 28
             d1 = date(int(updating_list_first[0][0:4]), int(updating_list_first[0][5:7]), int(updating_list_first[0][8:10]))
 
             delta = d1 - d0
@@ -2595,7 +2595,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
         else:
             first_fire.append(-9999)
         if len(updating_list_last) > 0:
-            d0 = date(int(updating_list_last[0][0:4]), 1, 1) #Sep 1
+            d0 = date(int(updating_list_last[0][0:4]), 3, 1) #Mar 1- revert
             d1 = date(int(updating_list_last[0][0:4]), int(updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
             delta = d1 - d0
 
@@ -2702,7 +2702,7 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
             pointDF = pd.DataFrame([fire_loc])
             gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
             if (eco_zone.geometry.contains(gdf.geometry)).any():
-                if v[2] >  1: #1 is Jan 1, we exclude
+                if v[2] >=  num_days_to_march: #1 is Jan 1, we exclude
                     if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
                         updating_list_first[0] = v[2]
                     elif len(updating_list_first) == 0:
@@ -2711,7 +2711,7 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
                         print('...')
 
                 #End date
-                if v[2] > 1: #1 is Jan 1, we exclude
+                if v[2] >= num_days_to_sep: #1 is Jan 1, we exclude
                     if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
                         updating_list_last[0] = v[2]
                     elif len(updating_list_last) == 0:
