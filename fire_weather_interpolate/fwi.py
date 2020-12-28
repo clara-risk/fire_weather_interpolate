@@ -2450,7 +2450,7 @@ def plot_july(fwi_list,maxmin,year,var,shapefile):
     fig.suptitle(title, fontsize=14)
     plt.show()
 
-def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
+def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,search_date):
     '''Get the first and last lightning-caused ignitions from the database in ecozone
     Parameters
         file_path (str): path to ignition lookup file
@@ -2458,6 +2458,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
         year2 (int): end year
         ecozone_path (str): path to the ecozone shapefile
         out_path (str): where to save the results file
+        search_date (str): 'oct' or 'sep', when to start looking for the last date
     Returns
         first_date (str): first lightning caused ignition in ecozone
         last_date (str): last lightning caused ignition in ecozone
@@ -2500,9 +2501,11 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
         if is_leap:
             num_days_to_march = 31+28
             num_days_to_sep = 31+28+31+30+31+30+31+31
+            num_days_to_oct = 31+28+31+30+31+30+31+31+30
         else:
             num_days_to_march = 31+29
             num_days_to_sep = 31+29+31+30+31+30+31+31
+            num_days_to_oct = 31+29+31+30+31+30+31+31+30
 
         #Get fires inside the ecozone
         eco_zone = gpd.read_file(ecozone_path)
@@ -2547,8 +2550,17 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
                     d0 = date(int(v[2][0:4]), 1, 1)
                     delta_check = d1 - d0
 
-                    if delta_check < timedelta(days=num_days_to_sep): #only if it is before sep 1
-                        updating_list_first.append(v[2])
+                    if search_date == 'sep': 
+
+                        if delta_check < timedelta(days=num_days_to_sep): #only if it is before sep 1
+                            updating_list_first.append(v[2])
+
+                    elif search_date == 'oct':
+                        if delta_check < timedelta(days=num_days_to_oct): #only if it is before sep 1
+                            updating_list_first.append(v[2])
+                    else:
+                        print('That is not a valid search date!') 
+                        
                 else:
                     print('...')  
                     
@@ -2595,7 +2607,17 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path):
         else:
             first_fire.append(-9999)
         if len(updating_list_last) > 0:
-            d0 = date(int(updating_list_last[0][0:4]), 3, 1) #Mar 1- revert
+
+            if search_date == 'sep': 
+            
+                d0 = date(int(updating_list_last[0][0:4]), 9, 1) #Sep 1- revert
+
+            elif search_date == 'oct':
+                d0 = date(int(updating_list_last[0][0:4]), 10, 1) #Sep 1- revert
+
+            else:
+                print('That is not a valid search date!')
+                
             d1 = date(int(updating_list_last[0][0:4]), int(updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
             delta = d1 - d0
 
