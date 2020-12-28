@@ -241,7 +241,7 @@ if __name__ == "__main__":
                         cluster_num2 = int(round(num_stations/5))
                         cluster_num3 = int(round(num_stations/10)) 
                         cluster_num,MAE,stdev_stations = gpr.select_block_size_gpr(10,'clusters',latlon_station,days_dict,grd_size,shapefile,\
-                                                                                       file_path_elev,idx_list,cluster_num1,cluster_num2,\
+                                                                                       file_path_elev,idx_list,None,cluster_num1,cluster_num2,\
                                                                                        cluster_num3,True,boreal_shapefile,0.1)
                     except ZeroDivisionError:
                         print('There are no stations in the boreal zone!')
