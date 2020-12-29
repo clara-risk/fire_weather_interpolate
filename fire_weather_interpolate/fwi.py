@@ -2661,6 +2661,10 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
         else:
             last_fire.append(-9999)
 
+        print(first_fire[-1])
+        print(last_fire[-1])
+            
+
         year_list.append(year)
         if int(last_fire[-1]) < 150 and int(last_fire[-1]) != -9999:
             print('Error 1!')
