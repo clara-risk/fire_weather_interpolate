@@ -2450,6 +2450,7 @@ def plot_july(fwi_list,maxmin,year,var,shapefile):
     fig.suptitle(title, fontsize=14)
     plt.show()
 
+    
 def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,search_date_end,search_date_start):
     '''Get the first and last lightning-caused ignitions from the database in ecozone
     Parameters
@@ -2475,11 +2476,10 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
         data = pd.read_csv(file_path)
         df = data.loc[data['YEAR'] == year] 
         df2 = df.loc[df['CAUSE'] == 'L'] 
-        df2 = df.loc[(df2['SRC_AGENCY'] == 'ON') | (df2['SRC_AGENCY'] == 'QC')] 
+        df2 = df2.loc[(df2['SRC_AGENCY'] == 'ON') | (df2['SRC_AGENCY'] == 'QC')] 
         fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
         initiate_dict = list(zip(df2['FIRE_ID'],df2['LATITUDE'], df2['LONGITUDE'],df2['REP_DATE']))
         lookup_dict = {i[0]: [i[1],i[2],i[3]] for i  in initiate_dict}
-        print(df2)
 
         proj_dict = {} 
         #Project the latitude and longitudes
@@ -2502,7 +2502,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
                     if d0 <= d1:
                         proj_dict[k] = [x,y,v[2]]
                 else:
-                    print('That is not a valid search date!') 
+                    print('That is not a valid search date!')
                     
             except:
                 print('Skipping nan value!')
