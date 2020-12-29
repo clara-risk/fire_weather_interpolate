@@ -2475,10 +2475,11 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
         data = pd.read_csv(file_path)
         df = data.loc[data['YEAR'] == year] 
         df2 = df.loc[df['CAUSE'] == 'L'] 
-        df2 = df.loc[(df['SRC_AGENCY'] == 'ON') | (df['SRC_AGENCY'] == 'QC')] 
+        df2 = df.loc[(df2['SRC_AGENCY'] == 'ON') | (df2['SRC_AGENCY'] == 'QC')] 
         fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
         initiate_dict = list(zip(df2['FIRE_ID'],df2['LATITUDE'], df2['LONGITUDE'],df2['REP_DATE']))
         lookup_dict = {i[0]: [i[1],i[2],i[3]] for i  in initiate_dict}
+        print(df2)
 
         proj_dict = {} 
         #Project the latitude and longitudes
