@@ -21,6 +21,7 @@ import pyproj
 import matplotlib.pyplot as plt
 from sklearn import linear_model
 from sklearn.linear_model import RidgeCV,LinearRegression
+from sklearn import datasets, linear_model
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.preprocessing import QuantileTransformer
 from sklearn.compose import TransformedTargetRegressor
@@ -31,6 +32,8 @@ import seaborn as sns
 from scipy.spatial import distance
 from scipy.spatial.distance import cdist
 from scipy import stats
+
+import statsmodels.api as sm
 
 #functions 
 
@@ -898,13 +901,10 @@ def linear_regression(path_to_excel_spreadsheet,plot_distributions,plot_residual
      
 def check_p_value(path_to_excel_spreadsheet):
      '''Quality-control for p-value calculation'''
-     from sklearn import datasets, linear_model
-     from sklearn.linear_model import LinearRegression
-     import statsmodels.api as sm
-     from scipy import stats
 
      df = pd.read_csv(path_to_excel_spreadsheet)
      mod = LinearRegression()
+     
      y = np.array(df['NFDB_DATE']).reshape(-1, 1)
      X = np.array(df['AV_SEASON_DATE']).reshape(-1, 1)
 
