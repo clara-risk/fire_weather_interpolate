@@ -851,7 +851,7 @@ def linear_regression(path_to_excel_spreadsheet,plot_distributions,plot_residual
           mu = sum(residuals)/len(residuals)
           var  = sum(pow(x-mu,2) for x in residuals) / len(residuals)
           sigma  = math.sqrt(var)
-          n, bins, patches = ax.hist(residuals,10,density=1,align='left')
+          n, bins, patches = ax.hist(residuals,7,density=1,align='left')
           line = ((1 / (np.sqrt(2 * np.pi) * sigma)) *np.exp(-0.5 * (1 / sigma * (bins - mu))**2))
           ax.plot(bins, line, '--')
           ax.set_xlabel('Residuals')
@@ -912,4 +912,18 @@ def check_p_value(path_to_excel_spreadsheet):
      est = sm.OLS(y, X2)
      est2 = est.fit()
      print(est2.summary())
+
+     print('Trying GLM...')
+
+     glm = sm.GLM(y, X2,family=sm.families.Poisson())
+     res = glm.fit()
+     print(res.summary())
+
+     print(res._endog)
+     
+     from statsmodels.genmod.generalized_linear_model import GLMResults
+     #c_p = GLMResults.cov_params(res,r_matrix=None, column=None, scale=res.scale, cov_p=None, other=None)
+     print(GLMResults(glm,res.params,res.normalized_cov_params,res.scale).aic)
+     print(GLMResults(glm,res.params,res.normalized_cov_params,res.scale).aic) #no pseudo-R2?? 
+     
      
