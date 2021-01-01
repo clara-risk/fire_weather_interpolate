@@ -34,6 +34,7 @@ from scipy.spatial.distance import cdist
 from scipy import stats
 
 import statsmodels.api as sm
+from statsmodels.genmod.generalized_linear_model import GLMResults
 
 #functions 
 
@@ -919,11 +920,8 @@ def check_p_value(path_to_excel_spreadsheet):
      res = glm.fit()
      print(res.summary())
 
-     print(res._endog)
-     
-     from statsmodels.genmod.generalized_linear_model import GLMResults
-     #c_p = GLMResults.cov_params(res,r_matrix=None, column=None, scale=res.scale, cov_p=None, other=None)
      print(GLMResults(glm,res.params,res.normalized_cov_params,res.scale).aic)
-     print(GLMResults(glm,res.params,res.normalized_cov_params,res.scale).aic) #no pseudo-R2?? 
+     print(1 - GLMResults(glm,res.params,res.normalized_cov_params,res.scale).llf/GLMResults(glm,res.params,res.normalized_cov_params,res.scale).llnull)
+     #McFadden pseudo-R2, see: https://github.com/statsmodels/statsmodels/issues/5861
      
      
