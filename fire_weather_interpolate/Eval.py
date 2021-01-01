@@ -921,7 +921,8 @@ def check_p_value(path_to_excel_spreadsheet):
      print(res.summary())
 
      print(GLMResults(glm,res.params,res.normalized_cov_params,res.scale).aic)
-     print(1 - GLMResults(glm,res.params,res.normalized_cov_params,res.scale).llf/GLMResults(glm,res.params,res.normalized_cov_params,res.scale).llnull)
+     print(1 - (GLMResults(glm,res.params,res.normalized_cov_params,res.scale).llf-1)/GLMResults(glm,res.params,res.normalized_cov_params,res.scale).llnull)
      #McFadden pseudo-R2, see: https://github.com/statsmodels/statsmodels/issues/5861
+     #Then, we adjust it, according to here: https://datascience.oneoffcoder.com/psuedo-r-squared-logistic-regression.html
      
      
