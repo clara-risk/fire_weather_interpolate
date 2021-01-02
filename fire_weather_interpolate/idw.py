@@ -152,7 +152,7 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d,expand_area):
      #Can return plotting dictionary if need be, add 3rd to return statement
      return idw_grid, maxmin
 
-def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot):
+def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot,expand_area):
      '''Leave-one-out cross-validation procedure for IDW 
      Parameters
          latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
@@ -161,7 +161,8 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot):
          shapefile (str): path to the study area shapefile 
          d (int): the weighting function for IDW interpolation
          pass_to_plot (bool):whether you will be plotting the error and need a version without absolute
-         value error 
+         value error
+         expand_area (bool): function will expand the study area so that more stations are taken into account (200 km)
      Returns 
          absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
          was left out 
@@ -215,23 +216,33 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot):
         
         na_map = gpd.read_file(shapefile)
         bounds = na_map.bounds
-        xmax = bounds['maxx']
-        xmin= bounds['minx']
-        ymax = bounds['maxy']
-        ymin = bounds['miny']
+        if expand_area:
+             xmax = bounds['maxx']+200000 
+             xmin= bounds['minx']-200000 
+             ymax = bounds['maxy']+200000 
+             ymin = bounds['miny']-200000
+        else:
+             xmax = bounds['maxx']
+             xmin= bounds['minx']
+             ymax = bounds['maxy']
+             ymin = bounds['miny']  
+
         pixelHeight = 10000 
         pixelWidth = 10000
                 
-        num_col = int((xmax - xmin) / pixelHeight)
-        num_row = int((ymax - ymin) / pixelWidth)
+        num_col = int((xmax - xmin) / pixelHeight)+1
+        num_row = int((ymax - ymin) / pixelWidth)+1
 
 
         #We need to project to a projected system before making distance matrix
         source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83') #We dont know but assume 
         xProj, yProj = pyproj.Proj('esri:102001')(x,y)
-
-        yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
-        xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])
+        if expand_area:
+             yProj_extent=np.append(yProj,[bounds['maxy']+200000,bounds['miny']-200000])
+             xProj_extent=np.append(xProj,[bounds['maxx']+200000,bounds['minx']-200000])
+        else:
+             yProj_extent=np.append(yProj,[bounds['maxy'],bounds['miny']])
+             xProj_extent=np.append(xProj,[bounds['maxx'],bounds['minx']])    
 
         Yi = np.linspace(np.min(yProj_extent),np.max(yProj_extent),num_row)
         Xi = np.linspace(np.min(xProj_extent),np.max(xProj_extent),num_col)
