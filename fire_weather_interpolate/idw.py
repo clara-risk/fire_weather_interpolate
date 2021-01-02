@@ -268,8 +268,8 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot,expand_are
         #Delete at a certain point
         coord_pair = projected_lat_lon[station_name_hold_back]
 
-        x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight) #lon 
-        y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth) #lat
+        x_orig = int((coord_pair[0] - float(xmin))/pixelHeight) #lon 
+        y_orig = int((coord_pair[1] - float(ymin))/pixelWidth) #lat
         x_origin_list.append(x_orig)
         y_origin_list.append(y_orig)
 
