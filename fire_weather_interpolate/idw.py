@@ -191,8 +191,6 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot,expand_are
      for station_name in Cvar_dict.keys():
           
           if station_name in latlon_dict.keys():
-               
-             station_name_list.append(station_name)
 
              loc = latlon_dict[station_name]
              latitude = loc[0]
@@ -203,6 +201,7 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot,expand_are
                   Plat = float(Plat)
                   Plon = float(Plon)
                   projected_lat_lon[station_name] = [Plat,Plon]
+                  station_name_list.append(station_name) #Only append if it falls inside the generated grid
 
 
 
