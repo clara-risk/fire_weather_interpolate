@@ -175,6 +175,19 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot,expand_are
      station_name_list = []
      projected_lat_lon = {}
 
+     na_map = gpd.read_file(shapefile)
+     bounds = na_map.bounds
+     if expand_area:
+          xmax = bounds['maxx']+200000 
+          xmin= bounds['minx']-200000 
+          ymax = bounds['maxy']+200000 
+          ymin = bounds['miny']-200000
+     else:
+          xmax = bounds['maxx']
+          xmin= bounds['minx']
+          ymax = bounds['maxy']
+          ymin = bounds['miny']  
+
      for station_name in Cvar_dict.keys():
           
           if station_name in latlon_dict.keys():
@@ -185,9 +198,11 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot,expand_are
              latitude = loc[0]
              longitude = loc[1]
              Plat, Plon = pyproj.Proj('esri:102001')(longitude,latitude)
-             Plat = float(Plat)
-             Plon = float(Plon)
-             projected_lat_lon[station_name] = [Plat,Plon]
+             proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
+             if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                  Plat = float(Plat)
+                  Plon = float(Plon)
+                  projected_lat_lon[station_name] = [Plat,Plon]
 
 
 
@@ -202,10 +217,12 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot,expand_are
                      loc = latlon_dict[station_name]
                      latitude = loc[0]
                      longitude = loc[1]
-                     cvar_val = Cvar_dict[station_name]
-                     lat.append(float(latitude))
-                     lon.append(float(longitude))
-                     Cvar.append(cvar_val)
+                     proj_coord = pyproj.Proj('esri:102001')(longitude,latitude) #Filter out stations outside of grid
+                     if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                          cvar_val = Cvar_dict[station_name]
+                          lat.append(float(latitude))
+                          lon.append(float(longitude))
+                          Cvar.append(cvar_val)
                  else:
 
                      pass
@@ -213,19 +230,6 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot,expand_are
         y = np.array(lat)
         x = np.array(lon)
         z = np.array(Cvar) 
-        
-        na_map = gpd.read_file(shapefile)
-        bounds = na_map.bounds
-        if expand_area:
-             xmax = bounds['maxx']+200000 
-             xmin= bounds['minx']-200000 
-             ymax = bounds['maxy']+200000 
-             ymin = bounds['miny']-200000
-        else:
-             xmax = bounds['maxx']
-             xmin= bounds['minx']
-             ymax = bounds['maxy']
-             ymin = bounds['miny']  
 
         pixelHeight = 10000 
         pixelWidth = 10000
