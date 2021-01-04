@@ -388,12 +388,14 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      index_min = list_stdev.index(min(list_stdev))
      lowest_stdev = statistics.stdev(list_error[index_min])
 
-     ave_MAE = sum(list_error[index_min])/len(list_error[index_min]) 
+     ave_MAE = sum(list_error[index_min])/len(list_error[index_min])
+     cluster_select = list_block_name[index_min]
 
      print(list_error[index_min]) 
      print(ave_MAE)
-     print(lowest_stdev) 
-     return lowest_stdev,ave_MAE
+     print(lowest_stdev)
+     print(cluster_select)
+     return cluster_select,ave_MAE,lowest_stdev
                
           
 def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,nfolds,replacement,\
