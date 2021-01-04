@@ -2474,12 +2474,17 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
         fire_locs = []
         lookup_dict = {}
         data = pd.read_csv(file_path)
-        df = data.loc[data['YEAR'] == year] 
-        df2 = df.loc[df['CAUSE'] == 'L'] 
+        df2 = data.loc[data['YEAR'] == year] 
+        #df2 = df.loc[df['CAUSE'] == 'L'] 
         df2 = df2.loc[(df2['SRC_AGENCY'] == 'ON') | (df2['SRC_AGENCY'] == 'QC')] 
         fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
         initiate_dict = list(zip(df2['FIRE_ID'],df2['LATITUDE'], df2['LONGITUDE'],df2['REP_DATE']))
         lookup_dict = {i[0]: [i[1],i[2],i[3]] for i  in initiate_dict}
+
+        #How many fires in the year??
+        print('Number of fires in year: '+str(len(initiate_dict)))
+        if len(initiate_dict) < 5:
+            lookup_dict = {} 
 
         proj_dict = {} 
         #Project the latitude and longitudes
@@ -2669,7 +2674,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
         if int(last_fire[-1]) < 150 and int(last_fire[-1]) != -9999:
             print('Error 1!')
             print(last_fire[-1])
-        if int(first_fire[-1]) < 30 and int(first_fire[-1]) != -9999:
+        if int(first_fire[-1]) < 31 and int(first_fire[-1]) != -9999:
             print('Error 2!')
             print(first_fire[-1]) 
 
@@ -2709,8 +2714,8 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
         fire_locs = []
         lookup_dict = {}
         data = pd.read_csv(file_path)
-        df = data.loc[data['FIRE_YEAR'] == year] 
-        df2 = df.loc[df['GENERAL_CAUSE'] == 'LTG'] 
+        df2 = data.loc[data['FIRE_YEAR'] == year] 
+        #df2 = df.loc[df['GENERAL_CAUSE'] == 'LTG'] #All fires 
         fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
         initiate_dict = list(zip(df2['UNIQUE_ID'],df2['LATITUDE'], df2['LONGITUDE'],df2['C_START_DATE_DayofYear']))
         lookup_dict = {i[0]: [i[1],i[2],i[3]] for i  in initiate_dict}
