@@ -386,13 +386,13 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      list_block_name = [cluster_num1,cluster_num2,cluster_num3]
      list_error = [block25_error,block16_error,block9_error]
      index_min = list_stdev.index(min(list_stdev))
-     stdev_number = min(list_stdev)
-     lowest_stdev = list_block_name[index_min]
+     lowest_stdev = statistics.stdev(list_error[index_min])
 
      ave_MAE = sum(list_error[index_min])/len(list_error[index_min]) 
 
-     print(lowest_stdev)
-     #print(ave_MAE) 
+     
+     print(ave_MAE)
+     print(lowest_stdev) 
      return lowest_stdev,ave_MAE,stdev_number
                
           
