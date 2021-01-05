@@ -2475,7 +2475,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
         lookup_dict = {}
         data = pd.read_csv(file_path)
         df2 = data.loc[data['YEAR'] == year] 
-        #df2 = df.loc[df['CAUSE'] == 'L'] 
+        #df2 = df2.loc[df2['CAUSE'] == 'L'] 
         df2 = df2.loc[(df2['SRC_AGENCY'] == 'ON') | (df2['SRC_AGENCY'] == 'QC')] 
         fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
         initiate_dict = list(zip(df2['FIRE_ID'],df2['LATITUDE'], df2['LONGITUDE'],df2['REP_DATE']))
@@ -2483,8 +2483,6 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
 
         #How many fires in the year??
         print('Number of fires in year: '+str(len(initiate_dict)))
-        if len(initiate_dict) < 5:
-            lookup_dict = {} 
 
         proj_dict = {} 
         #Project the latitude and longitudes
@@ -2497,14 +2495,16 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
             try:
                 if search_date_start == 'mar': 
 
-                    d0 = date(int(str(v[2])[0:4]), 3, 1) #Revert to Mar 1 
+                    d0 = date(int(str(v[2])[0:4]), 3, 1) #Revert to Mar 1
+                    d_End = date(int(str(v[2])[0:4]), 12, 1) #Dec 1 
                     d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
-                    if d0 <= d1:
+                    if d0 <= d1 and d_End > d1: #Exclude fires occurring before Mar 1 and after Dec 1 
                         proj_dict[k] = [x,y,v[2]]
                 elif search_date_start == 'feb': #Feb 1
-                    d0 = date(int(str(v[2])[0:4]), 2, 1) #Revert to Mar 1 
+                    d0 = date(int(str(v[2])[0:4]), 2, 1)
+                    d_End = date(int(str(v[2])[0:4]), 12, 1) #Dec 1 
                     d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
-                    if d0 <= d1:
+                    if d0 <= d1 and d_End > d1: #Exclude fires occurring before Feb 1 and after Dec 1 
                         proj_dict[k] = [x,y,v[2]]
                 else:
                     print('That is not a valid search date!')
@@ -2515,16 +2515,18 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
 
         #check if leap
         is_leap = isleap(int(year))
-        if is_leap:
+        if not is_leap:
             num_days_to_feb = 31
             num_days_to_march = 31+28
             num_days_to_sep = 31+28+31+30+31+30+31+31
             num_days_to_oct = 31+28+31+30+31+30+31+31+30
+            num_days_to_dec = 31+28+31+30+31+30+31+31+30+31+30
         else:
             num_days_to_feb = 31
             num_days_to_march = 31+29
             num_days_to_sep = 31+29+31+30+31+30+31+31
             num_days_to_oct = 31+29+31+30+31+30+31+31+30
+            num_days_to_dec = 31+29+31+30+31+30+31+31+30+31+30
 
         #Get fires inside the ecozone
         eco_zone = gpd.read_file(ecozone_path)
@@ -2532,21 +2534,13 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
         ecoDF_union = ecoDF.geometry.unary_union
 
         updating_list_first = []
-        updating_list_last = [] 
+        updating_list_last = []
+        num_fires_in_zone = 0 
         for k,v  in proj_dict.items():
 
             latitude = float(v[1])
             longitude = float(v[0])
-            #IS IT IN THE SHAPEFILE?
-            #fig, ax = plt.subplots(figsize= (15,15))
-            #crs = {'init': 'esri:102001'}
 
-            #na_map = gpd.read_file(ecozone_path)
-            #na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10)
-            #scatter = ax.scatter(longitude,latitude,edgecolors='k',linewidth=1,s = 14)
-            #plt.show()
-            
-            #fire_loc = Point((longitude,latitude))
             fire_loc = Point((latitude,longitude))
             pointDF = pd.DataFrame([fire_loc])
             gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
@@ -2554,6 +2548,8 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
                 
 
                 if len(updating_list_first) > 0 and len(str(v[2])) == 19: #filter out nan
+                    num_fires_in_zone +=1 
+
 
                     if updating_list_first[0] > v[2]:
                         #Get days since January 1
@@ -2563,6 +2559,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
                         #print('Overwrite first!') 
                         #print(v[2])
                 elif len(updating_list_first) == 0:
+                    num_fires_in_zone +=1 
 
                     d1 = date(int(v[2][0:4]), int(v[2][5:7]), int(v[2][8:10]))
                     #Calculate from Jan 1
@@ -2581,7 +2578,7 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
                         print('That is not a valid search date!') 
                         
                 else:
-                    print('...')  
+                    print('Date is nodata')  
                     
                 if len(updating_list_last) > 0 and len(str(v[2])) == 19:
                     if updating_list_last[0] < v[2]:
@@ -2597,7 +2594,9 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
                     if d0 < d1: #Exclude jan 1
                         updating_list_last.append(v[2])
                 else:
-                    print('...')  
+                    print('Date is nodata')
+
+        print(num_fires_in_zone) 
 
         if len(updating_list_first) > 0:
             if search_date_start == 'mar': 
@@ -2665,6 +2664,11 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
 
         else:
             last_fire.append(-9999)
+
+        print('There are '+str(num_fires_in_zone) + ' fires in the zone')
+        if num_fires_in_zone <= 5: #Not enough fires
+            first_fire[-1] = -9999
+            last_fire[-1] = -9999
 
         print(first_fire[-1])
         print(last_fire[-1])
@@ -2749,7 +2753,8 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
         ecoDF_union = ecoDF.geometry.unary_union
 
         updating_list_first = []
-        updating_list_last = [] 
+        updating_list_last = []
+        num_fires_in_zone = 0 
         for k,v  in proj_dict.items():
 
             latitude = float(v[1])
@@ -2759,6 +2764,7 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
             pointDF = pd.DataFrame([fire_loc])
             gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
             if (eco_zone.geometry.contains(gdf.geometry)).any():
+                num_fires_in_zone += 1
                 if search_date_start == 'mar': 
                     if v[2] >=  num_days_to_march: #1 is Jan 1, we exclude
                         if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
@@ -2799,10 +2805,10 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
                 else:
                     print('That is not a valid report date!') 
                     
-            if len(updating_list_first) > 0:
-                print('First fire: '+str(updating_list_first[0]))
-            if len(updating_list_last) > 0:
-                print('Last fire: '+str(updating_list_last[0])) 
+            #if len(updating_list_first) > 0:
+                #print('First fire: '+str(updating_list_first[0]))
+            #if len(updating_list_last) > 0:
+                #print('Last fire: '+str(updating_list_last[0])) 
         year_list.append(year)
         try: 
             first_fire.append(updating_list_first[0])
@@ -2812,7 +2818,13 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
             last_fire.append(updating_list_last[0]) 
         except:
             last_fire.append(-9999)
-            
+
+        if num_fires_in_zone <= 5: #Not enough fires
+            first_fire[-1] = -9999
+            last_fire[-1] = -9999
+        print(num_fires_in_zone) 
+        print(first_fire[-1])
+        print(last_fire[-1])        
 
     rows = zip(year_list,first_fire,last_fire)
     #Print to a results file
