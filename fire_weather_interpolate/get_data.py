@@ -193,7 +193,7 @@ def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile,fil
     for year in range(int(year1),int(year2)+1):
         print('Processing...'+str(year))
         days_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily,str(year))
-        end_dict, latlon_station2 = fwi.end_date_calendar_csv(file_path_daily,str(year))
+        end_dict, latlon_station2 = fwi.end_date_calendar_csv(file_path_daily,str(year),'oct')
         if year >= 2020: 
             hourly_dict, latlon_stationH = fwi.start_date_add_hourly(file_path_hourly, str(year))
             hourly_end, latlon_stationE = fwi.end_date_add_hourly(file_path_hourly, str(year))
@@ -207,17 +207,17 @@ def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile,fil
         if method == 'IDW2': 
 
             start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 2,True)
-            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 2,True,'oct')
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 2,True)
 
         elif method == 'IDW3':
             
             start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 3,True)
-            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 3,True,'oct')
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 3,True)
 
         elif method == 'IDW4':
 
             start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 4,True)
-            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 4,True,'oct')
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 4,True,)
 
         elif method == 'TPSS':
             num_stationsS = int(len(days_dict.keys()))
@@ -225,11 +225,11 @@ def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile,fil
             num_stationsE = int(len(end_dict.keys()))
             phi_inputE = int(num_stations)-(math.sqrt(2*num_stations))
             start_surface,maxmin = tps.TPS(latlon_station,days_dict,str(year),'Start',shapefile,False,phi_inputS,True,True)
-            end_surface,maxmin = tps.TPS(latlon_station2,end_dict,str(year),'End',shapefile,False,phi_inputE,True,True,'oct')
+            end_surface,maxmin = tps.TPS(latlon_station2,end_dict,str(year),'End',shapefile,False,phi_inputE,True,True)
 
         elif method == 'RF':
             start_surface,maxmin = rf.random_forest_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list,True)
-            end_surface,maxmin = rf.random_forest_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list,True,'oct')
+            end_surface,maxmin = rf.random_forest_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list,True)
 
         else:
             print('Either that method does not exist or there is no support for it. You can use IDW2-4, TPSS, or RF') 
