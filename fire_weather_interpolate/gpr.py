@@ -170,17 +170,23 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'elevS':source_elev, 'var': z})
     
     df_testX = pd.DataFrame({'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
+
+    if len(param_initiate) > 1: 
     
-    kernels = [1.0 * RationalQuadratic(length_scale=param_initiate[0], alpha=param_initiate[1]), 1.0 * RBF(length_scale=param_initiate),\
-               1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1])] 
+        kernels = [1.0 * RBF(length_scale=param_initiate[0]), 1.0 * RationalQuadratic(length_scale=param_initiate[0], alpha=param_initiate[1]), \
+                   1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1])]
+
+    else:
+        
+        kernels = [1.0 * RBF(length_scale=param_initiate[0])]
 
     if cov == 'RationalQuadratic':
         
-        reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+        reg = GaussianProcessRegressor(kernel=kernels[1],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
 
     elif cov == 'RBF':
     
-        reg = GaussianProcessRegressor(kernel=kernels[1],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+        reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
 
     elif cov == 'Matern':
         
