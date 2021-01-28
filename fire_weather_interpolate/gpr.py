@@ -33,7 +33,7 @@ import Eval as Eval
 import statistics 
 
 def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
-                     file_path_elev,idx_list,alpha_input,expand_area):
+                     file_path_elev,idx_list,expand_area,cov,param_initiate,restarts):
     '''Base interpolator function for gaussian process regression 
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -44,8 +44,16 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
         show (bool): whether to show the map
         file_path_elev (str): file path to the elevation lookup file 
         idx_list (list): the index of the elevation data column in the lookup file 
-        alpha_input(float): controls extent of the spatial autocorrelation modelled by the process (smaller = more)
         expand_area (bool): function will expand the study area so that more stations are taken into account (200 km)
+        cov (str): covariance function type, support for Rational Quadratic (but only isotropic), Matern
+
+        whether the spatial autocorrelation is the same in all directions it will depend on the inputs for parameters,
+        you need to input the parameters of the function (distribution) as a vector not a scalar... we are 3d so the vector MUST be len=3
+        because this corresponds to the [x,y,z] if we are using an anisotropic distribution 
+        
+        param_initiate (list, list of lists) = controls extent of the spatial autocorrelation modelled by the process
+        ...for isotropic 1d, [1] (or if 2 parameters, [[1],[1]]), for anisotropic, will be [1,1,1] or [[1,1],[1,1],[1,1]]
+        restarts (int) = # times to restart to avoid local optima 
     Returns 
         gpr_grid (np_array): an array of the interpolated values
     '''
@@ -163,10 +171,22 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     
     df_testX = pd.DataFrame({'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
     
-    kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-    reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=5) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+    kernels = [1.0 * RationalQuadratic(length_scale=param_initiate[0], alpha=param_initiate[1]), 1.0 * RBF(length_scale=param_initiate),\
+               1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1])]
+
+    if cov == 'RationalQuadratic':
+        
+        reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+
+    elif cov == 'RBF':
     
-    
+        reg = GaussianProcessRegressor(kernel=kernels[1],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+
+    elif cov == 'Matern':
+        
+         reg = GaussianProcessRegressor(kernel=kernels[2],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+
+            
     y = np.array(df_trainX['var']).reshape(-1,1)
     X_train = np.array(df_trainX[['xProj','yProj','elevS']])
     X_test = np.array(df_testX[['Xi','Yi','elev']])
