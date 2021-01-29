@@ -199,6 +199,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     
     reg.fit(X_train, y)
     fitted_params = reg.kernel_
+    score = reg.score(X_train, y)
     print(fitted_params)
     
     Zi = reg.predict(X_test)
