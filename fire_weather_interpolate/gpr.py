@@ -175,7 +175,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     
         kernels = [1.0 * RBF(length_scale=param_initiate[0]), 1.0 * RationalQuadratic(length_scale=param_initiate[0], alpha=param_initiate[1]), \
                    1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1])]
-
+    #Optimizer =  ‘L-BGFS-B’ algorithm
     else:
         
         kernels = [1.0 * RBF(length_scale=param_initiate[0])]
@@ -191,13 +191,15 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     elif cov == 'Matern':
         
          reg = GaussianProcessRegressor(kernel=kernels[2],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
-
+    
             
     y = np.array(df_trainX['var']).reshape(-1,1)
     X_train = np.array(df_trainX[['xProj','yProj','elevS']])
     X_test = np.array(df_testX[['Xi','Yi','elev']])
     
     reg.fit(X_train, y)
+    fitted_params = reg.kernel_
+    print(fitted_params)
     
     Zi = reg.predict(X_test)
     
