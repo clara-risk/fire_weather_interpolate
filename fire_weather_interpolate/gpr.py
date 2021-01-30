@@ -174,7 +174,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     if len(param_initiate) > 1: 
     
         kernels = [1.0 * RBF(length_scale=param_initiate[0]), 1.0 * RationalQuadratic(length_scale=param_initiate[0], alpha=param_initiate[1]), \
-                   1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1])]
+                   1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1],length_scale_bounds=(0,200000))]
     #Optimizer =  ‘L-BGFS-B’ algorithm
     else:
         
