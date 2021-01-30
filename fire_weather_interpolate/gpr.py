@@ -273,7 +273,7 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
 
 
     #Run the full model one time, get fitted params, and use those to speed up, also I think that's statistically correct.
-    params = GPR_interpolator(latlon_dict,Cvar_dict,input_date,'',shapefile,False,file_path_elev,idx_list,False,'Matern',param_initiate,1000)
+    params = GPR_interpolator(latlon_dict,Cvar_dict,'','',shapefile,False,file_path_elev,idx_list,False,'Matern',param_initiate,1000, True)
     multiplier = params[0:4]
     try:
         multiplier = float(multiplier)
