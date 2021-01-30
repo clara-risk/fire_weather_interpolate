@@ -33,7 +33,7 @@ import Eval as Eval
 import statistics 
 
 def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
-                     file_path_elev,idx_list,expand_area,cov,param_initiate,restarts):
+                     file_path_elev,idx_list,expand_area,cov,param_initiate,restarts,report_params):
     '''Base interpolator function for gaussian process regression 
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -53,7 +53,8 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
         
         param_initiate (list, list of lists) = controls extent of the spatial autocorrelation modelled by the process
         ...for isotropic 1d, [1] (or if 2 parameters, [[1],[1]]), for anisotropic, will be [1,1,1] or [[1,1],[1,1],[1,1]]
-        restarts (int) = # times to restart to avoid local optima 
+        restarts (int) = # times to restart to avoid local optima
+        report_params (bool) = if True, just outputs optimized values for kernel hyperparameters 
     Returns 
         gpr_grid (np_array): an array of the interpolated values
     '''
@@ -174,7 +175,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     if len(param_initiate) > 1: 
     
         kernels = [1.0 * RBF(length_scale=param_initiate[0]), 1.0 * RationalQuadratic(length_scale=param_initiate[0], alpha=param_initiate[1]), \
-                   1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1],length_scale_bounds=(0,200000))]
+                   1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1],length_scale_bounds=(0.01,300000))]
     #Optimizer =  ‘L-BGFS-B’ algorithm
     else:
         
@@ -201,6 +202,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     fitted_params = reg.kernel_
     score = reg.score(X_train, y)
     print(fitted_params)
+    print(score)
     
     Zi = reg.predict(X_test)
     
@@ -229,10 +231,13 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
 
         plt.show()
 
+    if report_params:
+        return fitted_params
 
-    return gpr_grid, maxmin
+    else: 
+        return gpr_grid, maxmin
 
-def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,alpha_input):
+def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,param_initiate):
     '''Leave-one-out cross-validation procedure for GPR
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -242,7 +247,7 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
         file_path_elev (str): file path to the elevation lookup file 
         elev_array (np_array): the elevation array for the study area 
         idx_list (list): the index of the elevation data column in the lookup file 
-        alpha_input(float): controls extent of the spatial autocorrelation modelled by the process (smaller = more)
+        param_initiate (list): controls extent of the spatial autocorrelation modelled by the process 
     Returns 
         absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
         was left out 
@@ -267,7 +272,19 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
             projected_lat_lon[station_name] = [Plat,Plon]
 
 
+    #Run the full model one time, get fitted params, and use those to speed up, also I think that's statistically correct.
+    params = GPR_interpolator(latlon_dict,Cvar_dict,input_date,'',shapefile,False,file_path_elev,idx_list,False,'Matern',param_initiate,1000)
+    multiplier = params[0:4]
+    try:
+        multiplier = float(multiplier)
+    except:
+        print('Error! Multiplier is not in the correct format')
 
+    exponent = float(params[6])
+    length_scale_idx = params.find(']')
+    length_scales = params[32:length_scale_idx[0]]
+    length_scales_list = length_scales.split(',')
+    
     for station_name_hold_back in station_name_list:
 
         lat = []
@@ -300,8 +317,8 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
         pixelHeight = 10000 
         pixelWidth = 10000
             
-        num_col = int((xmax - xmin) / pixelHeight)
-        num_row = int((ymax - ymin) / pixelWidth)
+        num_col = int((xmax - xmin) / pixelHeight)+1
+        num_row = int((ymax - ymin) / pixelWidth)+1
 
 
         #We need to project to a projected system before making distance matrix
@@ -369,8 +386,9 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
         df_testX = pd.DataFrame({'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
     
     
-        kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-        reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=5)     
+        #kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
+        kernels = [multiplier**exponent * Matern(length_scale=length_scale_list,nu=param_initiate[1],length_scale_bounds='fixed')]
+        reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer=None)     
     
     
         y = np.array(df_trainX['var']).reshape(-1,1)
