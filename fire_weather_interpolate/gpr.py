@@ -33,7 +33,7 @@ import Eval as Eval
 import statistics 
 
 def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
-                     file_path_elev,idx_list,expand_area,cov,param_initiate,restarts,report_params):
+                     file_path_elev,idx_list,expand_area,cov,param_initiate,restarts,report_params,optimizer):
     '''Base interpolator function for gaussian process regression 
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -54,7 +54,8 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
         param_initiate (list, list of lists) = controls extent of the spatial autocorrelation modelled by the process
         ...for isotropic 1d, [1] (or if 2 parameters, [[1],[1]]), for anisotropic, will be [1,1,1] or [[1,1],[1,1],[1,1]]
         restarts (int) = # times to restart to avoid local optima
-        report_params (bool) = if True, just outputs optimized values for kernel hyperparameters 
+        report_params (bool) = if True, just outputs optimized values for kernel hyperparameters
+        optimizer (bool) = if False, fix parameters of covariance function
     Returns 
         gpr_grid (np_array): an array of the interpolated values
     '''
@@ -174,25 +175,29 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
 
     if len(param_initiate) > 1: 
     
-        kernels = [1.0 * RBF(length_scale=param_initiate[0]), 1.0 * RationalQuadratic(length_scale=param_initiate[0], alpha=param_initiate[1]), \
-                   1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1],length_scale_bounds=(0.01,300000))]
+        kernels = [1.0 * RBF(length_scale=param_initiate[0]), 1.0 * RationalQuadratic(length_scale=param_initiate[0][0], alpha=param_initiate[0][1]), \
+                   1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1],length_scale_bounds=(100,500000))]
     #Optimizer =  ‘L-BGFS-B’ algorithm
     else:
         
         kernels = [1.0 * RBF(length_scale=param_initiate[0])]
 
     if cov == 'RationalQuadratic':
-        
-        reg = GaussianProcessRegressor(kernel=kernels[1],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
-
+        if optimizer:
+            reg = GaussianProcessRegressor(kernel=kernels[1],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+        else:
+            reg = GaussianProcessRegressor(kernel=kernels[1],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None)
     elif cov == 'RBF':
-    
-        reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
-
+        if optimizer:
+            reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+        else:
+            reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None) 
     elif cov == 'Matern':
-        
-         reg = GaussianProcessRegressor(kernel=kernels[2],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
-    
+
+        if optimizer:
+            reg = GaussianProcessRegressor(kernel=kernels[2],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+        else:
+            reg = GaussianProcessRegressor(kernel=kernels[2],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None)
             
     y = np.array(df_trainX['var']).reshape(-1,1)
     X_train = np.array(df_trainX[['xProj','yProj','elevS']])
@@ -273,17 +278,18 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
 
 
     #Run the full model one time, get fitted params, and use those to speed up, also I think that's statistically correct.
-    params = GPR_interpolator(latlon_dict,Cvar_dict,'','',shapefile,False,file_path_elev,idx_list,False,'Matern',param_initiate,1000, True)
-    multiplier = params[0:4]
-    try:
-        multiplier = float(multiplier)
-    except:
-        print('Error! Multiplier is not in the correct format')
+    params = GPR_interpolator(latlon_dict,Cvar_dict,'','',shapefile,True,file_path_elev,idx_list,False,'Matern',[[500000, 500000, 6010],0.5],0, True,False)
 
-    exponent = float(params[6])
-    length_scale_idx = params.find(']')
-    length_scales = params[32:length_scale_idx[0]]
-    length_scales_list = length_scales.split(',')
+##    multiplier = params[0:4]
+##    try:
+##        multiplier = float(multiplier)
+##    except:
+##        multiplier = float(multiplier[0:3])
+##
+##    exponent = float(params[6])
+##    length_scale_idx = params.find(']')
+##    length_scales = params[32:length_scale_idx[0]]
+##    length_scales_list = length_scales.split(',')
     
     for station_name_hold_back in station_name_list:
 
@@ -387,7 +393,9 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
     
     
         #kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-        kernels = [multiplier**exponent * Matern(length_scale=length_scale_list,nu=param_initiate[1],length_scale_bounds='fixed')]
+        #kernels = [multiplier**exponent * Matern(length_scale=length_scale_list,nu=param_initiate[1],length_scale_bounds='fixed')]
+        #kernels = [params]
+        kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]
         reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer=None)     
     
     
