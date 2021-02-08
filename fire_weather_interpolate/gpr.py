@@ -281,16 +281,6 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
     #Run the full model one time, get fitted params, and use those to speed up, also I think that's statistically correct.
     params = GPR_interpolator(latlon_dict,Cvar_dict,'','',shapefile,True,file_path_elev,idx_list,False,'Matern',[[5e+05, 6.62e+04, 1.07e+04],0.5],0, True,False)
 
-##    multiplier = params[0:4]
-##    try:
-##        multiplier = float(multiplier)
-##    except:
-##        multiplier = float(multiplier[0:3])
-##
-##    exponent = float(params[6])
-##    length_scale_idx = params.find(']')
-##    length_scales = params[32:length_scale_idx[0]]
-##    length_scales_list = length_scales.split(',')
     
     for station_name_hold_back in station_name_list:
 
@@ -596,8 +586,19 @@ def shuffle_split_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
         df_testX = pd.DataFrame({'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
     
     
-        kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-        reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True)     
+        #kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
+
+        #Temperature 
+        #kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]
+
+        #RH
+        #kernels = [307**2 * Matern(length_scale=[9.51e+04, 9.58e+04, 3.8e+05], nu=0.5)]
+
+        #Wind
+
+        kernels = [316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
+        
+        reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer=None)     
     
     
         y = np.array(df_trainX['var']).reshape(-1,1)
