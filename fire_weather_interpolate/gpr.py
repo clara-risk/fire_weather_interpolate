@@ -176,7 +176,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     if len(param_initiate) > 1: 
     
         kernels = [1.0 * RBF(length_scale=param_initiate[0]), 1.0 * RationalQuadratic(length_scale=param_initiate[0][0], alpha=param_initiate[0][1]), \
-                   1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1],length_scale_bounds=(1000,500000))] #Temp =(100,500000)
+                   1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1],length_scale_bounds=(1000,500000))] #Temp =(100,500000) #RH = (1000,500000)
     #Optimizer =  ‘L-BGFS-B’ algorithm
     else:
         
@@ -197,7 +197,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
         if optimizer:
             reg = GaussianProcessRegressor(kernel=kernels[2],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
         else:
-            kernels = [307**2 * Matern(length_scale=[9.51e+04, 9.58e+04, 3.8e+05], nu=0.5)]
+            kernels = [307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
             reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None)
             
     y = np.array(df_trainX['var']).reshape(-1,1)
@@ -279,7 +279,7 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
 
 
     #Run the full model one time, get fitted params, and use those to speed up, also I think that's statistically correct.
-    params = GPR_interpolator(latlon_dict,Cvar_dict,'','',shapefile,True,file_path_elev,idx_list,False,'Matern',[[9.51e+04, 9.58e+04, 3.8e+05],0.5],0, True,False)
+    params = GPR_interpolator(latlon_dict,Cvar_dict,'','',shapefile,True,file_path_elev,idx_list,False,'Matern',[[5e+05, 6.62e+04, 1.07e+04],0.5],0, True,False)
 
 ##    multiplier = params[0:4]
 ##    try:
@@ -401,7 +401,11 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
         #kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]
 
         #RH
-        kernels = [307**2 * Matern(length_scale=[9.51e+04, 9.58e+04, 3.8e+05], nu=0.5)]
+        #kernels = [307**2 * Matern(length_scale=[9.51e+04, 9.58e+04, 3.8e+05], nu=0.5)]
+
+        #Wind =
+
+        kernels = [316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
         reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer=None)     
     
     
