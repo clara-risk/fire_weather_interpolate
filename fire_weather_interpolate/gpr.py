@@ -635,7 +635,7 @@ def shuffle_split_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
     return overall_error
         
 
-def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,alpha_input,clusterNum,blocking_type):
+def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,cov_function,clusterNum,blocking_type):
     '''Spatially blocked k-folds cross-validation procedure for rf
     Parameters
         loc_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -646,6 +646,7 @@ def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_el
         elev_array (np_array): the elevation array for the study area 
         idx_list (list): the index of the elevation data column in the lookup file
         alpha_input(float): controls extent of the spatial autocorrelation modelled by the process (smaller = more)
+        cov_function (list): description of covariance function inside list
         clusterNum (int): number of clusters to form
         blocking_type (str): whether to block by cluster or block, either 'cluster' or 'block'
     Returns 
@@ -786,8 +787,9 @@ def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_el
     df_testX = pd.DataFrame({'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
 
 
-    kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-    reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=5)    
+    #kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
+    kernels = cov_function
+    reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer=None)    
 
 
     y = np.array(df_trainX['var']).reshape(-1,1)
@@ -926,7 +928,7 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      return lowest_stdev,ave_MAE,stdev_number,stdev_number
     
 def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,\
-                       nfolds,replacement,dictionary_Groups,alpha_input,expand_area):
+                       nfolds,replacement,dictionary_Groups,cov_function,expand_area):
      '''Spatially blocked bagging cross-validation procedure for IDW 
      Parameters
          idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
@@ -936,7 +938,7 @@ def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,\
          shapefile (str): path to the study area shapefile 
          d (int): the weighting function for IDW interpolation
          nfolds (int): # number of folds. For 10-fold we use 10, etc.
-         alpha_input(float): controls extent of the spatial autocorrelation modelled by the process (smaller = more)
+         cov_function (list): description of covariance function inside list
          expand_area (bool): expand the study area by 200km 
      Returns 
          error_dictionary (dict): a dictionary of the absolute error at each fold when it
@@ -1091,8 +1093,8 @@ def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,\
 
           df_testX = pd.DataFrame({'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
 
-          kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-          reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=5)    
+          kernels = cov_function
+          reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer=None)   
 
 
           y = np.array(df_trainX['var']).reshape(-1,1)
