@@ -427,7 +427,7 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
     return absolute_error_dictionary
 
 
-def shuffle_split_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,alpha_input,rep):
+def shuffle_split_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,cov_function):
     '''Shuffle split cross-validation procedure for GPR
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -437,8 +437,7 @@ def shuffle_split_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
         file_path_elev (str): file path to the elevation lookup file 
         elev_array (np_array): the elevation array for the study area 
         idx_list (list): the index of the elevation data column in the lookup file
-        alpha_input(float): controls extent of the spatial autocorrelation modelled by the process (smaller = more)
-        rep (int): number of repetitions to run 
+        cov_function (list): description of covariance function inside list 
     Returns 
         overall_error (float): average MAE value of all the reps 
     '''
