@@ -597,7 +597,9 @@ def shuffle_split_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
         #Wind
 
         #kernels = [316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
-        kernels = cov_function
+
+        #Okay, I know we are not supposed to do this, and it's a hack, but let's try Eval 
+        kernels = [eval(cov_function[0])]
         
         reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer=None)     
     
