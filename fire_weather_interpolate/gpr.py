@@ -791,7 +791,7 @@ def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_el
 
 
     #kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-    kernels = cov_function
+    kernels = [eval(cov_function[0])]
     reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer=None)    
 
 
