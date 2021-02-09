@@ -197,7 +197,8 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
         if optimizer:
             reg = GaussianProcessRegressor(kernel=kernels[2],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
         else:
-            kernels = [307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
+            #kernels = [307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
+            kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]
             reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None)
             
     y = np.array(df_trainX['var']).reshape(-1,1)
@@ -253,7 +254,8 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
         file_path_elev (str): file path to the elevation lookup file 
         elev_array (np_array): the elevation array for the study area 
         idx_list (list): the index of the elevation data column in the lookup file 
-        param_initiate (list): controls extent of the spatial autocorrelation modelled by the process 
+        param_initiate (list): controls extent of the spatial autocorrelation modelled by the process -
+        we need this so we can supervise it. 
     Returns 
         absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
         was left out 
@@ -395,7 +397,8 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
 
         #Wind =
 
-        kernels = [316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
+        #kernels = [316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
+        kernels = [eval(cov_function[0])]
         reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer=None)     
     
     
@@ -892,15 +895,15 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
      for n in range(0,nruns):
          #We want same number of stations selected for each cluster number
          #We need to calculate, 5 folds x 25 clusters = 125 stations; 8 folds x 16 clusters = 128 stations, etc.
-         target_stations = len(Cvar_dict.keys())*0.3 # What is 30% of the stations
-         fold_num1 = int(round(target_stations/cluster_num1))
-         fold_num2 = int(round(target_stations/cluster_num2))
-         fold_num3 = int(round(target_stations/cluster_num3)) 
+##         target_stations = len(Cvar_dict.keys())*0.3 # What is 30% of the stations
+##         fold_num1 = int(round(target_stations/cluster_num1))
+##         fold_num2 = int(round(target_stations/cluster_num2))
+##         fold_num3 = int(round(target_stations/cluster_num3)) 
             
           #For our first project, this is what we did 
-          #fold_num1 = 5
-          #fold_num2 = 8
-          #fold_num3 = 14 
+          fold_num1 = 5
+          fold_num2 = 8
+          fold_num3 = 14 
           #Just so there is a record of that
 
          block25 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num1,fold_num1,\
@@ -1096,7 +1099,7 @@ def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,\
 
           df_testX = pd.DataFrame({'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
 
-          kernels = cov_function
+          kernels = [eval(cov_function[0])]
           reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer=None)   
 
 
