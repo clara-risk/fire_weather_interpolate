@@ -907,16 +907,18 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
          fold_num2 = 8
          fold_num3 = 14 
           #Just so there is a record of that
-         idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,\
-                       nfolds,replacement,dictionary_Groups,cov_function,expand_area
 
-         block25 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num1,fold_num1,\
+
+         block25 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,idx_list,\
+                                      cluster_num1,fold_num1,\
                                       True,dictionaryGroups25,cov_function,expand_area)
          block25_error.append(block25)
-         block16 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num2,fold_num2,\
-                                      True,dictionaryGroups16,cov_functiont,expand_area)
+         block16 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,idx_list,\
+                                      cluster_num2,fold_num2,\
+                                      True,dictionaryGroups16,cov_function,expand_area)
          block16_error.append(block16)
-         block9 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num3,fold_num3,\
+         block9 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,idx_list,\
+                                     cluster_num3,fold_num3,\
                                      True,dictionaryGroups9,cov_function,expand_area)
          block9_error.append(block9)
 
@@ -935,9 +937,9 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
 
      print(lowest_stdev)
      #print(ave_MAE) 
-     return lowest_stdev,ave_MAE,stdev_number,stdev_number
+     return lowest_stdev,ave_MAE
     
-def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,\
+def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,idx_list,blocknum,\
                        nfolds,replacement,dictionary_Groups,cov_function,expand_area):
      '''Spatially blocked bagging cross-validation procedure for IDW 
      Parameters
@@ -945,7 +947,9 @@ def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,\
          loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
          .json file
          Cvar_dict (dict): dictionary of weather variable values for each station 
-         shapefile (str): path to the study area shapefile 
+         shapefile (str): path to the study area shapefile
+         file_path_elev (str): path to the elevation lookup file
+         idx_list (int): position of the elevation column in the lookup file
          d (int): the weighting function for IDW interpolation
          nfolds (int): # number of folds. For 10-fold we use 10, etc.
          cov_function (list): description of covariance function inside list
