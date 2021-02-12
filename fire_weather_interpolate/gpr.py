@@ -642,7 +642,8 @@ def shuffle_split_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
     return overall_error
         
 
-def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,cov_function,clusterNum,blocking_type):
+def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,\
+                      idx_list,cov_function,clusterNum,blocking_type):
     '''Spatially blocked k-folds cross-validation procedure for rf
     Parameters
         loc_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -831,7 +832,7 @@ def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_el
 
 def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,\
                           file_path_elev,idx_list,cluster_num1,cluster_num2,cluster_num3,\
-                          expand_area,boreal_shapefile,alpha_input):
+                          expand_area,boreal_shapefile,cov_function):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
      in order to select the block/cluster size
      Parameters
@@ -846,8 +847,8 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
          idx_list (int): position of the elevation column in the lookup file
          cluster_num: three cluster numbers to test, for blocking this must be one of three:25, 16, 9 
          For blocking you can enter 'None' and it will automatically test 25, 16, 9
-         boreal_shapefile (str): path to shapefile with the boreal zone 
-         alpha_input(float): controls extent of the spatial autocorrelation modelled by the process (smaller = more)
+         boreal_shapefile (str): path to shapefile with the boreal zone
+         cov_function (list): description of covariance function inside list
      Returns 
          lowest_stdev,ave_MAE (int,float): block/cluster number w/ lowest stdev, associated
          ave_MAE of all the runs 
@@ -906,15 +907,17 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
          fold_num2 = 8
          fold_num3 = 14 
           #Just so there is a record of that
+         idw_example_grid,loc_dict,Cvar_dict,shapefile,blocknum,\
+                       nfolds,replacement,dictionary_Groups,cov_function,expand_area
 
          block25 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num1,fold_num1,\
-                                      True,False,dictionaryGroups25,alpha_input,expand_area)
+                                      True,dictionaryGroups25,cov_function,expand_area)
          block25_error.append(block25)
          block16 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num2,fold_num2,\
-                                      True,False,dictionaryGroups16,alpha_input,expand_area)
+                                      True,dictionaryGroups16,cov_functiont,expand_area)
          block16_error.append(block16)
          block9 = spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,cluster_num3,fold_num3,\
-                                     True,False,dictionaryGroups9,alpha_input,expand_area)
+                                     True,dictionaryGroups9,cov_function,expand_area)
          block9_error.append(block9)
 
      stdev25 = statistics.stdev(block25_error) 
