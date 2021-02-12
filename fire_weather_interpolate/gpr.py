@@ -198,7 +198,8 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
             reg = GaussianProcessRegressor(kernel=kernels[2],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
         else:
             #kernels = [307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
-            kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]
+            #kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]
+            kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)]
             reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None)
             
     y = np.array(df_trainX['var']).reshape(-1,1)
@@ -244,7 +245,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     else: 
         return gpr_grid, maxmin
 
-def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,param_initiate):
+def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,param_initiate,cov_function):
     '''Leave-one-out cross-validation procedure for GPR
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -281,7 +282,7 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
 
 
     #Run the full model one time, get fitted params, and use those to speed up, also I think that's statistically correct.
-    params = GPR_interpolator(latlon_dict,Cvar_dict,'','',shapefile,True,file_path_elev,idx_list,False,'Matern',[[5e+05, 6.62e+04, 1.07e+04],0.5],0, True,False)
+    #params = GPR_interpolator(latlon_dict,Cvar_dict,'','',shapefile,True,file_path_elev,idx_list,False,'Matern',[[100000,100000,100000],0.5],0, True,False)
 
     
     for station_name_hold_back in station_name_list:
