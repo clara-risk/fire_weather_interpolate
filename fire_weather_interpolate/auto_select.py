@@ -84,7 +84,7 @@ def run_comparison(var_name,input_date,interpolation_types,rep,loc_dictionary,cv
 
                      
      best_method = min(MAE_dict, key=MAE_dict.get)
-     print('The best method for %s is: '%(best_method)) 
+     print('The best method for %s is: %s'%(var_name,best_method)) 
      if method == 'IDW2':
          choix_surf, maxmin = idw.IDW(loc_dictionary,cvar_dictionary,input_date,'Variable',shapefile,False,2,False) #Expand_area is not supported yet
          
@@ -184,8 +184,8 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
          year = str(input_date)[0:4]
          index = dates.index(input_date)
          dat = str(input_date)
-         day_index= get_date_index(year,dat,3)
-         eDay_index = get_date_index(year,dat,10)
+         day_index= fwi.get_date_index(year,dat,3)
+         eDay_index = fwi.get_date_index(year,dat,10)
 
          start = time.time() 
 
@@ -205,7 +205,7 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
             dc_list.append(dc)
             
          else:
-             rain_shape = rain_grid.shape
+             rain_shape = choice_surf_pcp.shape
              dc_initialize = np.zeros(rain_shape)+15 #merge with the other overwinter array once it's calculated
              dc_yesterday1 = dc_initialize*mask1
              dc_list.append(dc_yesterday1) #placeholder
