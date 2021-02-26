@@ -28,7 +28,7 @@ from datetime import datetime, timedelta, date
 import gc
 
 
-def run_comparison(var_name,interpolation_types,rep,loc_dictionary,cvar_dictionary,file_path_elev,elev_array,idx_list,phi_input=None,calc_phi=True,\
+def run_comparison(var_name,input_date,interpolation_types,rep,loc_dictionary,cvar_dictionary,file_path_elev,elev_array,idx_list,phi_input=None,calc_phi=True,\
                    kernels={'temp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']\
                             ,'rh':['307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)'],\
                             'pcp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)'],\
@@ -84,7 +84,7 @@ def run_comparison(var_name,interpolation_types,rep,loc_dictionary,cvar_dictiona
 
                      
      best_method = min(MAE_dict, key=MAE_dict.get)
-     print(best_method)
+     print('The best method for %s is: '%(best_method)) 
      if method == 'IDW2':
          choix_surf, maxmin = idw.IDW(loc_dictionary,cvar_dictionary,input_date,'Variable',shapefile,False,2,False) #Expand_area is not supported yet
          
@@ -117,7 +117,7 @@ def run_comparison(var_name,interpolation_types,rep,loc_dictionary,cvar_dictiona
 
      return best_method, choix_surf, maxmin
 
-def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_extend_for_season,loc_dictionary_hourly, loc_dictionary_daily, date_dictionary,\
+def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictionary_hourly, loc_dictionary_daily, date_dictionary,\
                             year,interpolation_types,rep,file_path_elev,idx_list,save_path,phi_input=None,calc_phi=True,\
                    kernels={'temp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']\
                             ,'rh':['307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)'],\
@@ -131,17 +131,21 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_extend_fo
      '''
      #Fire season start and end dates
      start = time.time() 
-     start_dict, latlon_station = fwi.start_date_calendar_csv(file_path_extend_for_season,year) #Get two things: start date for each station and the lat lon of the station
-     end_dict, latlon_station = fwi.end_date_calendar_csv(file_path_extend_for_season,year,'oct') #start searching from Oct 1
+     start_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily_csv,year) #Get two things: start date for each station and the lat lon of the station
+     end_dict, latlon_station = fwi.end_date_calendar_csv(file_path_daily_csv,year,'oct') #start searching from Oct 1
         
         
-     daysurface, maxmin= idw.IDW(latlon_station,start_dict,year,'# Days Since March 1',shapefile,False,3) #Interpolate the start date, IDW3
-     endsurface, maxmin= idw.IDW(latlon_station,end_dict,year,'# Days Since Oct 1',shapefile,False,3) #Interpolate the end date
+     daysurface, maxmin= idw.IDW(latlon_station,start_dict,year,'# Days Since March 1',shapefile,False,3,False) #Interpolate the start date, IDW3
+     endsurface, maxmin= idw.IDW(latlon_station,end_dict,year,'# Days Since Oct 1',shapefile,False,3,False) #Interpolate the end date
 
      end_dc_vals = np.zeros(endsurface.shape) #For now, no overwinter procedure
      end = time.time()
-     time_elapsed = end-start
-     print('Finished getting season start & end dates, it took %s seconds'%(time_elapsed))
+     time_elapsed = (end-start)/60
+     print('Finished getting season start & end dates, it took %s minutes'%(time_elapsed/60))
+
+        #Initialize the input elev_array (which is stable)
+     placeholder_surf, maxmin, elev_array = idew.IDEW(loc_dictionary_hourly,end_dict,'placeholder','Variable',shapefile,False,\
+                                                          file_path_elev,idx_list,2)
      
      #Get the dates in the fire season, overall, the surfaces will take care of masking
      sdate = pd.to_datetime(year+'-03-01').date() #Get the start date to start (if its too early everything will be masked out so can put any day before april)
@@ -154,10 +158,11 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_extend_fo
          gc.collect()
          #Get the dictionary
          start = time.time() 
-         temp = GD.get_noon_temp(input_date,file_path_hourly)
-         rh = GD.get_relative_humidity(input_date,file_path_hourly)
-         wind = GD.get_wind_speed(input_date,file_path_hourly)
-         pcp = GD.get_pcp(input_date[0:10],file_path_daily,date_dictionary)
+         temp = GD.get_noon_temp(str(input_date)[:-3],file_path_hourly)
+         rh = GD.get_relative_humidity(str(input_date)[:-3],file_path_hourly)
+         wind = GD.get_wind_speed(str(input_date)[:-3],file_path_hourly)
+         pcp = GD.get_pcp(str(input_date)[0:10],file_path_daily,date_dictionary)
+
          end = time.time()
          time_elapsed = end-start
          print('Finished getting weather dictionaries, it took %s seconds'%(time_elapsed))
@@ -165,10 +170,11 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_extend_fo
          start = time.time() 
 
     
-         best_interp_temp,choice_surf_temp,maxmin = run_comparison(interpolation_types,rep,loc_dictionary_hourly,temp,file_path_elev,elev_array,idx_list)
-         best_interp_rh,choice_surf_rh,maxmin = run_comparison(interpolation_types,rep,loc_dictionary_hourly,rh,file_path_elev,elev_array,idx_list)
-         best_interp_wind,choice_surf_wind,maxmin  = run_comparison(interpolation_types,rep,loc_dictionary_hourly,wind,file_path_elev,elev_array,idx_list)
-         best_interp_pcp,choice_surf_pcp,maxmin  = run_comparison(interpolation_types,rep,loc_dictionary_daily,pcp,file_path_elev,elev_array,idx_list)
+         best_interp_temp,choice_surf_temp,maxmin = run_comparison('temp',input_date,interpolation_types,rep,loc_dictionary_hourly,temp,file_path_elev,elev_array,idx_list)
+
+         best_interp_rh,choice_surf_rh,maxmin = run_comparison('rh',input_date,interpolation_types,rep,loc_dictionary_hourly,rh,file_path_elev,elev_array,idx_list)
+         best_interp_wind,choice_surf_wind,maxmin  = run_comparison('wind',input_date,interpolation_types,rep,loc_dictionary_hourly,wind,file_path_elev,elev_array,idx_list)
+         best_interp_pcp,choice_surf_pcp,maxmin  = run_comparison('pcp',input_date,interpolation_types,rep,loc_dictionary_daily,pcp,file_path_elev,elev_array,idx_list)
 
          end = time.time()
          time_elapsed = end-start
@@ -222,7 +228,8 @@ if __name__ == "__main__":
 
     dirname = 'C:/Users/clara/OneDrive/Documents/fire_weather_interpolate-master/fire_weather_interpolate-master/fire_weather_interpolate/'  #Insert the directory name (where the code is) 
     file_path_daily = os.path.join(dirname, 'datasets/weather/daily_feather/')
-    file_path_se_dates = 'C:/Users/clara/OneDrive/Documents/november/all_daily/'
+    #file_path_se_dates = 'C:/Users/clara/OneDrive/Documents/november/all_daily/'
+    file_path_se_dates  = 'C:/Users/clara/OneDrive/Documents/Thesis/summer2020/weather_engine/all_daily/'
     file_path_hourly = os.path.join(dirname, 'datasets/weather/hourly_feather/')
     shapefile = os.path.join(dirname, 'datasets/study_area/QC_ON_albers_dissolve.shp')
 
@@ -243,7 +250,7 @@ if __name__ == "__main__":
 
 
     execute_sequential_calc(file_path_hourly,file_path_daily,file_path_se_dates,hourly_dictionary, daily_dictionary, date_dictionary,\
-                            str(1987),['IDW2'],10,file_path_elev,idx_list,save,phi_input=None,calc_phi=True,\
+                            str(1987),['IDW2','IDW3'],10,file_path_elev,idx_list,save,phi_input=None,calc_phi=True,\
                    kernels={'temp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']\
                             ,'rh':['307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)'],\
                             'pcp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)'],\
