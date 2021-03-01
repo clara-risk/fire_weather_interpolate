@@ -327,7 +327,7 @@ def cross_validate_tps(latlon_dict,Cvar_dict,shapefile,phi,pass_to_plot):
     else:
         return absolute_error_dictionary
 
-def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi=None,rep,calc_phi):
+def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi=None,rep,calc_phi=True):
     '''Shuffle-split cross-validation for thin plate splines 
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
