@@ -204,7 +204,7 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
                 #kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)]
                 reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None)
     else:
-        kernels = [eval(cov_function[0])]
+        kernels = [eval(kernel_object[0])]
         reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer = None)
             
     y = np.array(df_trainX['var']).reshape(-1,1)
