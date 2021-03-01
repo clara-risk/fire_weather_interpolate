@@ -2460,7 +2460,7 @@ def plot_july(fwi_list,maxmin,year,var,shapefile,shapefile2):
         
         im = ax.imshow(fwi_list[index],extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)\
                        ,vmin=0,vmax=maxval, clip_path=circ, clip_on=True,origin='upper')
-        na_map.plot(ax = ax[0,0],facecolor="none",edgecolor='k',linewidth=1)
+        na_map.plot(ax = ax,facecolor="none",edgecolor='k',linewidth=1)
 
         ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
         ax.ticklabel_format(useOffset=False, style='plain')
@@ -2529,7 +2529,7 @@ def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
         
         im = ax.imshow(fwi_list[index],extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)\
                        ,vmin=0,vmax=maxval, clip_path=circ, clip_on=True,origin='upper')
-        na_map.plot(ax = ax[0,0],facecolor="none",edgecolor='k',linewidth=1)
+        na_map.plot(ax = ax,facecolor="none",edgecolor='k',linewidth=1)
 
         ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
         ax.ticklabel_format(useOffset=False, style='plain')
@@ -2598,7 +2598,7 @@ def plot_all(fwi_list,maxmin,year,var,shapefile,shapefile2):
         
         im = ax.imshow(fwi_list[index],extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)\
                        ,vmin=0,vmax=maxval, clip_path=circ, clip_on=True,origin='upper')
-        na_map.plot(ax = ax[0,0],facecolor="none",edgecolor='k',linewidth=1)
+        na_map.plot(ax = ax,facecolor="none",edgecolor='k',linewidth=1)
 
         ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
         ax.ticklabel_format(useOffset=False, style='plain')
