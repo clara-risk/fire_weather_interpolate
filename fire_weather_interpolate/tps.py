@@ -327,7 +327,7 @@ def cross_validate_tps(latlon_dict,Cvar_dict,shapefile,phi,pass_to_plot):
     else:
         return absolute_error_dictionary
 
-def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
+def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi=None,rep,calc_phi):
     '''Shuffle-split cross-validation for thin plate splines 
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
@@ -335,12 +335,17 @@ def shuffle_split_tps(latlon_dict,Cvar_dict,shapefile,phi,rep):
         Cvar_dict (dict): dictionary of weather variable values for each station 
         shapefile (str): path to the study area shapefile 
         phi (float): smoothing parameter for the thin plate spline, if 0 no smoothing
-        rep (int): number of replications 
+        rep (int): number of replications
+        calc_phi (bool): whether to calculate phi in the function 
     Returns 
         overall_error (float): MAE average of all the replications
      '''
     count = 1
     error_dictionary = {}
+
+    if calc_phi:
+        num_stations = int(len(Cvar_dict.keys()))
+        phi = int(num_stations)-(math.sqrt(2*num_stations))
 
     
     while count <= rep:
