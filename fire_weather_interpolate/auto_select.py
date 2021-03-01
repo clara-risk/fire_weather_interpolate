@@ -250,7 +250,7 @@ if __name__ == "__main__":
 
 
     execute_sequential_calc(file_path_hourly,file_path_daily,file_path_se_dates,hourly_dictionary, daily_dictionary, date_dictionary,\
-                            str(1987),['IDW2','IDW3'],10,file_path_elev,idx_list,save,phi_input=None,calc_phi=True,\
+                            str(2018),['IDW2','IDW3','IDW4','TPS','RF','GPR'],10,file_path_elev,idx_list,save,phi_input=None,calc_phi=True,\
                    kernels={'temp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']\
                             ,'rh':['307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)'],\
                             'pcp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)'],\
