@@ -20,6 +20,7 @@ warnings.filterwarnings("ignore") #Runtime warning suppress, this suppresses the
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.neighbors import kneighbors_graph
 import mpl_toolkits.mplot3d.axes3d as p3
+from mpl_toolkits.basemap import Basemap
 
 import get_data as GD
 
@@ -41,6 +42,7 @@ def spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num,file_path_elev,idx_
 
      x = []
      y = []
+
      proj_stations = {} 
      for station in Cvar_dict.keys():
           if station in loc_dict.keys():
@@ -106,28 +108,28 @@ def spatial_cluster(loc_dict,Cvar_dict,shapefile,cluster_num,file_path_elev,idx_
           ax.set_zlabel('Elevation (m)')
 
           plt.show()
+
      
      #This is where we make the connectivity graph where we can see on the map  
-     if plot_2D: 
+     if plot_2D:
+          
           fig, ax = plt.subplots(figsize= (15,15))
           crs = {'init': 'esri:102001'}
           na_map = gpd.read_file(shapefile)
 
-          na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
+          na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=1,alpha=1)
      
           plt.scatter(Xelev[:, 0], Xelev[:, 1], c=model.labels_,
-                        cmap=plt.cm.nipy_spectral)
-            
-          plt.axis('equal')
-          plt.axis('off')
+                        cmap=plt.cm.tab20b,s=20, edgecolor='k')
 
-          plt.subplots_adjust(bottom=0, top=.83, wspace=0,
-                                left=0, right=1)
-          plt.suptitle('n_cluster=%i, connectivity=%r' %
-                         (n_clusters, connectivity is not None), size=17)
+          ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+          ax.ticklabel_format(useOffset=False, style='plain')
 
-          ax.set_xlabel('Longitude')
-          ax.set_ylabel('Latitude')
+          #plt.subplots_adjust(bottom=0, top=.83, wspace=0,
+                                #left=0, right=1)
+          #plt.suptitle('n_cluster=%i, connectivity=%r' %
+                         #(n_clusters, connectivity is not None), size=17)
+
 
           plt.show()
 
