@@ -226,17 +226,21 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
 #Let's test
 if __name__ == "__main__":
 
-    dirname = 'C:/Users/clara/OneDrive/Documents/fire_weather_interpolate-master/fire_weather_interpolate-master/fire_weather_interpolate/'  #Insert the directory name (where the code is) 
+    #dirname = 'C:/Users/clara/OneDrive/Documents/fire_weather_interpolate-master/fire_weather_interpolate-master/fire_weather_interpolate/'  #Insert the directory name (where the code is)
+    #laptop
+     
+    dirname = 'C:/Users/clara/Documents/cross-validation/'
+
     file_path_daily = os.path.join(dirname, 'datasets/weather/daily_feather/')
-    #file_path_se_dates = 'C:/Users/clara/OneDrive/Documents/november/all_daily/'
-    file_path_se_dates  = 'C:/Users/clara/OneDrive/Documents/Thesis/summer2020/weather_engine/all_daily/'
+    file_path_se_dates = os.path.join(dirname, 'datasets/weather/all_daily/all_daily/')
+    #file_path_se_dates  = 'C:/Users/clara/OneDrive/Documents/Thesis/summer2020/weather_engine/all_daily/'
     file_path_hourly = os.path.join(dirname, 'datasets/weather/hourly_feather/')
     shapefile = os.path.join(dirname, 'datasets/study_area/QC_ON_albers_dissolve.shp')
 
     file_path_elev = os.path.join(dirname,'datasets/lookup_files/elev_csv.csv')
     idx_list = GD.get_col_num_list(file_path_elev,'elev')
 
-    save = 'C:/Users/clara/OneDrive/Documents/february/auto_test/'
+    save = 'C:/Users/clara/Documents/fire_season/march/'
 
     with open(dirname+'datasets/json/daily_lookup_file_TEMP.json', 'r') as fp:
         date_dictionary = json.load(fp) #Get the lookup file for the stations with data on certain months/years
@@ -250,7 +254,7 @@ if __name__ == "__main__":
 
 
     execute_sequential_calc(file_path_hourly,file_path_daily,file_path_se_dates,hourly_dictionary, daily_dictionary, date_dictionary,\
-                            str(2018),['IDW2','IDW3','IDW4','TPS','RF','GPR'],10,file_path_elev,idx_list,save,phi_input=None,calc_phi=True,\
+                            str(2018),['IDW2','TPS','RF','GPR'],10,file_path_elev,idx_list,save,phi_input=None,calc_phi=True,\
                    kernels={'temp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']\
                             ,'rh':['307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)'],\
                             'pcp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)'],\
