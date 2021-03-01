@@ -1939,9 +1939,12 @@ def DC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dc_yesterday,inde
 
     #E22 potential evapT
 
-    pe = (0.36*(temp_grid+2.8)+f101[month])/2
+    #pe = (0.36*(temp_grid+2.8)+f101[month])/2
 
-    #Make empty dmc array
+    #Checked code from 419 spreadsheet
+    pe = (0.36*(temp_grid+2.8)+f101[month-1])
+
+    #Make empty dc array
     new_shape = dc_yesterday1.shape
     dc = np.zeros(new_shape)
 
@@ -1953,11 +1956,20 @@ def DC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dc_yesterday,inde
     smi = 800*np.exp(-1*dc_yesterday1/400)
 
     #eq 21
-    dr0 = dc_yesterday1 -400*np.log(1+3.937*netRain/smi) #log is the natural logarithm 
+    #dr0 = dc_yesterday1 -400*np.log(1+3.937*netRain/smi) #log is the natural logarithm
+
+    #eq21 from 419 
+    dr_ini = np.array(smi+3.937*netRain)
+    dr0 = np.array(400*np.log(800/dr_ini))
+    
     dr0[dr0<0] = 0
     dr0[rain_grid <= 2.8] = dc_yesterday1[rain_grid <= 2.8]
 
-    dc1 = dr0 + pe
+    #dc1 = dr0 + pe
+
+    #from 419
+    
+    dc1 = np.array(dr0 + 0.5*pe)
     dc1[dc1 < 0] = 0
         
     dc1 = dc1 * mask * endMask
