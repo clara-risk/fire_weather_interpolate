@@ -118,7 +118,7 @@ def run_comparison(var_name,input_date,interpolation_types,rep,loc_dictionary,cv
      return best_method, choix_surf, maxmin
 
 def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictionary_hourly, loc_dictionary_daily, date_dictionary,\
-                            year,interpolation_types,rep,file_path_elev,idx_list,save_path,phi_input=None,calc_phi=True,\
+                            year,interpolation_types,rep,file_path_elev,idx_list,save_path,shapefile,shapefile2,phi_input=None,calc_phi=True,\
                    kernels={'temp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']\
                             ,'rh':['307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)'],\
                             'pcp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)'],\
@@ -219,6 +219,7 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
         json.dump(dc_list, fp)
 
      fwi.plot_july(dc_list,maxmin,year,'DC',shapefile)
+     fwi.plot_june(dc_list,maxmin,year,'DC',shapefile,shapefile2)
     
      return dc_list 
         
