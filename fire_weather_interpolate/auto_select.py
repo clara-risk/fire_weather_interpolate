@@ -226,7 +226,7 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
 
      dc_list = [np.array(x) for x in dc_list] #convert to np array for plotting 
 
-     fwi.plot_july(dc_list,maxmin,year,'DC',shapefile)
+     fwi.plot_july(dc_list,maxmin,year,'DC',shapefile,shapefile2)
      fwi.plot_june(dc_list,maxmin,year,'DC',shapefile,shapefile2)
     
      return dc_list 
