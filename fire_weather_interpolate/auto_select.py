@@ -215,8 +215,16 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
 
          count += 1
 
+     #prep to serialize
+     dc_list = [x.tolist() for x in dc_list]
+
      with open(save_path+year+'_DC_auto_select.json', 'w') as fp:
         json.dump(dc_list, fp)
+
+     with open(save_path+year+'_DC_auto_select.json', 'r') as fp:
+        dc_list = json.load(fp)
+
+     dc_list = [np.array(x) for x in dc_list] #convert to np array for plotting 
 
      fwi.plot_july(dc_list,maxmin,year,'DC',shapefile)
      fwi.plot_june(dc_list,maxmin,year,'DC',shapefile,shapefile2)
