@@ -2445,6 +2445,11 @@ def plot_july(fwi_list,maxmin,year,var,shapefile,shapefile2):
         maxval = max(max_list)
 
         crs = {'init': 'esri:102001'}
+        plt.rcParams["font.family"] = "Calibri" #"Times New Roman"
+        plt.rcParams.update({'font.size': 16})
+        #plt.rcParams['image.cmap']='RdYlBu_r'
+        #plt.rcParams['image.cmap']='Spectral_r'
+        plt.rcParams['image.cmap']='RdYlGn_r'
 
         na_map = gpd.read_file(shapefile)
         bor_map = gpd.read_file(shapefile2)
@@ -2471,8 +2476,8 @@ def plot_july(fwi_list,maxmin,year,var,shapefile,shapefile2):
     plt.subplots_adjust(bottom=0.1, right=0.8, top=0.9)
     fig.text(0.5, 0.04, 'Longitude', ha='center')
     fig.text(0.04, 0.5, 'Latitude', va='center', rotation='vertical')
-    title = '%s for July %s'%(var,year)
-    fig.suptitle(title, fontsize=14)
+    #title = '%s for June %s'%(var,year) #No title for now 
+    #fig.suptitle(title, fontsize=14)
     plt.show()
 
 def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
