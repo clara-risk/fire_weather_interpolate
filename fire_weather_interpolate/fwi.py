@@ -2551,6 +2551,76 @@ def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
     #title = '%s for June %s'%(var,year) #No title for now 
     #fig.suptitle(title, fontsize=14)
     plt.show()
+
+def plot_all(fwi_list,maxmin,year,var,shapefile,shapefile2):
+    ''' Visualize all values for all in list. **DO NOT HAVE TO CHANGE INDEX IF LEAP YEAR** WHY? B/C WE ARE COUNTING FRM MAR1
+    Parameters
+        fwi_list (list): list of fwi metric arrays for a certain measure (i.e. dmc)
+        maxmin (list): bounds of study area
+        year (str): year of interest
+        var (str): variable name of interest (i.e. "Duff Moisture Code")
+        shapefile (str): path to study area shapefile
+        shapefile2 (str): path to masking shapefile 
+    Returns
+        plots a figure with fwi metric map for each day 
+    '''
+
+    fig = plt.figure()
+    COUNT = 0
+    for index in range(0,len(fwi_list)): #The range refers to the start and end indexes of where June is in the list 
+        ax = fig.add_subplot(4,8,COUNT+1)
+        min_yProj_extent = maxmin[0]
+        max_yProj_extent = maxmin[1]
+        max_xProj_extent = maxmin[2]
+        min_xProj_extent = maxmin[3]
+
+        max_list = []
+
+        for arr in fwi_list: 
+
+            max_list.append(np.amax(arr))
+
+        maxval = max(max_list)
+
+        crs = {'init': 'esri:102001'}
+        plt.rcParams["font.family"] = "Calibri" #"Times New Roman"
+        plt.rcParams.update({'font.size': 16})
+        #plt.rcParams['image.cmap']='RdYlBu_r'
+        #plt.rcParams['image.cmap']='Spectral_r'
+        plt.rcParams['image.cmap']='RdYlGn_r'
+
+        na_map = gpd.read_file(shapefile)
+        bor_map = gpd.read_file(shapefile2)
+
+        title = str(COUNT+1)
+        circ = PolygonPatch(bor_map['geometry'][0],visible=False)
+        ax.add_patch(circ)
+        
+        im = ax.imshow(fwi_list[index],extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)\
+                       ,vmin=0,vmax=maxval, clip_path=circ, clip_on=True,origin='upper')
+        na_map.plot(ax = ax[0,0],facecolor="none",edgecolor='k',linewidth=1)
+
+        ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+        ax.ticklabel_format(useOffset=False, style='plain')
+
+        ax.set_title(title)
+        ax.invert_yaxis()
+
+        COUNT+=1
+
+
+
+    fig.subplots_adjust(right=0.8)
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+    cbar1 = fig.colorbar(im, orientation="vertical", cax=cbar_ax, pad=0.2)
+    cbar1.set_label(var)
+    plt.subplots_adjust(bottom=0.1, right=0.8, top=0.9)
+    fig.text(0.5, 0.04, 'Longitude', ha='center')
+    fig.text(0.04, 0.5, 'Latitude', va='center', rotation='vertical')
+    #title = '%s for June %s'%(var,year) #No title for now 
+    #fig.suptitle(title, fontsize=14)
+    plt.show()
+
     
 def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,search_date_end,search_date_start):
     '''Get the first and last lightning-caused ignitions from the database in ecozone
