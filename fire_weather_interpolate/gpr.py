@@ -33,7 +33,7 @@ import Eval as Eval
 import statistics 
 
 def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
-                     file_path_elev,idx_list,expand_area,cov,restarts,report_params,optimizer,param_initiate=[]):
+                     file_path_elev,idx_list,expand_area,kernel_object,restarts,report_params,optimizer,param_initiate=None,cov_type='RBF'):
     '''Base interpolator function for gaussian process regression 
     Parameters
         latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
@@ -173,34 +173,39 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     
     df_testX = pd.DataFrame({'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
 
-    if len(param_initiate) > 1: 
-    
-        kernels = [1.0 * RBF(length_scale=param_initiate[0]), 1.0 * RationalQuadratic(length_scale=param_initiate[0][0], alpha=param_initiate[0][1]), \
-                   1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1],length_scale_bounds=(1000,500000))] #Temp =(100,500000) #RH = (1000,500000)
-    #Optimizer =  ‘L-BGFS-B’ algorithm
-    else:
+    if param_initiate is not None: 
+
+        if len(param_initiate) > 1: 
         
-        kernels = [1.0 * RBF(length_scale=param_initiate[0])]
+            kernels = [1.0 * RBF(length_scale=param_initiate[0]), 1.0 * RationalQuadratic(length_scale=param_initiate[0][0], alpha=param_initiate[0][1]), \
+                       1.0 * Matern(length_scale=param_initiate[0],nu=param_initiate[1],length_scale_bounds=(1000,500000))] #Temp =(100,500000) #RH = (1000,500000)
+        #Optimizer =  ‘L-BGFS-B’ algorithm
+        else:
+            
+            kernels = [1.0 * RBF(length_scale=param_initiate[0])]
 
-    if cov == 'RationalQuadratic':
-        if optimizer:
-            reg = GaussianProcessRegressor(kernel=kernels[1],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
-        else:
-            reg = GaussianProcessRegressor(kernel=kernels[1],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None)
-    elif cov == 'RBF':
-        if optimizer:
-            reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
-        else:
-            reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None) 
-    elif cov == 'Matern':
+        if cov == 'RationalQuadratic':
+            if optimizer:
+                reg = GaussianProcessRegressor(kernel=kernels[1],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+            else:
+                reg = GaussianProcessRegressor(kernel=kernels[1],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None)
+        elif cov == 'RBF':
+            if optimizer:
+                reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+            else:
+                reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None) 
+        elif cov == 'Matern':
 
-        if optimizer:
-            reg = GaussianProcessRegressor(kernel=kernels[2],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
-        else:
-            #kernels = [307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
-            #kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]
-            kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)]
-            reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None)
+            if optimizer:
+                reg = GaussianProcessRegressor(kernel=kernels[2],normalize_y=True,n_restarts_optimizer=restarts) #Updated Nov 23 for fire season manuscript to make 3 restarts, Dec 9 = 5
+            else:
+                #kernels = [307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
+                #kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]
+                #kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)]
+                reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=restarts,optimizer = None)
+    else:
+        kernels = [eval(cov_function[0])]
+        reg = GaussianProcessRegressor(kernel=kernels[0],normalize_y=True,n_restarts_optimizer=0,optimizer = None)
             
     y = np.array(df_trainX['var']).reshape(-1,1)
     X_train = np.array(df_trainX[['xProj','yProj','elevS']])
