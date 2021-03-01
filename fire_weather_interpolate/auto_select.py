@@ -71,7 +71,7 @@ def run_comparison(var_name,input_date,interpolation_types,rep,loc_dictionary,cv
                  MAE_dict[method] = MAE
 
              if method == 'TPS':
-                 MAE= tps.shuffle_split_tps(loc_dictionary,cvar_dictionary,shapefile,phi_input,10)
+                 MAE= tps.shuffle_split_tps(loc_dictionary,cvar_dictionary,shapefile,10)
                  MAE_dict[method] = MAE
 
              if method == 'RF':
