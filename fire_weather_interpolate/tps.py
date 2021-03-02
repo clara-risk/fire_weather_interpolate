@@ -27,7 +27,8 @@ from sklearn.model_selection import ShuffleSplit
 from sklearn import metrics
 import make_blocks as mbk
 import Eval as Eval
-import statistics, math  
+import statistics, math
+from descartes import PolygonPatch
 
 import cluster_3d as c3d
 import get_data as GD
