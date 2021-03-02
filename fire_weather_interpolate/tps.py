@@ -32,7 +32,7 @@ import statistics, math
 import cluster_3d as c3d
 import get_data as GD
 #functions 
-def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,phi,expand_area,calc_phi):
+def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,shapefile_masking,show,phi,expand_area,calc_phi):
     '''Thin plate splines interpolation implemented using the interpolate radial basis function from 
     SciPy 
     Parameters
@@ -165,28 +165,38 @@ def TPS(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,phi,expand_area
     thin_plate = func(Xi,Yi)
     spline = thin_plate.reshape(num_row+1,num_col+1)
 
-    if show: 
+    if show:
+
+        plt.rcParams["font.family"] = "Calibri" #"Times New Roman"
+        plt.rcParams.update({'font.size': 16})
+        #plt.rcParams['image.cmap']='RdYlBu_r'
+        plt.rcParams['image.cmap']='Spectral_r'
+        #plt.rcParams['image.cmap']='RdYlGn_r'
 
         fig, ax = plt.subplots(figsize= (15,15))
         crs = {'init': 'esri:102001'}
 
         na_map = gpd.read_file(shapefile)
+        bor_map = gpd.read_file(shapefile_masking)
+
+        circ = PolygonPatch(bor_map['geometry'][0],visible=False)
         
-      
+          
         plt.imshow(spline,extent=(xProj_extent.min()-1,xProj_extent.max()+1,yProj_extent.max()-1,yProj_extent.min()+1)\
-                   ,vmin=0,vmax=max(z_origin_list))
-        na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
+                   ,vmin=0,vmax=max(z_origin_list),clip_path=circ, clip_on=True,origin='upper')
+        na_map.plot(ax = ax,facecolor="none",edgecolor='k',linewidth=1)
             
         #plt.scatter(xProj,yProj,c=z_origin_list,edgecolors='k',linewidth=1)
         scatter = ax.scatter(xProj,yProj,c=z_origin_list,edgecolors='k',linewidth=1,s = 14)
 
         plt.gca().invert_yaxis()
-        #cbar = plt.colorbar()
-        #cbar.set_label(var_name)
-        colorbar = fig.colorbar(scatter, ax=ax)
-        
-        title = 'Thin Plate Spline Interpolation for %s on %s'%(var_name,input_date) 
-        fig.suptitle(title, fontsize=14)
+        cbar = plt.colorbar()
+        cbar.set_label(var_name)
+        #colorbar = fig.colorbar(scatter, ax=ax)
+        ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+        ax.ticklabel_format(useOffset=False, style='plain')
+        #title = 'Thin Plate Spline Interpolation for %s on %s'%(var_name,input_date) 
+        #fig.suptitle(title, fontsize=14)
         plt.xlabel('Longitude')
         plt.ylabel('Latitude') 
 
