@@ -2528,7 +2528,7 @@ def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
         ax.add_patch(circ)
         
         im = ax.imshow(fwi_list[index],extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)\
-                       ,vmin=0,vmax=maxval, clip_path=circ, clip_on=True,origin='upper')
+                       ,vmin=0,vmax=300, clip_path=circ, clip_on=True,origin='upper')
         na_map.plot(ax = ax,facecolor="none",edgecolor='k',linewidth=1)
 
         ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
@@ -2541,9 +2541,10 @@ def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
 
 
 
-    fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    cbar1 = fig.colorbar(im, orientation="vertical", cax=cbar_ax, pad=0.2)
+    fig.subplots_adjust(right=0.85)
+    #cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
+    cbar1 = fig.colorbar(im, orientation="vertical", cax=cbar_ax, pad=0.2, aspect=10)
     cbar1.set_label(var)
     plt.subplots_adjust(bottom=0.1, right=0.8, top=0.9)
     fig.text(0.5, 0.04, 'Longitude', ha='center')
