@@ -2514,6 +2514,7 @@ def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
                 max_list.append(np.amax(arr.flatten()))
 
         maxval = np.amax(max_list)
+        print(maxval)
 
         crs = {'init': 'esri:102001'}
         plt.rcParams["font.family"] = "Calibri" #"Times New Roman"
