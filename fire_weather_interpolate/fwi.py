@@ -2507,11 +2507,13 @@ def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
 
         max_list = []
 
-        for arr in fwi_list: 
+        for arr in fwi_list:
 
-            max_list.append(np.amax(arr))
+            if np.isfinite(np.amax(arr.flatten())): 
 
-        maxval = max(max_list)
+                max_list.append(np.amax(arr.flatten()))
+
+        maxval = np.amax(max_list)
 
         crs = {'init': 'esri:102001'}
         plt.rcParams["font.family"] = "Calibri" #"Times New Roman"
@@ -2528,7 +2530,7 @@ def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
         ax.add_patch(circ)
         
         im = ax.imshow(fwi_list[index],extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)\
-                       ,vmin=0,vmax=300, clip_path=circ, clip_on=True,origin='upper')
+                       ,vmin=0,vmax=maxval, clip_path=circ, clip_on=True,origin='upper')
         na_map.plot(ax = ax,facecolor="none",edgecolor='k',linewidth=1)
 
         ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
