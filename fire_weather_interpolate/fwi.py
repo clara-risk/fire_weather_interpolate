@@ -2550,8 +2550,8 @@ def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
     cbar1 = fig.colorbar(im, orientation="vertical", cax=cbar_ax, pad=0.2, aspect=10)
     cbar1.set_label(var)
     plt.subplots_adjust(bottom=0.1, right=0.8, top=0.9)
-    fig.text(0.5, 0.04, 'Longitude', ha='center')
-    fig.text(0.04, 0.5, 'Latitude', va='center', rotation='vertical')
+    #fig.text(0.5, 0.04, 'Longitude', ha='center')
+    #fig.text(0.04, 0.5, 'Latitude', va='center', rotation='vertical')
     #title = '%s for June %s'%(var,year) #No title for now 
     #fig.suptitle(title, fontsize=14)
     plt.show()
