@@ -308,25 +308,38 @@ def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot,expand_are
 
 def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,file_path_elev,idx_list,d,\
                           cluster_num1,cluster_num2,cluster_num3,expand_area,boreal_shapefile):
-     '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
-     in order to select the block/cluster size
-     Parameters
-         nruns (int): number of repetitions 
-         group_type (str): whether using 'clusters' or 'blocks'
-         loc_dict (dict): the latitude and longitudes of the daily/hourly stations, 
-         loaded from the .json file
-         Cvar_dict (dict): dictionary of weather variable values for each station 
-         idw_example_grid (numpy array): used for reference of study area grid size
-         shapefile (str): path to the study area shapefile 
-         file_path_elev (str): path to the elevation lookup file
-         idx_list (int): position of the elevation column in the lookup file
-         cluster_num: three cluster numbers to test, for blocking this must be one of three:25, 16, 9 
-         For blocking you can enter 'None' and it will automatically test 25, 16, 9
-         expand_area (bool): expand area by 200km
-         boreal_shapefile (str): path to shapefile with the boreal zone 
-     Returns 
-         lowest_stdev,ave_MAE (int,float): block/cluster number w/ lowest stdev, associated
-         ave_MAE of all the runs 
+    '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, in order to select the block/cluster size
+    Parameters
+    ----------
+         nruns : int 
+              number of repetitions 
+         group_type : string  
+              whether using 'clusters' or 'blocks'
+         loc_dict : dictionary 
+              the latitude and longitudes of the daily/hourly stations
+         Cvar_dict : dictionary 
+              dictionary of weather variable values for each station 
+         idw_example_grid  : ndarray 
+              used for reference of study area grid size
+         shapefile : string 
+              path to the study area shapefile
+         file_path_elev : string
+              path to the elevation lookup file
+         idx_list : int 
+              position of the elevation column in the lookup file
+         cluster_num : list 
+              three cluster numbers to test, for blocking this must be one of three:25, 16, 9
+              you can enter 'None' and it will automatically test 25, 16, 9
+         expand_area : bool 
+              expand area by 200km
+         boreal_shapefile : string 
+              path to shapefile with the boreal zone       
+    Returns
+    ----------
+         int 
+              - block/cluster number with lowest stdev
+         float
+              - average MAE of all the runs for that cluster/block number 
      '''
      
      #Get group dictionaries
@@ -383,7 +396,6 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           #fold_num3 = 14 
           #Just so there is a record of that
           
-
           block25 = spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,cluster_num1,fold_num1,\
                                        True,False,dictionaryGroups25,expand_area)
           block25_error.append(block25) 
