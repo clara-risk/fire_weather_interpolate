@@ -691,7 +691,8 @@ def spatial_groups_IDW(idw_example_grid, loc_dict, Cvar_dict, shapefile, d, bloc
     return overall_error
 
 
-def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict, shapefile, d, file_path_elev, idx_list, block_num, return_error):
+def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict, shapefile, d,
+                      file_path_elev, idx_list, block_num, blocking_type, return_error):
     '''Spatially blocked k-fold cross-validation procedure for IDW
     Parameters
     ----------
@@ -711,6 +712,8 @@ def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict, shapefile, d, file_
               position of the elevation column in the lookup file
          block_num : int
               number of blocks/clusters
+         blocking_type : string
+              whether to use clusters or blocks
          return_error : bool
               whether or not to return the error dictionary
     Returns
@@ -731,9 +734,18 @@ def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict, shapefile, d, file_
     absolute_error_dictionary = {}
     projected_lat_lon = {}
 
-    cluster = c3d.spatial_cluster(
-        loc_dict, Cvar_dict, shapefile, block_num, file_path_elev, idx_list, False, False, False)
-
+    if blocking_type == 'cluster':
+        cluster = c3d.spatial_cluster(
+            loc_dict, Cvar_dict, shapefile, block_num, file_path_elev, idx_list, False, False, False)
+    elif blocking_type == 'block':
+        # Get the numpy array that delineates the blocks
+        np_array_blocks = mbk.make_block(idw_example_grid, block_num)
+        cluster = mbk.sorting_stations(
+            np_array_blocks, shapefile, loc_dict, Cvar_dict)  # Now get the dictionary
+    else:
+        print('That is not a valid blocking method')
+        sys.exit()
+        
     for group in cluster.values():
         if group not in groups_complete:
             station_list = [k for k, v in cluster.items() if v == group]
