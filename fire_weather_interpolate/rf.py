@@ -604,20 +604,40 @@ def shuffle_split_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_arr
 
 
 def spatial_kfold_rf(idw_example_grid, loc_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list,\
-                     clusterNum, blocking_type, return_error):
-    '''Spatially blocked k-folds cross-validation procedure for rf
+                     block_num, blocking_type, return_error):
+    '''Spatially blocked k-fold cross-validation procedure for RF
     Parameters
-        loc_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        file_path_elev (str): file path to the elevation lookup file 
-        elev_array (np_array): the elevation array for the study area 
-        idx_list (list): the index of the elevation data column in the lookup file 
-        clusterNum (int): number of clusters to form
-        return_error (bool): whether or not to return the error dictionary for stdev calculation
-    Returns 
-        overall_error (float): average MAE value of all the reps 
+    ----------
+         idw_example_grid  : ndarray
+              used for reference of study area grid size
+         loc_dict : dictionary
+              the latitude and longitudes of the daily/hourly stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
+              path to the study area shapefile
+         d : int
+              the weighting for IDW interpolation
+         file_path_elev : string
+              path to the elevation lookup file
+         elev_array : ndarray
+              array for elevation, create using IDEW interpolation (this is a trick to speed up code)         
+         idx_list : int
+              position of the elevation column in the lookup file
+         block_num : int
+              number of blocks/clusters
+         blocking_type : string
+              whether to use clusters or blocks
+         return_error : bool
+              whether or not to return the error dictionary
+    Returns
+    ----------
+         float
+              - MAE estimate for entire surface
+         int
+              - Return the block number just so we can later write it into the file to keep track
+         dictionary
+              - if return_error = True, a dictionary of the absolute error at each fold when it was left out
     '''
     groups_complete = []  # If not using replacement, keep a record of what we have done
     error_dictionary = {}
@@ -630,10 +650,10 @@ def spatial_kfold_rf(idw_example_grid, loc_dict, Cvar_dict, shapefile, file_path
 
     # Selecting blocknum
     if blocking_type == 'cluster':
-        cluster = c3d.spatial_cluster(loc_dict, Cvar_dict, shapefile, clusterNum, file_path_elev, idx_list, False,False,False)
+        cluster = c3d.spatial_cluster(loc_dict, Cvar_dict, shapefile, block_num, file_path_elev, idx_list, False,False,False)
     elif blocking_type == 'block':
         # Get the numpy array that delineates the blocks
-        np_array_blocks = mbk.make_block(idw_example_grid, clusterNum)
+        np_array_blocks = mbk.make_block(idw_example_grid, block_num)
         cluster = mbk.sorting_stations(
             np_array_blocks, shapefile, loc_dict, Cvar_dict)  # Now get the dictionary
     else:
@@ -790,9 +810,9 @@ def spatial_kfold_rf(idw_example_grid, loc_dict, Cvar_dict, shapefile, file_path
     MAE = sum(absolute_error_dictionary.values()) / \
         len(absolute_error_dictionary.values())
     if return_error:
-        return clusterNum, MAE, absolute_error_dictionary
+        return block_num, MAE, absolute_error_dictionary
     else:
-        return clusterNum, MAE
+        return block_num, MAE
 
 
 def select_block_size_rf(nruns, group_type, loc_dict, Cvar_dict, idw_example_grid, shapefile,\
