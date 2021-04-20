@@ -225,21 +225,27 @@ def TPS(latlon_dict, Cvar_dict, input_date, var_name, shapefile, shapefile_maski
     return spline, maxmin
 
 
-def cross_validate_tps(latlon_dict, Cvar_dict, shapefile, phi, pass_to_plot):
+def cross_validate_tps(latlon_dict, Cvar_dict, shapefile, phi,pass_to_plot):
     '''Leave-one-out cross-validation for thin plate splines 
     Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        phi (float): smoothing parameter for the thin plate spline, if 0 no smoothing
-        pass_to_plot (bool): whether or not you will use the error dictionary to plot the spatial
-        distribution of error 
-    Returns 
-        absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
-        was left out 
+    ----------
+         latlon_dict : dictionary
+              the latitude and longitudes of the stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
+              path to the study area shapefile, including its name
+         phi : float
+             smoothing parameter for the thin plate spline, if 0 no smoothing
+         pass_to_plot : bool
+              whether you will be plotting the error and need a version without absolute value error (i.e. fire season days)
+    Returns
+    ----------
+         dictionary
+              - a dictionary of the absolute error at each station when it was left out
+         dictionary
+              - if pass_to_plot = True, returns a dictionary without the absolute value of the error, for example for plotting fire season error
      '''
-
     absolute_error_dictionary = {}  # for plotting
     no_absolute_value_dict = {}  # Whether there is over or under estimation
 
@@ -362,16 +368,24 @@ def cross_validate_tps(latlon_dict, Cvar_dict, shapefile, phi, pass_to_plot):
 def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi=True):
     '''Shuffle-split cross-validation for thin plate splines 
     Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        phi (float): smoothing parameter for the thin plate spline, if 0 no smoothing
-        rep (int): number of replications
-        calc_phi (bool): whether to calculate phi in the function 
-    Returns 
-        overall_error (float): MAE average of all the replications
-     '''
+    ----------
+        loc_dict : dictionary
+             the latitude and longitudes of the daily/hourly stations
+        Cvar_dict : dictionary
+             dictionary of weather variable values for each station
+        shapefile : string
+             path to the study area shapefile
+        rep : int
+             number of replications
+        phi : float
+             smoothing parameter for the thin plate spline, if 0 no smoothing, default is None (it is calculated)
+        calc_phi : bool
+            whether to calculate phi in the function, if True, phi can = None 
+   Returns
+   ----------
+        float
+             - MAE estimate for entire surface (average of replications)
+   '''
     count = 1
     error_dictionary = {}
 
@@ -530,20 +544,41 @@ def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi
 
 
 def spatial_kfold_tps(idw_example_grid, loc_dict, Cvar_dict, shapefile, phi, file_path_elev,
-                      elev_array, idx_list, clusterNum, blocking_type, return_error, calc_phi):
+                      idx_list, clusterNum, blocking_type, return_error, calc_phi):
     '''Spatially blocked k-folds cross-validation procedure for thin plate splines 
     Parameters
-        loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        phi (float): smoothing parameter for the thin plate spline, if 0 no smoothing
-        clusterNum (int): the number of clusters you want to hold back
-        return_error (bool): whether you want to return the error dictionary or not (to calculate stdev)
-        calc_phi (bool): whether to calculate phi in the function 
-    Returns 
-        MAE (float): MAE average of all the replications
-     '''
+    ----------
+         idw_example_grid  : ndarray
+              used for reference of study area grid size
+         loc_dict : dictionary
+              the latitude and longitudes of the daily/hourly stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
+              path to the study area shapefile
+         phi : float
+              smoothing parameter for the thin plate spline, if 0 no smoothing
+         file_path_elev : string
+              path to the elevation lookup file
+         idx_list : int
+              position of the elevation column in the lookup file
+         block_num : int
+              number of blocks/clusters
+         blocking_type : string
+              whether to use clusters or blocks
+         return_error : bool
+              whether or not to return the error dictionary
+         calc_phi : bool
+             whether to calculate phi in the function, if True, phi can = None 
+    Returns
+    ----------
+         float
+              - MAE estimate for entire surface
+         int
+              - Return the block number just so we can later write it into the file to keep track
+         dictionary
+              - if return_error = True, a dictionary of the absolute error at each fold when it was left out
+    '''
     groups_complete = []  # If not using replacement, keep a record of what we have done
     error_dictionary = {}
 
