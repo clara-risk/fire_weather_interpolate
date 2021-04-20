@@ -26,20 +26,33 @@ import statistics
 warnings.filterwarnings("ignore")
 
 
-def spatial_cluster(loc_dict, Cvar_dict, shapefile, cluster_num, file_path_elev, idx_list, plot_2D, plot_3D, return_all):
+def spatial_cluster(loc_dict, Cvar_dict, shapefile, cluster_num, file_path_elev, idx_list,
+                    plot_2D, plot_3D, return_all):
     '''Spatial clustering based on scikit learn's agglomerative clustering
     Parameters
-        loc_dict (dict): the latitude and longitudes of the hourly/daily stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        cluster_num (int): number of clusters to form 
-        file_path_elev (str): path to the elevation lookup file 
-        idx_list (int): column of elevation in lookup file 
-        plot_2D/plot_3D (bool): whether to plot maps of the clusters in either 2d or 3d
-        return_all (bool): whether or not to return all the outputs (needed for selecting cluster size) 
-    Returns 
-        station_class (dict): a dictionary of cluster that each station is in 
+    ----------
+         loc_dict : dictionary
+              the latitude and longitudes of the daily/hourly stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
+              path to the study area shapefile
+         clusternum : int
+              number of clusters
+         file_path_elev : string
+              path to the elevation lookup file
+         idx_list : int
+              position of the elevation column in the lookup file
+         plot_2D : bool
+              whether to plot maps of the clusters in 2d
+         plot_3D : bool
+              whether to plot maps of the clusters in 3d             
+         return_all : bool
+            whether or not to return all the outputs (needed for selecting cluster size) 
+    Returns
+    ----------
+         dictionary
+             - a dictionary of cluster that each station is in 
     '''
 
     x = []
