@@ -21,7 +21,7 @@ to cross-validate.
 idew: has functions to interpolate using IDEW interpolation and to
 cross-validate. 
 
-ok: has functions to interpolate using ordinary kriging and to cross-validate.
+gpr: has functions to interpolate using gaussian process regression and to cross-validate.
 
 rf: has functions to interpolate using random forest and to cross-validate. 
 
@@ -30,8 +30,14 @@ calculating the station start-up date and overwintering the drought code.
 
 Eval: has functions for evaluating the strength of the relationship with 
 area burned and also for evaluating the leave-one-out cross validation 
-(i.e., RMSE calculation). 
+(i.e., RMSE calculation).
 
+make_blocks: has functions to split stations into blocks for cross-validation
+
+cluster_3d: has functions to cluster stations for cross-validation
+
+auto_select: process to automatically select the best spatial interpolation method
+throughout the fire season 
 
 References
 ----------
@@ -56,7 +62,6 @@ References
 from . import get_data as GD
 from . import idw as idw
 from . import idew as idew
-from . import ok as ok
 from . import tps as tps
 from . import rf as rf
 from . import gpr as gpr
@@ -64,6 +69,7 @@ from . import fwi as fwi
 from . import Eval as Eval  
 from . import cluster_3d as c3d
 from . import make_blocks as mbk
+from . import auto_select as auto_s 
 #Check import 
 
 try:
