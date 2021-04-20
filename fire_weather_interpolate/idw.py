@@ -37,18 +37,28 @@ import get_data as GD
 
 def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d,expand_area): 
      '''Inverse distance weighting interpolation
-     Parameters
-         latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-         .json file
-         Cvar_dict (dict): dictionary of weather variable values for each station 
-         input_date (str): the date you want to interpolate for 
-         shapefile (str): path to the study area shapefile 
-         show (bool): whether you want to plot a map 
-         d (int): the weighting function for IDW interpolation
-         expand_area (bool): function will expand the study area so that more stations are taken into account (200 km)
-     Returns
-         idw_grid (np_array): the array of values for the interpolated surface
-         maxmin: the bounds of the array surface, for use in other functions 
+    Parameters
+    ----------
+         latlon_dict : dictionary 
+              the latitude and longitudes of the stations
+         Cvar_dict : dictionary 
+              dictionary of weather variable values for each station 
+         input_date : string
+              the date you want to interpolate for 
+         shapefile : string
+              path to the study area shapefile, including its name 
+         show : bool
+              whether you want to plot a map 
+         d : int
+              the weighting for IDW interpolation
+         expand_area : bool
+              function will expand the study area so that more stations are taken into account (200 km)
+    Returns
+    ----------
+         ndarray
+              - the array of values for the interpolated surface
+         list
+              - the bounds of the array surface, for use in other functions 
      '''
      plotting_dictionary ={} #if expanding the study area, we need to return a dictionary of the stations used
      lat = []
@@ -149,24 +159,32 @@ def IDW(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,d,expand_area):
 
         plt.show()
 
-     #Can return plotting dictionary if need be, add 3rd to return statement
      return idw_grid, maxmin
 
 def cross_validate_IDW(latlon_dict,Cvar_dict,shapefile,d,pass_to_plot,expand_area):
-     '''Leave-one-out cross-validation procedure for IDW 
-     Parameters
-         latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-         .json file
-         Cvar_dict (dict): dictionary of weather variable values for each station 
-         shapefile (str): path to the study area shapefile 
-         d (int): the weighting function for IDW interpolation
-         pass_to_plot (bool):whether you will be plotting the error and need a version without absolute
-         value error
-         expand_area (bool): function will expand the study area so that more stations are taken into account (200 km)
-     Returns 
-         absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
-         was left out 
+    '''Leave-one-out cross-validation procedure for IDW 
+    Parameters
+    ----------
+         latlon_dict : dictionary 
+              the latitude and longitudes of the stations
+         Cvar_dict : dictionary 
+              dictionary of weather variable values for each station 
+         shapefile : string
+              path to the study area shapefile, including its name 
+         d : int
+              the weighting for IDW interpolation
+         pass_to_plot : bool
+              whether you will be plotting the error and need a version without absolute value error (i.e. fire season days)
+         expand_area : bool
+              function will expand the study area so that more stations are taken into account (200 km)          
+    Returns
+    ----------
+         dictionary 
+              - a dictionary of the absolute error at each station when it was left out 
+         dictionary 
+              - if pass_to_plot = True, returns a dictionary without the absolute value of the error, for example for plotting fire season error
      '''
+          
      x_origin_list = []
      y_origin_list = [] 
 
