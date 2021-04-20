@@ -39,21 +39,31 @@ def TPS(latlon_dict, Cvar_dict, input_date, var_name, shapefile, shapefile_maski
     '''Thin plate splines interpolation implemented using the interpolate radial basis function from 
     SciPy 
     Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        input_date (str): the date you want to interpolate for 
-        var_name (str): name of the variable you are interpolating
-        shapefile (str): path to the study area shapefile 
-        show (bool): whether you want to plot a map 
-        phi (float): smoothing parameter for the thin plate spline, if 0 no smoothing
-        expand_area (bool): function will expand the study area so that more stations are taken into account (200 km)
-        calc_phi (bool): whether the function will automatically calculate phi (use if expand_area == True)
-        If calc_phi == True, the function will ignore the input value for phi 
-    Returns 
-        spline (np_array): the array of values for the interpolated surface
-        maxmin: the bounds of the array surface, for use in other functions 
-
+    ----------
+        latlon_dict : dictionary
+             the latitude and longitudes of the stations
+        Cvar_dict : dictionary
+             dictionary of weather variable values for each station
+        input_date : string
+             the date you want to interpolate for
+        var_name : string
+             the name of the variable you are interpolating 
+        shapefile : string
+             path to the study area shapefile, including its name
+        show : bool
+             whether you want to plot a map
+        phi : float
+             smoothing parameter for the thin plate spline, if 0 no smoothing
+        expand_area : bool
+             function will expand the study area so that more stations are taken into account (200 km)
+        calc_phi : bool
+             whether the function will automatically calculate phi (use if expand_area == True); if calc_phi == True, the function will ignore the input value for phi 
+    Returns
+    ----------
+        ndarray
+             - the array of values for the interpolated surface
+        list
+             - the bounds of the array surface, for use in other functions
     '''
     x_origin_list = []
     y_origin_list = []
