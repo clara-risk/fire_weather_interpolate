@@ -31,25 +31,40 @@ warnings.filterwarnings("ignore")
 
 
 # functions
-def IDEW(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, file_path_elev, idx_list, d):
+def IDEW(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, file_path_elev,
+         idx_list, d):
     '''Inverse distance elevation weighting
     Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        input_date (str): the date you want to interpolate for 
-        shapefile (str): path to the study area shapefile 
-        show (bool): whether you want to plot a map 
-        file_path_elev (str): file path to the elevation lookup file 
-        idx_list (list): the index of the elevation data column in the lookup file 
-        d (int): the weighting function for IDW interpolation 
-    Returns 
-        idew_grid (np_array): the array of values for the interpolated surface
-        maxmin (list): the bounds of the array surface, for use in other functions 
-        elev_array (np_array): the array of elevation values for the study area, so we can return it
-        to the cross-validation function for faster processing 
+    ----------
+         latlon_dict : dictionary
+              the latitude and longitudes of the stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         input_date : string
+              the date you want to interpolate for
+         var_name : string
+              the name of the variable you are interpolating
+         shapefile : string
+              path to the study area shapefile, including its name
+         show : bool
+              whether you want to plot a map
+         file_path_elev : string
+              path to the elevation lookup file
+         idx_list : int
+              position of the elevation column in the lookup file
+         d : int
+              the weighting for IDW interpolation
 
-    '''
+    Returns
+    ----------
+         ndarray
+              - the array of values for the interpolated surface
+         list
+              - the bounds of the array surface, for use in other functions
+         ndarray
+              - elevation array (for use in the random forest module 
+     '''
+
     # Input: lat lon of station, variable (start day, rainfall, etc), date of interest,variable name (for plotting), show (bool true/false), file path to elevation lookup file
     # idx_list (for the column containing the elevation data), d is the power applied to get the weight
     lat = []  # Initialize empty lists to store data
