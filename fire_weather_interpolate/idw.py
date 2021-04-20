@@ -49,6 +49,8 @@ def IDW(latlon_dict, Cvar_dict, input_date,
              dictionary of weather variable values for each station
         input_date : string
              the date you want to interpolate for
+        var_name : string
+             the name of the variable you are interpolating 
         shapefile : string
              path to the study area shapefile, including its name
         show : bool
