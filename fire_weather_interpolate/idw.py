@@ -430,23 +430,34 @@ def select_block_size_IDW(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
           
 def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,nfolds,replacement,\
                        show,dictionary_Groups,expand_area):
-     '''Spatially blocked bagging cross-validation procedure for IDW 
-     Parameters
-         idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
-         loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-         .json file
-         Cvar_dict (dict): dictionary of weather variable values for each station 
-         shapefile (str): path to the study area shapefile 
-         d (int): the weighting function for IDW interpolation
-         nfolds (int): # number of folds. For 10-fold we use 10, etc.
-         replacement (bool): whether or not to use replacement between folds, should usually be true
-         show (bool): show the clustering procedure or not
-         dictionary_Groups (dict): dictionary of what groups (clusters) the stations belong to
-         expand_area (bool): expand the study area by 200km 
-     Returns 
-         error_dictionary (dict): a dictionary of the absolute error at each fold when it
-         was left out 
-     '''
+    '''Stratified shuffle-split cross-validation procedure 
+    Parameters
+    ----------
+         idw_example_grid  : ndarray 
+              used for reference of study area grid size
+         loc_dict : dictionary 
+              the latitude and longitudes of the daily/hourly stations
+         Cvar_dict : dictionary 
+              dictionary of weather variable values for each station 
+         shapefile : string 
+              path to the study area shapefile
+         d : int
+              the weighting for IDW interpolation
+         blocknum : int 
+              number of blocks/clusters 
+         nfolds : int 
+              number of folds to create (essentially repetitions) 
+         replacement : bool 
+              whether or not to use replacement between folds, should usually be true
+         dictionary_Groups : dictionary 
+              dictionary of what groups (clusters) the stations belong to
+         expand_area : bool
+              function will expand the study area so that more stations are taken into account (200 km)    
+    Returns
+    ----------
+         dictionary 
+              - a dictionary of the absolute error at each fold when it was left out 
+    '''
      station_list_used = [] #If not using replacement, keep a record of what we have done 
      count = 1
      error_dictionary = {}
@@ -595,10 +606,11 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
 
 
           error_dictionary[count]= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
-          #print(absolute_error_dictionary)
+
           count+=1
+          
      overall_error = sum(error_dictionary.values())/nfolds #average of all the runs
-     #print(overall_error)
+
      return overall_error
 
 
