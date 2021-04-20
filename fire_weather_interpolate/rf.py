@@ -43,8 +43,10 @@ def random_forest_interpolator(latlon_dict, Cvar_dict, input_date, var_name, sha
               path to the study area shapefile, including its name
          show : bool
               whether you want to plot a map
-         d : int
-              the weighting for IDW interpolation
+         file_path_elev : string
+              path to the elevation lookup file
+         idx_list : int
+              position of the elevation column in the lookup file
          expand_area : bool
               function will expand the study area so that more stations are taken into account (200 km)
     Returns
@@ -210,20 +212,30 @@ def random_forest_interpolator(latlon_dict, Cvar_dict, input_date, var_name, sha
         return rf_grid, maxmin
 
 def cross_validate_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, pass_to_plot):
-    '''Leave-one-out cross-validation procedure for IDEW
+    '''Leave-one-out cross-validation procedure for RF
     Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        file_path_elev (str): file path to the elevation lookup file 
-        elev_array (np_array): the elevation array for the study area 
-        idx_list (list): the index of the elevation data column in the lookup file 
-        d (int): the weighting function for IDW interpolation 
-    Returns 
-        absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
-        was left out 
-    '''
+    ----------
+         latlon_dict : dictionary
+              the latitude and longitudes of the stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
+              path to the study area shapefile, including its name
+         file_path_elev : string
+              path to the elevation lookup file
+         elev_array : ndarray
+              array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+         idx_list : int
+              position of the elevation column in the lookup file
+         pass_to_plot : bool
+              whether you will be plotting the error and need a version without absolute value error (i.e. fire season days)
+    Returns
+    ----------
+         dictionary
+              - a dictionary of the absolute error at each station when it was left out
+         dictionary
+              - if pass_to_plot = True, returns a dictionary without the absolute value of the error, for example for plotting fire season error
+     '''
     x_origin_list = []
     y_origin_list = []
 
@@ -382,19 +394,28 @@ def cross_validate_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_ar
         return absolute_error_dictionary
 
 def shuffle_split_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, rep):
-    '''Shuffle split cross-validation procedure for rf
-    Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        file_path_elev (str): file path to the elevation lookup file 
-        elev_array (np_array): the elevation array for the study area 
-        idx_list (list): the index of the elevation data column in the lookup file 
-        rep (int): number of repetitions to run 
-    Returns 
-        overall_error (float): average MAE value of all the reps 
-    '''
+    '''Shuffle-split cross-validation with 50/50 training test split
+   Parameters
+   ----------
+        loc_dict : dictionary
+             the latitude and longitudes of the daily/hourly stations
+        Cvar_dict : dictionary
+             dictionary of weather variable values for each station
+        shapefile : string
+             path to the study area shapefile
+         file_path_elev : string
+              path to the elevation lookup file
+         elev_array : ndarray
+              array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+         idx_list : int
+              position of the elevation column in the lookup file
+        rep : int
+             number of replications
+   Returns
+   ----------
+        float
+             - MAE estimate for entire surface (average of replications)
+   '''
     count = 1
     error_dictionary = {}
     while count <= rep:
