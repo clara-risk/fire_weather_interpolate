@@ -544,7 +544,7 @@ def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi
 
 
 def spatial_kfold_tps(idw_example_grid, loc_dict, Cvar_dict, shapefile, phi, file_path_elev,
-                      idx_list, clusterNum, blocking_type, return_error, calc_phi):
+                      idx_list, block_num, blocking_type, return_error, calc_phi):
     '''Spatially blocked k-folds cross-validation procedure for thin plate splines 
     Parameters
     ----------
@@ -588,10 +588,10 @@ def spatial_kfold_tps(idw_example_grid, loc_dict, Cvar_dict, shapefile, phi, fil
 
     if blocking_type == 'cluster':
         cluster = c3d.spatial_cluster(
-            loc_dict, Cvar_dict, shapefile, clusterNum, file_path_elev, idx_list, False, False, False)
+            loc_dict, Cvar_dict, shapefile, block_num, file_path_elev, idx_list, False, False, False)
     elif blocking_type == 'block':
         # Get the numpy array that delineates the blocks
-        np_array_blocks = mbk.make_block(idw_example_grid, clusterNum)
+        np_array_blocks = mbk.make_block(idw_example_grid, block_num)
         cluster = mbk.sorting_stations(
             np_array_blocks, shapefile, loc_dict, Cvar_dict)  # Now get the dictionary
     else:
@@ -713,9 +713,9 @@ def spatial_kfold_tps(idw_example_grid, loc_dict, Cvar_dict, shapefile, phi, fil
     MAE = sum(absolute_error_dictionary.values()) / \
         len(absolute_error_dictionary.values())
     if return_error:
-        return clusterNum, MAE, absolute_error_dictionary
+        return block_num, MAE, absolute_error_dictionary
     else:
-        return clusterNum, MAE
+        return block_num, MAE
 
 
 def select_block_size_tps(nruns, group_type, loc_dict, Cvar_dict, idw_example_grid, shapefile,
@@ -847,20 +847,35 @@ def select_block_size_tps(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
 
 def spatial_groups_tps(idw_example_grid, loc_dict, Cvar_dict, shapefile, phi, blocknum,
                        nfolds, replacement, show, dictionary_Groups, expand_area, calc_phi):
-    '''Spatially blocked bagging cross-validation procedure for IDW 
+    '''Stratified shuffle-split cross-validation procedure
     Parameters
-        idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
-        loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        d (int): the weighting function for IDW interpolation
-        nfolds (int): # number of folds. For 10-fold we use 10, etc.
-        dictionary_Groups (dict): dictionary of what groups (clusters) the stations belong to
-        expand_area (bool): expand the study area by 200km
-    Returns 
-        error_dictionary (dict): a dictionary of the absolute error at each fold when it
-        was left out 
+    ----------
+         idw_example_grid  : ndarray
+              used for reference of study area grid size
+         loc_dict : dictionary
+              the latitude and longitudes of the daily/hourly stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
+              path to the study area shapefile
+         phi : float
+              smoothing parameter for the thin plate spline, if 0 no smoothing
+         blocknum : int
+              number of blocks/clusters
+         nfolds : int
+              number of folds to create (essentially repetitions)
+         replacement : bool
+              whether or not to use replacement between folds, should usually be true
+         dictionary_Groups : dictionary
+              dictionary of what groups (clusters) the stations belong to
+         expand_area : bool
+              function will expand the study area so that more stations are taken into account (200 km)
+         calc_phi : bool
+             whether to calculate phi in the function, if True, phi can = None 
+    Returns
+    ----------
+         dictionary
+              - a dictionary of the absolute error at each fold when it was left out
     '''
     station_list_used = []  # If not using replacement, keep a record of what we have done
     count = 1
