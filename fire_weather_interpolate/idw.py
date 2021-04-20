@@ -615,19 +615,30 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
 
 
 def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_elev,idx_list,BlockNum,return_error):
-     '''Spatially blocked k-folds cross-validation procedure for IDW 
-     Parameters
-         idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
-         loc_dict (dict): the latitude and longitudes of the hourly/daily stations, loaded from the 
-         .json file
-         Cvar_dict (dict): dictionary of weather variable values for each station 
-         shapefile (str): path to the study area shapefile 
-         d (int): the weighting function for IDW interpolation
-     Returns 
-         error_dictionary (dict): a dictionary of the absolute error at each fold when it
-         was left out 
-     '''
-     groups_complete = [] #If not using replacement, keep a record of what we have done 
+    '''Spatially blocked k-fold cross-validation procedure for IDW 
+    Parameters
+    ----------
+         idw_example_grid  : ndarray 
+              used for reference of study area grid size
+         loc_dict : dictionary 
+              the latitude and longitudes of the daily/hourly stations
+         Cvar_dict : dictionary 
+              dictionary of weather variable values for each station 
+         shapefile : string 
+              path to the study area shapefile
+         d : int
+              the weighting for IDW interpolation
+    Returns
+    ----------
+         float
+              - MAE estimate for entire surface
+         int
+              - Return the block number just so we can later write it into the file to keep track 
+         dictionary 
+              - if return_error = True, a dictionary of the absolute error at each fold when it was left out 
+    '''
+
+     groups_complete = [] 
      error_dictionary = {} 
      x_origin_list = []
      y_origin_list = [] 
