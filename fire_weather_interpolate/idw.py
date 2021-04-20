@@ -91,8 +91,8 @@ def IDW(latlon_dict, Cvar_dict, input_date,
             loc = latlon_dict[station_name]
             latitude = loc[0]
             longitude = loc[1]
-            # Filter out stations outside of grid
-            proj_coord = pyproj.Proj('esri:102001')(longitude, latitude)
+            proj_coord = pyproj.Proj('esri:102001')(
+    longitude, latitude)  # Filter out stations outside of grid
             if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
                 ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
                 cvar_val = Cvar_dict[station_name]
@@ -128,8 +128,11 @@ def IDW(latlon_dict, Cvar_dict, input_date,
 
     Xi, Yi = np.meshgrid(Xi, Yi)
     Xi, Yi = Xi.flatten(), Yi.flatten()
-    maxmin = [np.min(yProj_extent), np.max(yProj_extent),
-                     np.max(xProj_extent), np.min(xProj_extent)]
+    maxmin = [
+    np.min(yProj_extent),
+    np.max(yProj_extent),
+    np.max(xProj_extent),
+     np.min(xProj_extent)]
 
     vals = np.vstack((xProj, yProj)).T
 
@@ -152,10 +155,20 @@ def IDW(latlon_dict, Cvar_dict, input_date,
 
         na_map = gpd.read_file(shapefile)
 
-        plt.imshow(idw_grid, extent=(xProj_extent.min(
-        ) - 1, xProj_extent.max() + 1, yProj_extent.max() - 1, yProj_extent.min() + 1))
-        na_map.plot(ax=ax, color='white', edgecolor='k',
-                    linewidth=2, zorder=10, alpha=0.1)
+        plt.imshow(
+    idw_grid,
+    extent=(
+        xProj_extent.min() - 1,
+        xProj_extent.max() + 1,
+        yProj_extent.max() - 1,
+         yProj_extent.min() + 1))
+        na_map.plot(
+    ax=ax,
+    color='white',
+    edgecolor='k',
+    linewidth=2,
+    zorder=10,
+     alpha=0.1)
 
         plt.scatter(xProj, yProj, c=z, edgecolors='k')
 
@@ -227,8 +240,8 @@ def cross_validate_IDW(latlon_dict, Cvar_dict, shapefile,
                 latitude = loc[0]
                 longitude = loc[1]
                 Plat, Plon = pyproj.Proj('esri:102001')(longitude, latitude)
-                # Filter out stations outside of grid
-                proj_coord = pyproj.Proj('esri:102001')(longitude, latitude)
+                proj_coord = pyproj.Proj('esri:102001')(
+    longitude, latitude)  # Filter out stations outside of grid
                 if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
                     ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
                     Plat = float(Plat)
@@ -248,9 +261,8 @@ def cross_validate_IDW(latlon_dict, Cvar_dict, shapefile,
                         loc = latlon_dict[station_name]
                         latitude = loc[0]
                         longitude = loc[1]
-                        # Filter out stations outside of grid
-                        proj_coord = pyproj.Proj(
-                            'esri:102001')(longitude, latitude)
+                        proj_coord = pyproj.Proj('esri:102001')(
+    longitude, latitude)  # Filter out stations outside of grid
                         if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
                             ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
                             cvar_val = Cvar_dict[station_name]
@@ -271,9 +283,10 @@ def cross_validate_IDW(latlon_dict, Cvar_dict, shapefile,
             num_col = int((xmax - xmin) / pixelHeight) + 1
             num_row = int((ymax - ymin) / pixelWidth) + 1
 
-            # We need to project to a projected system before making distance matrix
-            # We dont know but assume
-            source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+            # We need to project to a projected system before making distance
+            # matrix
+            source_proj = pyproj.Proj(
+    proj='latlong', datum='NAD83')  # We dont know but assume
             xProj, yProj = pyproj.Proj('esri:102001')(x, y)
             if expand_area:
                 yProj_extent = np.append(
@@ -286,15 +299,22 @@ def cross_validate_IDW(latlon_dict, Cvar_dict, shapefile,
                 xProj_extent = np.append(
                     xProj, [bounds['maxx'], bounds['minx']])
 
-            Yi = np.linspace(np.min(yProj_extent),
-                             np.max(yProj_extent), num_row)
-            Xi = np.linspace(np.min(xProj_extent),
-                             np.max(xProj_extent), num_col)
+            Yi = np.linspace(
+    np.min(yProj_extent),
+    np.max(yProj_extent),
+     num_row)
+            Xi = np.linspace(
+    np.min(xProj_extent),
+    np.max(xProj_extent),
+     num_col)
 
             Xi, Yi = np.meshgrid(Xi, Yi)
             Xi, Yi = Xi.flatten(), Yi.flatten()
-            maxmin = [np.min(yProj_extent), np.max(yProj_extent),
-                             np.max(xProj_extent), np.min(xProj_extent)]
+            maxmin = [
+    np.min(yProj_extent),
+    np.max(yProj_extent),
+    np.max(xProj_extent),
+     np.min(xProj_extent)]
 
             vals = np.vstack((xProj, yProj)).T
 
@@ -388,7 +408,8 @@ def select_block_size_IDW(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
                 folds9, shapefile, loc_dict, Cvar_dict)
 
         elif group_type == 'clusters':
-            # if we expand the area, re-make the dictionary with only the stations in the boreal region (Project 2)
+            # if we expand the area, re-make the dictionary with only the
+            # stations in the boreal region (Project 2)
             if expand_area:
                 inBoreal = GD.is_station_in_boreal(loc_dict, Cvar_dict, boreal_shapefile)
                 # Overwrite cvar_dict
@@ -419,12 +440,12 @@ def select_block_size_IDW(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
 
         for n in range(0, nruns):
             # We want same number of stations selected for each cluster number
-            # We need to calculate, 5 folds x 25 clusters = 125 stations; 8 folds x 16 clusters = 128 stations, etc.
-            # What is 30% of the stations
-            target_stations = len(Cvar_dict.keys())*0.3
-            fold_num1 = int(round(target_stations/cluster_num1))
-            fold_num2 = int(round(target_stations/cluster_num2))
-            fold_num3 = int(round(target_stations/cluster_num3))
+            # We need to calculate, 5 folds x 25 clusters = 125 stations; 8
+            # folds x 16 clusters = 128 stations, etc.
+            target_stations = len(Cvar_dict.keys()) * 0.3 # What is 30% of the stations
+            fold_num1 = int(round(target_stations /cluster_num1))
+            fold_num2 = int(round(target_stations / cluster_num2))
+            fold_num3 = int(round(target_stations /cluster_num3))
 
             # For our first project, this is what we did
             # fold_num1 = 5
@@ -454,7 +475,7 @@ def select_block_size_IDW(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
         index_min = list_stdev.index(min(list_stdev))
         lowest_stdev = statistics.stdev(list_error[index_min])
 
-        ave_MAE = sum(list_error[index_min])/len(list_error[index_min])
+        ave_MAE = sum(list_error[index_min]) / len(list_error[index_min])
         cluster_select = list_block_name[index_min]
 
         print(list_error[index_min])
@@ -466,33 +487,33 @@ def select_block_size_IDW(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
 
 def spatial_groups_IDW(idw_example_grid, loc_dict, Cvar_dict,shapefile,d,blocknum,nfolds,replacement,\
                        show, dictionary_Groups, expand_area):
-    '''Stratified shuffle-split cross-validation procedure 
+    '''Stratified shuffle-split cross-validation procedure
     Parameters
     ----------
-         idw_example_grid  : ndarray 
+         idw_example_grid  : ndarray
               used for reference of study area grid size
-         loc_dict : dictionary 
+         loc_dict : dictionary
               the latitude and longitudes of the daily/hourly stations
-         Cvar_dict : dictionary 
-              dictionary of weather variable values for each station 
-         shapefile : string 
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
               path to the study area shapefile
          d : int
               the weighting for IDW interpolation
-         blocknum : int 
-              number of blocks/clusters 
-         nfolds : int 
-              number of folds to create (essentially repetitions) 
-         replacement : bool 
+         blocknum : int
+              number of blocks/clusters
+         nfolds : int
+              number of folds to create (essentially repetitions)
+         replacement : bool
               whether or not to use replacement between folds, should usually be true
-         dictionary_Groups : dictionary 
+         dictionary_Groups : dictionary
               dictionary of what groups (clusters) the stations belong to
          expand_area : bool
-              function will expand the study area so that more stations are taken into account (200 km)    
+              function will expand the study area so that more stations are taken into account (200 km)
     Returns
     ----------
-         dictionary 
-              - a dictionary of the absolute error at each fold when it was left out 
+         dictionary
+              - a dictionary of the absolute error at each fold when it was left out
     '''
         station_list_used = []  # If not using replacement, keep a record of what we have done
         count = 1
@@ -501,10 +522,10 @@ def spatial_groups_IDW(idw_example_grid, loc_dict, Cvar_dict,shapefile,d,blocknu
         na_map = gpd.read_file(shapefile)
         bounds = na_map.bounds
         if expand_area:
-            xmax = bounds['maxx']+200000
+            xmax = bounds['maxx'] +200000
             xmin = bounds['minx']-200000
-            ymax = bounds['maxy']+200000
-            ymin = bounds['miny']-200000
+            ymax = bounds['maxy'] +200000
+            ymin = bounds['miny'] - 200000
         else:
             xmax = bounds['maxx']
             xmin = bounds['minx']
@@ -518,169 +539,170 @@ def spatial_groups_IDW(idw_example_grid, loc_dict, Cvar_dict,shapefile,d,blocknu
             absolute_error_dictionary = {}
             projected_lat_lon = {}
 
-            # if we expand the area, re-select station only if it is in the boreal region
+            # if we expand the area, re-select station only if it is in the
+            # boreal region
 
             station_list = Eval.select_random_station(dictionary_Groups, blocknum, replacement,station_list_used).values()
 
-            if replacement == False:
-                station_list_used.append(list(station_list))
+               if replacement == False:
+                    station_list_used.append(list(station_list))
 
-            for station_name in Cvar_dict.keys():
+                for station_name in Cvar_dict.keys():
 
-                if station_name in loc_dict.keys():
+                    if station_name in loc_dict.keys():
 
-                    loc = loc_dict[station_name]
-                    latitude = loc[0]
-                    longitude = loc[1]
-                    Plat, Plon = pyproj.Proj(
-                        'esri:102001')(longitude, latitude)
-                    Plat = float(Plat)
-                    Plon = float(Plon)
-                    proj_coord = pyproj.Proj('esri:102001')(longitude, latitude)  # Filter out stations outside of grid
-                    if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
-                        projected_lat_lon[station_name] = [Plat, Plon]
-
-            lat = []
-            lon = []
-            Cvar = []
-            for station_name in sorted(Cvar_dict.keys()):
-                if station_name in loc_dict.keys():
-                    if station_name not in station_list:  # This is the step where we hold back the fold
                         loc = loc_dict[station_name]
                         latitude = loc[0]
                         longitude = loc[1]
-                        cvar_val = Cvar_dict[station_name]
+                        Plat, Plon = pyproj.Proj(
+                            'esri:102001')(longitude, latitude)
+                        Plat = float(Plat)
+                        Plon = float(Plon)
                         proj_coord = pyproj.Proj('esri:102001')(longitude, latitude)  # Filter out stations outside of grid
-                        if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
-                            lat.append(float(latitude))
-                            lon.append(float(longitude))
-                            Cvar.append(cvar_val)
-                    else:
-                        pass  # Skip the station
+                        if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
+                            ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                            projected_lat_lon[station_name] = [Plat, Plon]
 
-            y = np.array(lat)
-            x = np.array(lon)
-            z = np.array(Cvar)
+                lat = []
+                lon = []
+                Cvar = []
+                for station_name in sorted(Cvar_dict.keys()):
+                    if station_name in loc_dict.keys():
+                        if station_name not in station_list:  # This is the step where we hold back the fold
+                            loc = loc_dict[station_name]
+                            latitude = loc[0]
+                            longitude = loc[1]
+                            cvar_val = Cvar_dict[station_name]
+                            proj_coord = pyproj.Proj('esri:102001')(longitude, latitude)  # Filter out stations outside of grid
+                            if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
+                                ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                                lat.append(float(latitude))
+                                lon.append(float(longitude))
+                                Cvar.append(cvar_val)
+                        else:
+                            pass  # Skip the station
 
-            pixelHeight = 10000
-            pixelWidth = 10000
+                y = np.array(lat)
+                x = np.array(lon)
+                z = np.array(Cvar)
 
-            num_col = int((xmax - xmin) / pixelHeight)
-            num_row = int((ymax - ymin) / pixelWidth)
+                pixelHeight = 10000
+                pixelWidth = 10000
 
-              # We need to project to a projected system before making distance matrix
-            source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83')  # We dont know but assume
-            xProj, yProj = pyproj.Proj('esri:102001')(x, y)
+                num_col = int((xmax - xmin) / pixelHeight)
+                num_row = int((ymax - ymin) / pixelWidth)
 
-            if expand_area:
+                # We need to project to a projected system before making
+                # distance matrix
+                source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83')  # We dont know but assume
+                xProj, yProj = pyproj.Proj('esri:102001')(x, y)
 
-                yProj_extent = np.append(yProj, [bounds['maxy']+200000,bounds['miny']-200000])
-                xProj_extent = np.append(xProj, [bounds['maxx']+200000,bounds['minx']-200000])
-            else:
-                yProj_extent = np.append(yProj, [bounds['maxy'],bounds['miny']])
-                xProj_extent = np.append(xProj, [bounds['maxx'],bounds['minx']])    
+                if expand_area:
 
-            Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row+1)
-            Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col+1)
+                    yProj_extent = np.append(yProj, [bounds['maxy']+200000,bounds['miny']-200000])
+                    xProj_extent = np.append(xProj, [bounds['maxx']+200000,bounds['minx']-200000])
+                else:
+                    yProj_extent = np.append(yProj, [bounds['maxy'],bounds['miny']])
+                    xProj_extent = np.append(xProj, [bounds['maxx'],bounds['minx']])    
 
-            Xi, Yi = np.meshgrid(Xi, Yi)
-            Xi, Yi = Xi.flatten(), Yi.flatten()
-            maxmin = [np.min(yProj_extent), np.max(yProj_extent), np.max(xProj_extent),np.min(xProj_extent)]
+                Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row+1)
+                Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col+1)
 
-            vals = np.vstack((xProj, yProj)).T
+                Xi, Yi = np.meshgrid(Xi, Yi)
+                Xi, Yi = Xi.flatten(), Yi.flatten()
+                maxmin = [np.min(yProj_extent), np.max(yProj_extent), np.max(xProj_extent),np.min(xProj_extent)]
 
-            interpol = np.vstack((Xi, Yi)).T
-            dist_not = np.subtract.outer(vals[:, 0], interpol[:, 0]) #Length of the triangle side from the cell to the point with data 
-            dist_one = np.subtract.outer(vals[:, 1], interpol[:, 1]) #Length of the triangle side from the cell to the point with data 
-            distance_matrix = np.hypot(dist_not, dist_one)  # euclidean distance, getting the hypotenuse
+                vals = np.vstack((xProj, yProj)).T
 
-            # what if distance is 0 --> np.inf? have to account for the pixel underneath
-            weights = 1/(distance_matrix**d)
-            # Making sure to assign the value of the weather station above the pixel directly to the pixel underneath
-            weights[np.where(np.isinf(weights))] = 1/(1.0E-50)
-            weights /= weights.sum(axis= 0)
+                interpol = np.vstack((Xi, Yi)).T
+                dist_not = np.subtract.outer(vals[:, 0], interpol[:, 0]) #Length of the triangle side from the cell to the point with data 
+                dist_one = np.subtract.outer(vals[:, 1], interpol[:, 1]) #Length of the triangle side from the cell to the point with data 
+                distance_matrix = np.hypot(dist_not, dist_one)  # euclidean distance, getting the hypotenuse
 
-            Zi = np.dot(weights.T, z)
-            idw_grid = Zi.reshape(num_row+1, num_col+1)
-            if show and (count == 1):
-                fig, ax = plt.subplots(figsize=(15, 15))
-                crs = {'init': 'esri:102001'}
+                weights = 1 /(distance_matrix**d)  # what if distance is 0 --> np.inf? have to account for the pixel underneath
+                weights[np.where(np.isinf(weights))] = 1 /(1.0E-50)  # Making sure to assign the value of the weather station above the pixel directly to the pixel underneath
+                weights /= weights.sum(axis= 0)
 
-                na_map = gpd.read_file(shapefile)
+                Zi = np.dot(weights.T, z)
+                idw_grid = Zi.reshape(num_row +1, num_col +1)
+                if show and (count == 1):
+                    fig, ax = plt.subplots(figsize=(15, 15))
+                    crs = {'init': 'esri:102001'}
 
-                im = plt.imshow(folds, extent=(xProj_extent.min()-1, xProj_extent.max()+1,yProj_extent.max()-1,yProj_extent.min()+1),cmap='tab20b') 
-                na_map.plot(ax = ax, color='white', edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
+                    na_map = gpd.read_file(shapefile)
 
-                plt.scatter(xProj, yProj, c='black',s=2)
+                    im = plt.imshow(folds, extent=(xProj_extent.min()-1, xProj_extent.max()+1,yProj_extent.max()-1,yProj_extent.min()+1),cmap='tab20b') 
+                    na_map.plot(ax = ax, color='white', edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
 
-                plt.gca().invert_yaxis()
-                cbar = plt.colorbar(im, ax=ax, cmap='tab20b')
-                cbar.set_label('Block Number')
+                    plt.scatter(xProj, yProj, c='black',s=2)
 
-                title = 'Group selection'
-                fig.suptitle(title, fontsize=14)
-                plt.xlabel('Longitude')
-                plt.ylabel('Latitude')
+                    plt.gca().invert_yaxis()
+                    cbar = plt.colorbar(im, ax=ax, cmap='tab20b')
+                    cbar.set_label('Block Number')
 
-                plt.show()
+                    title = 'Group selection'
+                    fig.suptitle(title, fontsize=14)
+                    plt.xlabel('Longitude')
+                    plt.ylabel('Latitude')
 
-            # Compare at a certain point
-            for statLoc in station_list:
+                    plt.show()
 
-                coord_pair = projected_lat_lon[statLoc]
+                # Compare at a certain point
+                for statLoc in station_list:
 
-                x_orig = int((coord_pair[0] - float(xmin))/pixelHeight)  # lon
-                y_orig = int((coord_pair[1] - float(ymin))/pixelWidth)  # lat
-                x_origin_list.append(x_orig)
-                y_origin_list.append(y_orig)
+                    coord_pair = projected_lat_lon[statLoc]
 
-                interpolated_val = idw_grid[y_orig][x_orig]
+                    x_orig = int((coord_pair[0] - float(xmin))/pixelHeight)  # lon
+                    y_orig = int((coord_pair[1] - float(ymin)) /pixelWidth)  # lat
+                    x_origin_list.append(x_orig)
+                    y_origin_list.append(y_orig)
 
-                original_val = Cvar_dict[statLoc]
-                absolute_error = abs(interpolated_val-original_val)
-                absolute_error_dictionary[statLoc] = absolute_error
+                    interpolated_val = idw_grid[y_orig][x_orig]
+
+                    original_val = Cvar_dict[statLoc]
+                    absolute_error = abs(interpolated_val - original_val)
+                    absolute_error_dictionary[statLoc] = absolute_error
 
 
-            error_dictionary[count] = sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values())  # average of all the withheld stations
+                error_dictionary[count] = sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values())  # average of all the withheld stations
 
-            count += 1
+                count += 1
 
-        overall_error = sum(error_dictionary.values())/ \
-                            nfolds  # average of all the runs
+        overall_error = sum(error_dictionary.values()) /nfolds  # average of all the runs
 
         return overall_error
 
 
 def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict,shapefile,d,file_path_elev,idx_list,block_num,return_error):
-    '''Spatially blocked k-fold cross-validation procedure for IDW 
+    '''Spatially blocked k-fold cross-validation procedure for IDW
     Parameters
     ----------
-         idw_example_grid  : ndarray 
+         idw_example_grid  : ndarray
               used for reference of study area grid size
-         loc_dict : dictionary 
+         loc_dict : dictionary
               the latitude and longitudes of the daily/hourly stations
-         Cvar_dict : dictionary 
-              dictionary of weather variable values for each station 
-         shapefile : string 
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
               path to the study area shapefile
          d : int
               the weighting for IDW interpolation
          file_path_elev : string
               path to the elevation lookup file
-         idx_list : int 
+         idx_list : int
               position of the elevation column in the lookup file
          block_num : int
               number of blocks/clusters
          return_error : bool
-              whether or not to return the error dictionary 
+              whether or not to return the error dictionary
     Returns
     ----------
          float
               - MAE estimate for entire surface
          int
-              - Return the block number just so we can later write it into the file to keep track 
-         dictionary 
-              - if return_error = True, a dictionary of the absolute error at each fold when it was left out 
+              - Return the block number just so we can later write it into the file to keep track
+         dictionary
+              - if return_error = True, a dictionary of the absolute error at each fold when it was left out
     '''
 
        groups_complete = []
@@ -763,10 +785,8 @@ def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict,shapefile,d,file_pat
         dist_one = np.subtract.outer(vals[:, 1], interpol[:, 1]) #Length of the triangle side from the cell to the point with data 
         distance_matrix = np.hypot(dist_not, dist_one)  # euclidean distance, getting the hypotenuse
 
-        # what if distance is 0 --> np.inf? have to account for the pixel underneath
-        weights = 1/(distance_matrix**d)
-        # Making sure to assign the value of the weather station above the pixel directly to the pixel underneath
-        weights[np.where(np.isinf(weights))] = 1/(1.0E-50)
+        weights = 1 /(distance_matrix**d)  # what if distance is 0 --> np.inf? have to account for the pixel underneath
+        weights[np.where(np.isinf(weights))] = 1 /(1.0E-50)  # Making sure to assign the value of the weather station above the pixel directly to the pixel underneath
         weights /= weights.sum(axis= 0)
 
         Zi = np.dot(weights.T, z)
@@ -777,15 +797,14 @@ def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict,shapefile,d,file_pat
             coord_pair = projected_lat_lon[statLoc]
 
             x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight)  # lon
-            y_orig = int(
-                (coord_pair[1] - float(bounds['miny']))/pixelWidth)  # lat
+            y_orig = int((coord_pair[1] - float(bounds['miny'])) /pixelWidth)  # lat
             x_origin_list.append(x_orig)
             y_origin_list.append(y_orig)
 
             interpolated_val = idw_grid[y_orig][x_orig]
 
             original_val = Cvar_dict[statLoc]
-            absolute_error = abs(interpolated_val-original_val)
+            absolute_error = abs(interpolated_val - original_val)
             absolute_error_dictionary[statLoc] = absolute_error
 
         MAE = sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values())  # average of all the withheld stations
@@ -795,19 +814,19 @@ def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict,shapefile,d,file_pat
             return block_num, MAE
 
 def shuffle_split(loc_dict, Cvar_dict, shapefile,d,rep,show):
-    '''Shuffle-split cross-validation with 50/50 training test split 
+    '''Shuffle-split cross-validation with 50/50 training test split
    Parameters
    ----------
-        loc_dict : dictionary 
+        loc_dict : dictionary
              the latitude and longitudes of the daily/hourly stations
-        Cvar_dict : dictionary 
-             dictionary of weather variable values for each station 
-        shapefile : string 
+        Cvar_dict : dictionary
+             dictionary of weather variable values for each station
+        shapefile : string
              path to the study area shapefile
         d : int
              the weighting for IDW interpolation
         rep : int
-             number of replications 
+             number of replications
         show : bool
              if you want to show a map of the clusters
         block_num : int
@@ -815,7 +834,7 @@ def shuffle_split(loc_dict, Cvar_dict, shapefile,d,rep,show):
    Returns
    ----------
         float
-             - MAE estimate for entire surface (average of replications) 
+             - MAE estimate for entire surface (average of replications)
    '''
     count = 1
     error_dictionary = {}
@@ -915,8 +934,8 @@ def shuffle_split(loc_dict, Cvar_dict, shapefile,d,rep,show):
         dist_one = np.subtract.outer(vals[:, 1], interpol[:, 1]) 
         distance_matrix = np.hypot(dist_not, dist_one)
 
-        weights = 1/(distance_matrix**d)
-        weights[np.where(np.isinf(weights))] = 1/(1.0E-50)
+        weights = 1 /(distance_matrix**d)
+        weights[np.where(np.isinf(weights))] = 1 /(1.0E-50)
         weights /= weights.sum(axis= 0)
 
         Zi = np.dot(weights.T, z)
@@ -949,21 +968,19 @@ def shuffle_split(loc_dict, Cvar_dict, shapefile,d,rep,show):
             coord_pair = projected_lat_lon[statLoc]
 
             x_orig = int((coord_pair[0] - float(bounds['minx']))/pixelHeight)  # lon
-            y_orig = int(
-                (coord_pair[1] - float(bounds['miny']))/pixelWidth)  # lat
+            y_orig = int((coord_pair[1] - float(bounds['miny'])) /pixelWidth)  # lat
             x_origin_list.append(x_orig)
             y_origin_list.append(y_orig)
 
             interpolated_val = idw_grid[y_orig][x_orig]
 
             original_val = Cvar_dict[statLoc]  # Previous, this line had a large error.
-            absolute_error = abs(interpolated_val-original_val)
+            absolute_error = abs(interpolated_val - original_val)
             absolute_error_dictionary[statLoc] = absolute_error
 
         error_dictionary[count] = sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values())  # average of all the withheld stations
 
         count += 1
-    overall_error = sum(error_dictionary.values())/ \
-                        rep  # average of all the runs
+    overall_error = sum(error_dictionary.values()) /rep  # average of all the runs
 
     return overall_error
