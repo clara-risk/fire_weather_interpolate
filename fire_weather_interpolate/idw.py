@@ -375,7 +375,7 @@ def select_block_size_IDW(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
               path to the elevation lookup file
          idx_list : int
               position of the elevation column in the lookup file
-         cluster_num : list
+         cluster_num1-3 : int
               three cluster numbers to test, for blocking this must be one of three:25, 16, 9
               you can enter 'None' and it will automatically test 25, 16, 9
          expand_area : bool
@@ -872,8 +872,6 @@ def shuffle_split(loc_dict, Cvar_dict, shapefile, d, rep, show):
              number of replications
         show : bool
              if you want to show a map of the clusters
-        block_num : int
-             number of blocks/clusters
    Returns
    ----------
         float
