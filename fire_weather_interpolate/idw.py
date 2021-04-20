@@ -614,7 +614,7 @@ def spatial_groups_IDW(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,blocknum,
      return overall_error
 
 
-def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_elev,idx_list,BlockNum,return_error):
+def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_elev,idx_list,block_num,return_error):
     '''Spatially blocked k-fold cross-validation procedure for IDW 
     Parameters
     ----------
@@ -628,6 +628,14 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
               path to the study area shapefile
          d : int
               the weighting for IDW interpolation
+         file_path_elev : string
+              path to the elevation lookup file
+         idx_list : int 
+              position of the elevation column in the lookup file
+         block_num : int
+              number of blocks/clusters
+         return_error : bool
+              whether or not to return the error dictionary 
     Returns
     ----------
          float
@@ -646,15 +654,12 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
      absolute_error_dictionary = {} 
      projected_lat_lon = {}
 
-     cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,BlockNum,file_path_elev,idx_list,False,False,False)
+     cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,block_num,file_path_elev,idx_list,False,False,False)
 
      for group in cluster.values():
         if group not in groups_complete:
             station_list = [k for k,v in cluster.items() if v == group]
             groups_complete.append(group)
-
-
-     
 
      for station_name in Cvar_dict.keys():
           
@@ -747,23 +752,33 @@ def spatial_kfold_idw(idw_example_grid,loc_dict,Cvar_dict,shapefile,d,file_path_
 
      MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
      if return_error:
-         return BlockNum,MAE,absolute_error_dictionary
+         return block_num,MAE,absolute_error_dictionary
      else:
-         return BlockNum,MAE
+         return block_num,MAE
 
 def shuffle_split(loc_dict,Cvar_dict,shapefile,d,rep,show):
      '''Shuffle-split cross-validation with 50/50 training test split 
-     Parameters
-         loc_dict (dict): the latitude and longitudes of the hourly/daily stations, loaded from the 
-         .json file
-         Cvar_dict (dict): dictionary of weather variable values for each station 
-         shapefile (str): path to the study area shapefile 
-         d (int): the weighting function for IDW interpolation
-         rep (int): number of replications 
-         show (bool): if you want to show a map of the clusters
-     Returns 
-         overall_error (float): average MAE of all the replications 
-     '''
+    Parameters
+    ----------
+         loc_dict : dictionary 
+              the latitude and longitudes of the daily/hourly stations
+         Cvar_dict : dictionary 
+              dictionary of weather variable values for each station 
+         shapefile : string 
+              path to the study area shapefile
+         d : int
+              the weighting for IDW interpolation
+         rep : int
+              number of replications 
+         show : bool
+              if you want to show a map of the clusters
+         block_num : int
+              number of blocks/clusters
+    Returns
+    ----------
+         float
+              - MAE estimate for entire surface (average of replications) 
+    '''
      count = 1
      error_dictionary = {} 
      while count <= rep: #Loop through each block/cluster, leaving whole cluster out 
@@ -860,12 +875,12 @@ def shuffle_split(loc_dict,Cvar_dict,shapefile,d,rep,show):
           vals = np.vstack((xProj,yProj)).T
              
           interpol = np.vstack((Xi,Yi)).T
-          dist_not = np.subtract.outer(vals[:,0], interpol[:,0]) #Length of the triangle side from the cell to the point with data 
-          dist_one = np.subtract.outer(vals[:,1], interpol[:,1]) #Length of the triangle side from the cell to the point with data 
-          distance_matrix = np.hypot(dist_not,dist_one) #euclidean distance, getting the hypotenuse
+          dist_not = np.subtract.outer(vals[:,0], interpol[:,0]) 
+          dist_one = np.subtract.outer(vals[:,1], interpol[:,1]) 
+          distance_matrix = np.hypot(dist_not,dist_one) 
              
-          weights = 1/(distance_matrix**d) #what if distance is 0 --> np.inf? have to account for the pixel underneath
-          weights[np.where(np.isinf(weights))] = 1/(1.0E-50) #Making sure to assign the value of the weather station above the pixel directly to the pixel underneath
+          weights = 1/(distance_matrix**d) 
+          weights[np.where(np.isinf(weights))] = 1/(1.0E-50) 
           weights /= weights.sum(axis = 0) 
 
           Zi = np.dot(weights.T, z)
