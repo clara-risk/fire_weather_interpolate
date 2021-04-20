@@ -227,20 +227,29 @@ def IDEW(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, file_pat
     return idew_grid, maxmin, elev_array
 
 
-def cross_validate_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, d):
+def cross_validate_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array,
+                        idx_list, d):
     '''Leave-one-out cross-validation procedure for IDEW
     Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        file_path_elev (str): file path to the elevation lookup file 
-        elev_array (np_array): the elevation array for the study area 
-        idx_list (list): the index of the elevation data column in the lookup file 
-        d (int): the weighting function for IDW interpolation 
-    Returns 
-        absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
-        was left out 
+    ----------
+         latlon_dict : dictionary
+              the latitude and longitudes of the stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
+              path to the study area shapefile, including its name
+         file_path_elev : string
+              path to the elevation lookup file
+         elev_array : ndarray
+              array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+         idx_list : int
+              position of the elevation column in the lookup file
+         d : int
+              the weighting for IDW interpolation            
+    Returns
+    ----------
+         dictionary
+              - a dictionary of the absolute error at each station when it was left out
     '''
     x_origin_list = []
     y_origin_list = []
