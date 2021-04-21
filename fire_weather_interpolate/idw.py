@@ -375,6 +375,8 @@ def select_block_size_IDW(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
               path to the elevation lookup file
          idx_list : int
               position of the elevation column in the lookup file
+         d : int
+              the weighting for IDW interpolation
          cluster_num1-3 : int
               three cluster numbers to test, for blocking this must be one of three:25, 16, 9
               you can enter 'None' and it will automatically test 25, 16, 9
