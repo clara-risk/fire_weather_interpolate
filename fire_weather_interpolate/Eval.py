@@ -249,9 +249,13 @@ def highest_value_first_four_days(fire_shapefile, shapefile, latlon_dict,
 def get_report_date_plus_three(fire_shapefile):
     '''Function to return the first four days of the fire
     Parameters
-        fire_shapefile (str): path to the fire shapefile 
-    Returns 
-        fire_dates (list): list of the report date and three days after
+    ----------
+        fire_shapefile : string
+            path to the fire shapefile 
+    Returns
+    ----------
+        fire_dates : list
+            - list of the report date and three days after
     '''
     fire_map = gpd.read_file(fire_shapefile)
     rep_date = pd.to_datetime(fire_map['REP_DATE'].to_list()[0])
@@ -263,20 +267,25 @@ def get_report_date_plus_three(fire_shapefile):
     return fire_dates
 
 
-def ridge_regression(path_to_excel_spreadsheet, var1, var2, var3, var4, var5, var6, var7, var8, var9, var10, all_variables, plot_distributions,
-                     plot_residual_histogram, transform):
+def ridge_regression(path_to_excel_spreadsheet, var1, var2, var3, var4, var5, var6, var7, var8, var9,
+                     var10, all_variables, plot_distributions, plot_residual_histogram, transform):
     '''Make a ridge regression model and print out the resulting coefficients and (if True) the histogram of residuals 
     Parameters
-        path_to_excel_spreadsheet (str): path to the spreadsheet containing the FWI values for each fire and the other covariates,
-        Notes: No trailing 0s in speadsheet, no space after parameter name in header 
-        var1-10 (str): variable names, corresponding to the header titles 
-        all_variables (bool): if True, will use all the variables, not just the FWI metrics 
-        plot_distributions (bool): if True, will plot the correlation diagram for all the variables 
-        plot_residual_histogram (bool): if True, will plot a histogram showing the residuals to check if normally distributed
-        transform (bool): if True, it will transform the input data (i.e. the fire surface area), 
-        to make it normally distributed
-    Returns 
-        Prints out regression coefficients, MAE, and R2 of the model 
+    ----------
+        path_to_excel_spreadsheet : string
+            path to the spreadsheet containing the FWI values for each fire and the other covariates,
+            Notes: No trailing 0s in speadsheet, no space after parameter name in header
+        var1-10 : string
+            variable names, corresponding to the header names
+        all_variables : bool
+            if True, will use all the variables, not just the FWI metrics 
+        plot_distributions : bool
+            if True, will plot the correlation diagram for all the variables 
+        plot_residual_histogram : bool
+            if True, will plot a histogram showing the residuals to check if normally distributed
+        transform : bool
+            if True, it will transform the input data (i.e. the fire surface area),
+            to make it normally distributed
     '''
 
     df = pd.read_csv(path_to_excel_spreadsheet)
