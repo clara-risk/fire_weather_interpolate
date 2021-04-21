@@ -30,15 +30,43 @@ from datetime import datetime, timedelta, date
 import gc
 
 
-def run_comparison(var_name, input_date, interpolation_types, rep, loc_dictionary, cvar_dictionary, file_path_elev, elev_array, idx_list, phi_input=None, calc_phi=True,
+def run_comparison(var_name, input_date, interpolation_types, rep, loc_dictionary, cvar_dictionary, file_path_elev, elev_array,
+                   idx_list, phi_input=None, calc_phi=True,
                    kernels={'temp': ['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)'], 'rh': ['307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)'],
                             'pcp': ['316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)'],
                             'wind': ['316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)']}):
     '''Execute the shuffle-split cross-validation for the given interpolation types 
-    Parameters
-        interpolation_types (list of str): list of interpolation types to consider
-    Returns 
-        interpolation_best (str): returns the selected interpolation type name 
+   Parameters
+   ----------
+        var_name : string
+             name of weather variable you are interpolating
+        input_date : string
+             date of weather data (day of fire season) 
+        interpolation_types : list
+             list of interpolation types to consider
+        rep : int
+             number of replications to run
+        loc_dictionary : dictionary
+             dictionary of station locations
+        cvar_dictionary : dictionary
+             dictionary containing the weather data for each station available
+         file_path_elev : string
+              path to the elevation lookup file
+         elev_array : ndarray
+              array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+         idx_list : int
+              position of the elevation column in the lookup file
+        phi_input : float
+             smoothing parameter for the thin plate spline, if 0 no smoothing, default is None (it is calculated)
+        calc_phi : bool
+             whether to calculate phi in the function, if True, phi can = None
+        kernels : dictionary
+             the kernels for each weather variable for gaussian process regression 
+        
+   Returns
+   ----------
+        string
+            - returns the selected interpolation type name 
     '''
     MAE_dict = {}
     for method in interpolation_types:
