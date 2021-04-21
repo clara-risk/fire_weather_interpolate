@@ -438,8 +438,6 @@ def shuffle_split_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_a
              the weighting for IDW interpolation
         rep : int
              number of replications
-        show : bool
-             if you want to show a map of the clusters
    Returns
    ----------
         float
@@ -618,20 +616,37 @@ def shuffle_split_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_a
     return overall_error
 
 
-def spatial_kfold_IDEW(loc_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, d, clusterNum):
+def spatial_kfold_IDEW(loc_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list,
+                       d, block_num,blocking_type):
     '''Spatially blocked k-folds cross-validation procedure for IDEW
     Parameters
-        loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        file_path_elev (str): file path to the elevation lookup file 
-        elev_array (np_array): the elevation array for the study area 
-        idx_list (list): the index of the elevation data column in the lookup file 
-        d (int): the weighting function for IDW interpolation 
-        clusterNum (int): the number of clusters that the user wants to use 
-    Returns 
-        overall_error (float): MAE average of all the replications
+    ----------
+         idw_example_grid  : ndarray
+              used for reference of study area grid size
+         loc_dict : dictionary
+              the latitude and longitudes of the daily/hourly stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
+              path to the study area shapefile
+         d : int
+              the weighting for IDW interpolation
+         file_path_elev : string
+              path to the elevation lookup file
+         elev_array : ndarray
+             array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+         idx_list : int
+              position of the elevation column in the lookup file
+         block_num : int
+              number of blocks/clusters
+         blocking_type : string
+              whether to use clusters or blocks
+    Returns
+    ----------
+         float
+              - MAE estimate for entire surface
+         int
+              - Return the block number just so we can later write it into the file to keep track
     '''
     groups_complete = []  # If not using replacement, keep a record of what we have done
     error_dictionary = {}
@@ -642,9 +657,18 @@ def spatial_kfold_IDEW(loc_dict, Cvar_dict, shapefile, file_path_elev, elev_arra
     absolute_error_dictionary = {}
     projected_lat_lon = {}
 
-    cluster = c3d.spatial_cluster(
-        loc_dict, Cvar_dict, shapefile, clusterNum, file_path_elev, idx_list, False, False, False)
-
+    if blocking_type == 'cluster':
+        cluster = c3d.spatial_cluster(
+            loc_dict, Cvar_dict, shapefile, block_num, file_path_elev, idx_list, False, False, False)
+    elif blocking_type == 'block':
+        # Get the numpy array that delineates the blocks
+        np_array_blocks = mbk.make_block(idw_example_grid, block_num)
+        cluster = mbk.sorting_stations(
+            np_array_blocks, shapefile, loc_dict, Cvar_dict)  # Now get the dictionary
+    else:
+        print('That is not a valid blocking method')
+        sys.exit()
+        
     for group in cluster.values():
         if group not in groups_complete:
             station_list = [k for k, v in cluster.items() if v == group]
@@ -782,7 +806,7 @@ def spatial_kfold_IDEW(loc_dict, Cvar_dict, shapefile, file_path_elev, elev_arra
     MAE = sum(absolute_error_dictionary.values()) / \
         len(absolute_error_dictionary.values())
 
-    return clusterNum, MAE
+    return block_num, MAE
 
 
 def select_block_size_IDEW(nruns, group_type, loc_dict, Cvar_dict, idw_example_grid, shapefile, file_path_elev, idx_list, elev_array, d):
