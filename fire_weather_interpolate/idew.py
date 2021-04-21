@@ -417,21 +417,34 @@ def cross_validate_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_
     return absolute_error_dictionary
 
 
-def shuffle_split_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, d, rep):
-    '''Leave-one-out cross-validation procedure for IDEW
-    Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        file_path_elev (str): file path to the elevation lookup file 
-        elev_array (np_array): the elevation array for the study area 
-        idx_list (list): the index of the elevation data column in the lookup file 
-        d (int): the weighting function for IDW interpolation 
-    Returns 
-        absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
-        was left out 
-    '''
+def shuffle_split_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list,
+                       d, rep):
+    '''Shuffle-split cross-validation with 50/50 training test split
+   Parameters
+   ----------
+        loc_dict : dictionary
+             the latitude and longitudes of the daily/hourly stations
+        Cvar_dict : dictionary
+             dictionary of weather variable values for each station
+        shapefile : string
+             path to the study area shapefile
+        file_path_elev : string
+            path to the elevation lookup file
+        elev_array : ndarray
+            array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+        idx_list : int
+            position of the elevation column in the lookup file
+        d : int
+             the weighting for IDW interpolation
+        rep : int
+             number of replications
+        show : bool
+             if you want to show a map of the clusters
+   Returns
+   ----------
+        float
+             - MAE estimate for entire surface (average of replications)
+   '''
     count = 1
     error_dictionary = {}
     while count <= rep:
