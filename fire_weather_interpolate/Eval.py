@@ -395,8 +395,26 @@ def ridge_regression(path_to_excel_spreadsheet, var1, var2, var3, var4, var5, va
         plt.show()
 
 
-def stratify_size(df, size_condition, all_variables, var1, var2, var3, var4, var5, var6, var7, var8, var9, var10):
-    '''This is a sub-function that will be called to stratify the fires based on size in the ridge regression (stratify) function. 
+def stratify_size(df, size_condition, all_variables, var1, var2, var3, var4, var5, var6, var7,
+                  var8, var9, var10):
+    '''This is a sub-function that will be called to stratify the fires based on size in the
+    ridge regression (stratify) function.
+    Parameters
+    ----------
+    df : pandas dataframe
+        dataframe of the spreadsheet containing the information for each fire
+    size_condition : string
+        size condition you want to use to stratify (select specific rows), either "all", "<200",">=200"
+    all_variables : bool
+        if True, create an array with all the variables (not just FWI metrics) for regression
+    var1-10 : string
+        variable names, corresponding to the header names
+    Returns
+    ----------
+    ndarray
+        - array of predictor variables, for input to the regression
+    ndarray
+        - array of response variables, for input to the regression 
     '''
     if size_condition == 'all':
         y = np.array(df['CALC_HA']).reshape(-1, 1)
@@ -429,8 +447,29 @@ def stratify_size(df, size_condition, all_variables, var1, var2, var3, var4, var
     return X, y
 
 
-def stratify_dataset(df, stratify_condition, size_condition, all_variables, var1, var2, var3, var4, var5, var6, var7, var8, var9, var10):
-    '''This is a sub-function that will be called to stratify the fires based on different characteristics in the ridge regression (stratify) function. 
+def stratify_dataset(df, stratify_condition, size_condition, all_variables,
+                     var1, var2, var3, var4, var5, var6, var7, var8, var9, var10):
+    '''This is a sub-function that will be called to stratify the fires based on different
+    characteristics in the ridge regression (stratify) function. 
+    Parameters
+    ----------
+    df : pandas dataframe
+        dataframe of the spreadsheet containing the information for each fire
+    stratify_condition : string
+        characteristics of fire/fire location you want to preserve in the dataset,
+        one of: "none", "human","lightning","60conifer","60conifer & lightning" 
+    size_condition : string
+        size condition you want to use to stratify (select specific rows), either "all", "<200",">=200"
+    all_variables : bool
+        if True, create an array with all the variables (not just FWI metrics) for regression
+    var1-10 : string
+        variable names, corresponding to the header names
+    Returns
+    ----------
+    ndarray
+        - array of predictor variables, for input to the regression
+    ndarray
+        - array of response variables, for input to the regression 
     '''
     if stratify_condition == 'none':
         if size_condition == 'all':
