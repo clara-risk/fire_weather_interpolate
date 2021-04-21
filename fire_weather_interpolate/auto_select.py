@@ -50,12 +50,12 @@ def run_comparison(var_name, input_date, interpolation_types, rep, loc_dictionar
              dictionary of station locations
         cvar_dictionary : dictionary
              dictionary containing the weather data for each station available
-         file_path_elev : string
-              path to the elevation lookup file
-         elev_array : ndarray
-              array for elevation, create using IDEW interpolation (this is a trick to speed up code)
-         idx_list : int
-              position of the elevation column in the lookup file
+        file_path_elev : string
+             path to the elevation lookup file
+        elev_array : ndarray
+             array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+        idx_list : int
+             position of the elevation column in the lookup file
         phi_input : float
              smoothing parameter for the thin plate spline, if 0 no smoothing, default is None (it is calculated)
         calc_phi : bool
@@ -169,9 +169,47 @@ def execute_sequential_calc(file_path_hourly, file_path_daily, file_path_daily_c
                                      'wind': ['316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)']}):
     '''Execute the DC, DMC, FFMC seq calculations  
     Parameters
-        interpolation_types (list of str): list of interpolation types to consider
+    ----------
+        file_path_hourly : string
+             path to hourly feather files
+        file_path_daily : string
+             path to daily feather files
+        file_path_daily_csv : string
+             path to daily csv files 
+        var_name : string
+             name of weather variable you are interpolating
+        input_date : string
+             date of weather data (day of fire season)
+        loc_dictionary_daily : dictionary
+             dictionary of station locations (daily) 
+        loc_dictionary_hourly : dictionary
+             dictionary of station locations (hourly)
+        year : string
+             year to execute sequential calculations for 
+        interpolation_types : list
+             list of interpolation types to consider
+        rep : int
+             number of replications to run
+        file_path_elev : string
+             path to the elevation lookup file
+        idx_list : int
+             position of the elevation column in the lookup file
+        save_path : string
+             where in computer to save the output file to
+        shapefile : string
+             path to study area shapefile (ON + QC)
+        shapefile2 : string
+             path to boreal shapefile 
+        phi_input : float
+             smoothing parameter for the thin plate spline, if 0 no smoothing, default is None (it is calculated)
+        calc_phi : bool
+             whether to calculate phi in the function, if True, phi can = None
+        kernels : dictionary
+             the kernels for each weather variable for gaussian process regression
+             
     Returns 
-        interpolation_best (str): returns the selected interpolation type name 
+        list
+            - list of array of FWI codes for each day in fire season 
     '''
     # Fire season start and end dates
     start = time.time()
