@@ -42,15 +42,18 @@ from statsmodels.genmod.generalized_linear_model import GLMResults
 
 def plot_LOOCV_error(loc_dict, error_dictionary, shapefile, var_name):
     '''Print a map of the LOOCV error (not absolute valued) so we can see the variation in error
-   accross the study area 
+    accross the study area 
     Parameters
-        error_dictionary (dict): a dictionary of the error, produced by the cross-validate function
-        shapefile (str): path to the study area shapefile
-        var_name (str): variable name, for example, Start Day (Days since March 1) 
-    Returns 
-        Prints a map 
+    ----------
+        loc_dict : dictionary
+            lookup dictionary for station locations 
+        error_dictionary : dictionary
+            a dictionary of the error, produced by the cross-validate function
+        shapefile : string
+            path to the study area shapefile
+        var_name : string
+            variable name, for example, Start Day (Days since March 1) 
     '''
-    print(error_dictionary)
     lat = []
     lon = []
     error = []
