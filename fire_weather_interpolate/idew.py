@@ -809,24 +809,38 @@ def spatial_kfold_IDEW(loc_dict, Cvar_dict, shapefile, file_path_elev, elev_arra
     return block_num, MAE
 
 
-def select_block_size_IDEW(nruns, group_type, loc_dict, Cvar_dict, idw_example_grid, shapefile, file_path_elev, idx_list, elev_array, d):
-    '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation,
-    in order to select the block/cluster size
+def select_block_size_IDEW(nruns, group_type, loc_dict, Cvar_dict, idw_example_grid,
+                           shapefile, file_path_elev, idx_list, elev_array, d):
+    '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, in order to select the block/cluster size
     Parameters
-        nruns (int): number of repetitions
-        group_type (str): whether using 'clusters' or 'blocks'
-        loc_dict (dict): the latitude and longitudes of the daily/hourly stations,
-        loaded from the .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station
-        idw_example_grid (numpy array): used for reference of study area grid size
-        shapefile (str): path to the study area shapefile
-        file_path_elev (str): path to the elevation lookup file
-        idx_list (int): position of the elevation column in the lookup file
+    ----------
+         nruns : int
+              number of repetitions
+         group_type : string
+              whether using 'clusters' or 'blocks'
+         loc_dict : dictionary
+              the latitude and longitudes of the daily/hourly stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         idw_example_grid  : ndarray
+              used for reference of study area grid size
+         shapefile : string
+              path to the study area shapefile
+         file_path_elev : string
+              path to the elevation lookup file
+         idx_list : int
+              position of the elevation column in the lookup file
+         elev_array : ndarray
+              array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+         d : int
+              the weighting for IDW interpolation
     Returns
-        lowest_stdev,ave_MAE (int,float): block/cluster number w/ lowest stdev, associated
-        ave_MAE of all the runs
-    '''
-
+    ----------
+         int
+              - block/cluster number with lowest stdev
+         float
+              - average MAE of all the runs for that cluster/block number
+     '''
     # Get group dictionaries
 
     if group_type == 'blocks':
