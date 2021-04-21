@@ -813,12 +813,15 @@ def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4, save_p
 def plot(shapefile, maxmin, idw1_grid, idw2_grid, idew1_grid, idew2_grid, tpss_grid, rf_grid, ok_grid, varname):
     '''Plot all the maps for the different spatial interpolation methods on one figure 
     Parameters
-        shapefile (str): math to the shapefile 
-        maxmin (list): extent of the image to plot, you can get it from any of the interpolation functions
-        idw1_grid (etc.): the grids for the different spatial interpolation methods
-        varname (str): name of the variable being shown 
-    Returns
-        Plots a figure with the different maps 
+    ----------
+         shapefile : string
+              path to the study area shapefile
+        maxmin : list
+            extent of the image to plot, you can get it from any of the interpolation functions
+        idw1_grid (etc.) : ndarray
+            the arrays generated for the different spatial interpolation methods
+        varname : string
+            name of the variable being shown 
     '''
     plt.rcParams["font.family"] = "Times New Roman"  # Set the font to Times New Roman
     fig, ax = plt.subplots(2, 4)
@@ -902,13 +905,19 @@ def plot(shapefile, maxmin, idw1_grid, idw2_grid, idew1_grid, idew2_grid, tpss_g
 def select_random_station(groups, blocknum, replacement, used_stations):
     '''Select a random station from each group for bagging xval 
     Parameters
-        groups (dict): dictionary of what group each station belongs to 
-        blocknum (int): number of blocks 
-        replacement (bool): whether or not to use replacement 
-        used_stations (list): empty list if using replacement, if not, it is a list
-        of already used stations 
+    ----------
+        groups : dictionary
+            dictionary of what group each station belongs to 
+        blocknum : int
+            number of blocks
+        replacement : bool
+            whether or not to use replacement 
+        used_stations : list
+            empty list if using replacement, if not, it is a list of already used stations 
     Returns
-        stations_selected (dict): dictionary of selected stations 
+    ----------
+        dictionary 
+            - dictionary of selected stations 
     '''
     if not replacement:
         stations_selected = {}
