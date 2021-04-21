@@ -13,6 +13,8 @@ https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeCV.h
 """
 
 # import
+import os
+import sys
 from shapely.geometry import Point
 import geopandas as gpd
 import pandas as pd
@@ -646,11 +648,15 @@ def ridge_regression_stratify(path_to_excel_spreadsheet, var1, var2, var3, var4,
 
 
 def get_RMSE(absolute_error_dictionary):
-    '''Calc RMSE
+    '''Calculate RMSE
     Parameters
-        absolute_error_dictionary (dict): dictionary output from the cross-validation procedure
+    ----------
+        absolute_error_dictionary : dictionary
+            dictionary output from the cross-validation procedure
     Returns
-        RMSE (float)
+    ----------
+        float
+            - RMSE value
     '''
     squared = [x**2 for x in absolute_error_dictionary.values()]
     innerRMSE = sum(squared)*(1/len(squared))
@@ -659,12 +665,17 @@ def get_RMSE(absolute_error_dictionary):
 
 
 def get_MAE(absolute_error_dictionary):
-    '''Calc mean absolute error 
+    '''Calculate mean absolute error 
     Parameters
-        absolute_error_dictionary (dict): dictionary output from the cross-validation procedure
+    ----------
+        absolute_error_dictionary : dictionary
+            dictionary output from the cross-validation procedure
     Returns
-        MAE (float)
-        MAE_max (float): highest absolute error at any of the stations 
+    ----------
+        float
+            - MAE
+        float
+            - highest absolute error at any of the stations 
     '''
     MAE = sum(absolute_error_dictionary.values()) / \
         len(absolute_error_dictionary)
@@ -672,13 +683,19 @@ def get_MAE(absolute_error_dictionary):
     return MAE, MAE_max
 
 
-def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4):
+def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4, save_path):
     '''Check if a fire is inside a zone (ecozone, intensively managed zone, etc.) 
     Parameters
-        file_path (str): path to the location where the fire shapefiles are stored by year
-        file_path_zones (str): path to where the shapefiles for the zones are located
-        Zone1-4 (str): names of the zones, Zone1 is required, the rest are optional, takes up to 4
-        Note: if you are not using the other three zones, input "None"
+    ----------
+        file_path : string
+            path to the location where the fire shapefiles are stored by year
+        file_path_zones : string
+            path to where the shapefiles for the zones are located
+        Zone1-4 : string
+            names of the zones, Zone1 is required, the rest are optional, takes up to 4
+            Note: if you are not using the other three zones, input "None"
+        save_path : string
+            path where you want to save the output text file 
     Returns
         Prints out the fires plus what zone it is in
     '''
@@ -693,14 +710,14 @@ def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4):
                     fire_map1 = gpd.read_file(shpfile)
                     fireDF = gpd.GeoDataFrame(fire_map1)
 
-                    try:
-                        DF = fireDF.geometry.unary_union
-                        fire_map = DF.convex_hull
-                        approx_centre_point = Point(fire_map.centroid.coords)
+                    #try:
+                    DF = fireDF.geometry.unary_union
+                    fire_map = DF.convex_hull
+                    approx_centre_point = Point(fire_map.centroid.coords)
 
-                    except:  # There's only one fire polygon
-                        fire_map = fireDF.geometry.unary_union
-                        approx_centre_point = Point(fire_map.centroid.coords)
+##                    except:  # There's only one fire polygon
+##                        fire_map = fireDF.geometry.unary_union
+##                        approx_centre_point = Point(fire_map.centroid.coords)
 
                     pointDF = pd.DataFrame([approx_centre_point])
                     gdf = gpd.GeoDataFrame(
@@ -710,20 +727,23 @@ def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4):
                     zone1_map = gpd.read_file(shpfile_zone1)
                     Zone1_gdf = gpd.GeoDataFrame(zone1_map)
 
-                    shpfile_zone2 = os.path.join(dirname, Zone2+'.shp')
-                    zone2_map = gpd.read_file(shpfile_zone2)
-                    Zone2_gdf = gpd.GeoDataFrame(zone2_map)
-                    Zone2 = None
+                    if Zone2 is not None: 
 
-                    shpfile_zone3 = os.path.join(dirname, Zone3+'.shp')
-                    zone3_map = gpd.read_file(shpfile_zone3)
-                    Zone3_gdf = gpd.GeoDataFrame(zone3_map)
-                    Zone3 = None
+                        shpfile_zone2 = os.path.join(dirname, Zone2+'.shp')
+                        zone2_map = gpd.read_file(shpfile_zone2)
+                        Zone2_gdf = gpd.GeoDataFrame(zone2_map)
 
-                    shpfile_zone4 = os.path.join(dirname, Zone4+'.shp')
-                    zone4_map = gpd.read_file(shpfile_zone4)
-                    Zone4_gdf = gpd.GeoDataFrame(zone4_map)
-                    Zone4 = None
+                    if Zone3 is not None: 
+
+                        shpfile_zone3 = os.path.join(dirname, Zone3+'.shp')
+                        zone3_map = gpd.read_file(shpfile_zone3)
+                        Zone3_gdf = gpd.GeoDataFrame(zone3_map)
+
+                    if Zone4 is not None: 
+
+                        shpfile_zone4 = os.path.join(dirname, Zone4+'.shp')
+                        zone4_map = gpd.read_file(shpfile_zone4)
+                        Zone4_gdf = gpd.GeoDataFrame(zone4_map)
 
                     # Find if the convex hull of the fire is INTERSECTING the zone
                     df = pd.DataFrame(
@@ -737,13 +757,17 @@ def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4):
 
                     if str(rep_date)[0:4] != 'None' and int(str(rep_date)[0:4]) >= 1956:
 
-                        if len(gpd.overlay(gdf, zone1_map, how='intersection')) > 0:
-                            if len(fireDF['REP_DATE'].to_list()) > 0:
-                                # if float(calc_ha) >= 200: # Uncomment if you only want the fires > 200 ha
-                                if fire_shp[:-4] not in fires:
-                                    print(fire_id + ',' + str(rep_date)
-                                          [0:10] + ',' + str(calc_ha)+','+Zone1)
-                                    fires.append(fire_shp[:-4])
+                        with open(save_path+'output.txt', 'w+') as txt:
+
+                            if len(gpd.overlay(gdf, zone1_map, how='intersection')) > 0:
+                                if len(fireDF['REP_DATE'].to_list()) > 0:
+                                    # if float(calc_ha) >= 200: # Uncomment if you only want the fires > 200 ha
+                                    if fire_shp[:-4] not in fires:
+                                        print(fire_id + ',' + str(rep_date)
+                                              [0:10] + ',' + str(calc_ha)+','+Zone1)
+                                        fires.append(fire_shp[:-4])
+                                        txt.write('\n' + fire_id + ',' + str(rep_date)
+                                              [0:10] + ',' + str(calc_ha)+','+Zone1)
 
                             if len(gpd.overlay(gdf, zone2_map, how='intersection')) > 0:
                                 if len(fireDF['REP_DATE'].to_list()) > 0:
@@ -752,6 +776,8 @@ def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4):
                                         print(fire_id + ',' + str(rep_date)
                                               [0:10] + ',' + str(calc_ha)+',' + Zone2)
                                         fires.append(fire_shp[:-4])
+                                        txt.write('\n' + fire_id + ',' + str(rep_date)
+                                          [0:10] + ',' + str(calc_ha)+','+Zone2)
 
                             if len(gpd.overlay(gdf, zone3_map, how='intersection')) > 0:
                                 if len(fireDF['REP_DATE'].to_list()) > 0:
@@ -760,6 +786,8 @@ def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4):
                                         print(fire_id + ',' + str(rep_date)
                                               [0:10] + ',' + str(calc_ha)+',' + Zone3)
                                         fires.append(fire_shp[:-4])
+                                        txt.write('\n' + fire_id + ',' + str(rep_date)
+                                          [0:10] + ',' + str(calc_ha)+','+Zone3)
 
                             if len(gpd.overlay(gdf, zone4_map, how='intersection')) > 0:
                                 if len(fireDF['REP_DATE'].to_list()) > 0:
@@ -768,15 +796,18 @@ def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4):
                                         print(fire_id + ',' + str(rep_date)
                                               [0:10] + ',' + str(calc_ha)+',' + Zone4)
                                         fires.append(fire_shp[:-4])
+                                        txt.write('\n' + fire_id + ',' + str(rep_date)
+                                          [0:10] + ',' + str(calc_ha)+','+Zone4)
 
-                        else:
-                            # if float(calc_ha) >= 200:
-                            print(fire_id + ',' + str(rep_date)
-                                  [0:10] + ',' + str(calc_ha)+',' + '0')
-                            fires.append(fire_shp[:-4])
+                    else:
+                        # if float(calc_ha) >= 200:
+                        print(fire_id + ',' + str(rep_date)
+                                [0:10] + ',' + str(calc_ha)+',' + '0')
+                        fires.append(fire_shp[:-4])
 
                     fires.append(fire_shp[:-4])
                     fire_dates.append(str(rep_date)[0:10])
+    txt.close()
 
 
 def plot(shapefile, maxmin, idw1_grid, idw2_grid, idew1_grid, idew2_grid, tpss_grid, rf_grid, ok_grid, varname):
