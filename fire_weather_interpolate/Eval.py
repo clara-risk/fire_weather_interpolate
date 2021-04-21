@@ -952,14 +952,17 @@ def select_random_station(groups, blocknum, replacement, used_stations):
 
 def linear_regression(path_to_excel_spreadsheet, plot_distributions, plot_residual_histogram, transform):
     '''Make a linear regression model and print out the resulting coefficients and (if True) the histogram of residuals 
-   Parameters
-       path_to_excel_spreadsheet (str): path to the spreadsheet containing the fire season start/end values,
-       Notes: No trailing 0s in speadsheet, no space after parameter name in header 
-       plot_distributions (bool): if True, will plot the correlation diagram for all the variables 
-       plot_residual_histogram (bool): if True, will plot a histogram showing the residuals to check if normally distributed
-       transform (bool): if True, it will transform the input data, to make it normally distributed
-   Returns 
-       Prints out regression coefficients, MAE, and R2 of the model & p-values
+    Parameters
+    ----------
+       path_to_excel_spreadsheet : string
+           path to the spreadsheet containing the fire season start/end values,
+           Notes: No trailing 0s in speadsheet, no space after parameter name in header
+       plot_distributions : bool
+           if True, will plot the correlation diagram for all the variables 
+       plot_residual_histogram : bool
+           if True, will plot a histogram showing the residuals to check if normally distributed
+       transform : bool
+           if True, it will transform the input data, to make it normally distributed
    '''
     df = pd.read_csv(path_to_excel_spreadsheet)
     mod = LinearRegression()
@@ -1066,7 +1069,13 @@ def linear_regression(path_to_excel_spreadsheet, plot_distributions, plot_residu
 
 
 def check_p_value(path_to_excel_spreadsheet):
-    '''Quality-control for p-value calculation'''
+    '''Quality-control for p-value calculation
+    Parameters
+    ----------
+       path_to_excel_spreadsheet : string
+           path to the spreadsheet containing the fire season start/end values,
+           Notes: No trailing 0s in speadsheet, no space after parameter name in header
+    '''
 
     df = pd.read_csv(path_to_excel_spreadsheet)
     mod = LinearRegression()
