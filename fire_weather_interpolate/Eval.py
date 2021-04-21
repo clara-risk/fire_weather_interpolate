@@ -551,17 +551,24 @@ def ridge_regression_stratify(path_to_excel_spreadsheet, var1, var2, var3, var4,
     '''Make a ridge regression model stratified based on different ecozones and fire characteristics
     and print out the resulting coefficients and (if True) the histogram of residuals 
     Parameters
-        path_to_excel_spreadsheet (str): path to the spreadsheet containing the FWI values for each fire and the other covariates,
-        Notes: No trailing 0s in speadsheet, no space after parameter name in header 
-        var1-10 (str): variable names, corresponding to the header titles 
-        all_variables (bool): if True, will use all the variables, not just the FWI metrics 
-        plot_distributions (bool): if True, will plot the correlation diagram for all the variables 
-        plot_residual_histogram (bool): if True, will plot a histogram showing the residuals to check if normally distributed
-        stratify_condition (str): can be one of 'human', 'lightning', '60conifer', '60conifer & lightning','none'
-        size_condition (str): can be one of 'all', '<200', '>=200'
-        ecozone_condition (str): can be one of 'none','taiga','boreal1' (west), 'boreal2' (east), 'hudson'
-    Returns 
-        Prints out regression coefficients, MAE, and R2 of the model 
+    ----------
+        path_to_excel_spreadsheet : string
+            path to the spreadsheet containing the FWI values for each fire and the other covariates,
+            Notes: No trailing 0s in speadsheet, no space after parameter name in header 
+        var1-10 : string
+            variable names, corresponding to the header titles 
+        all_variables : bool
+            if True, will use all the variables, not just the FWI metrics 
+        plot_distributions : bool
+            if True, will plot the correlation diagram for all the variables 
+        plot_residual_histogram : bool
+            if True, will plot a histogram showing the residuals to check if normally distributed
+        stratify_condition : string
+            can be one of 'human', 'lightning', '60conifer', '60conifer & lightning','none'
+        size_condition : string
+            can be one of 'all', '<200', '>=200'
+        ecozone_condition : string
+            can be one of 'none','taiga','boreal1' (west), 'boreal2' (east), 'hudson'
     '''
 
     df = pd.read_csv(path_to_excel_spreadsheet)
