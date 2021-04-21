@@ -213,15 +213,24 @@ def get_interpolated_val_in_fire(fire_shapefile, shapefile, latlon_dict, interpo
         return float(max_ival)
 
 
-def highest_value_first_four_days(fire_shapefile, shapefile, latlon_dict, interpolated_surface_d1, interpolated_surface_d2, interpolated_surface_d3, interpolated_surface_d4):
+def highest_value_first_four_days(fire_shapefile, shapefile, latlon_dict,
+                                  interpolated_surface_d1, interpolated_surface_d2,
+                                  interpolated_surface_d3, interpolated_surface_d4):
     '''Function to return the highest FWI values in a fire for four input arrays  
     Parameters
-        fire_shapefile (str): path to the fire shapefile 
-        shapefile (str): path to the study area shapefile
-        latlon_dict (dict, loaded from json): dictionary of lat lon for each station 
-        interpolated_surface_d1,d2,d3,d4 (np_array): an array of values in the study area, in the first four days of the fire
-    Returns 
-        max_val (float): maximum value for first four days since report date 
+    ----------
+        fire_shapefile : string
+            path to the fire shapefile 
+        shapefile : string
+            path to the study area shapefile
+        latlon_dict : dictionary
+            lookup dictionary of lat lon for each station 
+        interpolated_surface_d1,d2,d3,d4 :ndarray
+            an array of values in the study area, in the first four days of the fire
+    Returns
+    ----------
+        max_val : float
+            - maximum value for first four days since report date 
     '''
 
     v1 = get_interpolated_val_in_fire(
