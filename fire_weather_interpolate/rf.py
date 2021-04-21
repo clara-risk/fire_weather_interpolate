@@ -60,156 +60,156 @@ def random_forest_interpolator(latlon_dict, Cvar_dict, input_date, var_name, sha
     lon = []
     Cvar = []
 
-     na_map = gpd.read_file(shapefile)
-      bounds = na_map.bounds
-       if expand_area:
-            xmax = bounds['maxx']+200000
-            xmin = bounds['minx']-200000
-            ymax = bounds['maxy']+200000
-            ymin = bounds['miny']-200000
-        else:
-            xmax = bounds['maxx']
-            xmin = bounds['minx']
-            ymax = bounds['maxy']
-            ymin = bounds['miny']
+    na_map = gpd.read_file(shapefile)
+    bounds = na_map.bounds
+    if expand_area:
+        xmax = bounds['maxx']+200000
+        xmin = bounds['minx']-200000
+        ymax = bounds['maxy']+200000
+        ymin = bounds['miny']-200000
+    else:
+        xmax = bounds['maxx']
+        xmin = bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']
 
-        for station_name in Cvar_dict.keys():
-            if station_name in latlon_dict.keys():
+    for station_name in Cvar_dict.keys():
+        if station_name in latlon_dict.keys():
 
-                loc = latlon_dict[station_name]
-                latitude = loc[0]
-                longitude = loc[1]
-                # Filter out stations outside of grid
-                proj_coord = pyproj.Proj('esri:102001')(longitude, latitude)
-                if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
-                    cvar_val = Cvar_dict[station_name]
-                    lat.append(float(latitude))
-                    lon.append(float(longitude))
-                    Cvar.append(cvar_val)
+            loc = latlon_dict[station_name]
+            latitude = loc[0]
+            longitude = loc[1]
+            # Filter out stations outside of grid
+            proj_coord = pyproj.Proj('esri:102001')(longitude, latitude)
+            if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                cvar_val = Cvar_dict[station_name]
+                lat.append(float(latitude))
+                lon.append(float(longitude))
+                Cvar.append(cvar_val)
 
-        y = np.array(lat)
-        x = np.array(lon)
-        z = np.array(Cvar)
+    y = np.array(lat)
+    x = np.array(lon)
+    z = np.array(Cvar)
 
-        pixelHeight = 10000
-        pixelWidth = 10000
+    pixelHeight = 10000
+    pixelWidth = 10000
 
-        num_col = int((xmax - xmin) / pixelHeight)
-        num_row = int((ymax - ymin) / pixelWidth)
+    num_col = int((xmax - xmin) / pixelHeight)
+    num_row = int((ymax - ymin) / pixelWidth)
 
-        # We need to project to a projected system before making distance matrix
-        source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
-        xProj, yProj = pyproj.Proj('esri:102001')(x, y)
+    # We need to project to a projected system before making distance matrix
+    source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+    xProj, yProj = pyproj.Proj('esri:102001')(x, y)
 
-        df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z})
+    df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z})
 
-        if expand_area:
+    if expand_area:
 
-            yProj_extent = np.append(
-                yProj, [bounds['maxy']+200000, bounds['miny']-200000])
-            xProj_extent = np.append(
-                xProj, [bounds['maxx']+200000, bounds['minx']-200000])
+        yProj_extent = np.append(
+            yProj, [bounds['maxy']+200000, bounds['miny']-200000])
+        xProj_extent = np.append(
+            xProj, [bounds['maxx']+200000, bounds['minx']-200000])
 
-        else:
-            yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
-            xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
+    else:
+        yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
+        xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
 
-        Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row+1)
-        Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col+1)
+    Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row+1)
+    Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col+1)
 
-        Xi, Yi = np.meshgrid(Xi, Yi)
-        Xi, Yi = Xi.flatten(), Yi.flatten()
+    Xi, Yi = np.meshgrid(Xi, Yi)
+    Xi, Yi = Xi.flatten(), Yi.flatten()
 
-        maxmin = [np.min(yProj_extent), np.max(yProj_extent),
-                  np.max(xProj_extent), np.min(xProj_extent)]
+    maxmin = [np.min(yProj_extent), np.max(yProj_extent),
+              np.max(xProj_extent), np.min(xProj_extent)]
 
-        # Elevation
-        # Preparing the coordinates to send to the function that will get the elevation grid
-        concat = np.array((Xi.flatten(), Yi.flatten())).T
-        send_to_list = concat.tolist()
-        # The elevation function takes a tuple
-        send_to_tuple = [tuple(x) for x in send_to_list]
+    # Elevation
+    # Preparing the coordinates to send to the function that will get the elevation grid
+    concat = np.array((Xi.flatten(), Yi.flatten())).T
+    send_to_list = concat.tolist()
+    # The elevation function takes a tuple
+    send_to_tuple = [tuple(x) for x in send_to_list]
 
-        Xi1_grd = []
-        Yi1_grd = []
-        elev_grd = []
-        # Get the elevations from the lookup file
-        elev_grd_dict = GD.finding_data_frm_lookup(
-            send_to_tuple, file_path_elev, idx_list)
+    Xi1_grd = []
+    Yi1_grd = []
+    elev_grd = []
+    # Get the elevations from the lookup file
+    elev_grd_dict = GD.finding_data_frm_lookup(
+        send_to_tuple, file_path_elev, idx_list)
 
-        for keys in elev_grd_dict.keys():  # The keys are each lat lon pair
-            x = keys[0]
-            y = keys[1]
-            Xi1_grd.append(x)
-            Yi1_grd.append(y)
-            # Append the elevation data to the empty list
-            elev_grd.append(elev_grd_dict[keys])
+    for keys in elev_grd_dict.keys():  # The keys are each lat lon pair
+        x = keys[0]
+        y = keys[1]
+        Xi1_grd.append(x)
+        Yi1_grd.append(y)
+        # Append the elevation data to the empty list
+        elev_grd.append(elev_grd_dict[keys])
 
-        elev_array = np.array(elev_grd)  # make an elevation array
+    elev_array = np.array(elev_grd)  # make an elevation array
 
 
-        elev_dict = GD.finding_data_frm_lookup(zip(
-            xProj, yProj), file_path_elev, idx_list)  # Get the elevations for the stations
+    elev_dict = GD.finding_data_frm_lookup(zip(
+        xProj, yProj), file_path_elev, idx_list)  # Get the elevations for the stations
 
-        xProj_input = []
-        yProj_input = []
-        e_input = []
+    xProj_input = []
+    yProj_input = []
+    e_input = []
 
-        for keys in zip(xProj, yProj):  # Repeat process for just the stations not the whole grid
-            x = keys[0]
-            y = keys[1]
-            xProj_input.append(x)
-            yProj_input.append(y)
-            e_input.append(elev_dict[keys])
+    for keys in zip(xProj, yProj):  # Repeat process for just the stations not the whole grid
+        x = keys[0]
+        y = keys[1]
+        xProj_input.append(x)
+        yProj_input.append(y)
+        e_input.append(elev_dict[keys])
 
-        source_elev = np.array(e_input)
+    source_elev = np.array(e_input)
 
-        Xi1_grd = np.array(Xi1_grd)
-        Yi1_grd = np.array(Yi1_grd)
+    Xi1_grd = np.array(Xi1_grd)
+    Yi1_grd = np.array(Yi1_grd)
 
-        df_trainX = pd.DataFrame(
-            {'xProj': xProj, 'yProj': yProj, 'elevS': source_elev, 'var': z})
+    df_trainX = pd.DataFrame(
+        {'xProj': xProj, 'yProj': yProj, 'elevS': source_elev, 'var': z})
 
-        df_testX = pd.DataFrame(
-            {'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
+    df_testX = pd.DataFrame(
+        {'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
 
-        reg = RandomForestRegressor(
-            n_estimators=100, max_features='sqrt', random_state=1)
+    reg = RandomForestRegressor(
+        n_estimators=100, max_features='sqrt', random_state=1)
 
-        y = np.array(df_trainX['var']).reshape(-1, 1)
-        X_train = np.array(df_trainX[['xProj', 'yProj', 'elevS']])
-        X_test = np.array(df_testX[['Xi', 'Yi', 'elev']])
+    y = np.array(df_trainX['var']).reshape(-1, 1)
+    X_train = np.array(df_trainX[['xProj', 'yProj', 'elevS']])
+    X_test = np.array(df_testX[['Xi', 'Yi', 'elev']])
 
-        reg.fit(X_train, y)
+    reg.fit(X_train, y)
 
-        Zi = reg.predict(X_test)
+    Zi = reg.predict(X_test)
 
-        rf_grid = Zi.reshape(num_row+1, num_col+1)
+    rf_grid = Zi.reshape(num_row+1, num_col+1)
 
-        if show:
-            fig, ax = plt.subplots(figsize=(15, 15))
-            crs = {'init': 'esri:102001'}
+    if show:
+        fig, ax = plt.subplots(figsize=(15, 15))
+        crs = {'init': 'esri:102001'}
 
-            na_map = gpd.read_file(shapefile)
+        na_map = gpd.read_file(shapefile)
 
-            plt.imshow(rf_grid, extent=(xProj_extent.min(
-            )-1, xProj_extent.max()+1, yProj_extent.max()-1, yProj_extent.min()+1))
-            na_map.plot(ax= ax, color='white', edgecolor='k', linewidth=2, zorder=10, alpha=0.1)
+        plt.imshow(rf_grid, extent=(xProj_extent.min(
+        )-1, xProj_extent.max()+1, yProj_extent.max()-1, yProj_extent.min()+1))
+        na_map.plot(ax= ax, color='white', edgecolor='k', linewidth=2, zorder=10, alpha=0.1)
 
-            plt.scatter(xProj, yProj, c=z, edgecolors='k')
+        plt.scatter(xProj, yProj, c=z, edgecolors='k')
 
-            plt.gca().invert_yaxis()
-            cbar = plt.colorbar()
-            cbar.set_label(var_name)
+        plt.gca().invert_yaxis()
+        cbar = plt.colorbar()
+        cbar.set_label(var_name)
 
-            title = 'RF Interpolation for %s on %s' % (var_name, input_date)
-            fig.suptitle(title, fontsize=14)
-            plt.xlabel('Longitude')
-            plt.ylabel('Latitude')
+        title = 'RF Interpolation for %s on %s' % (var_name, input_date)
+        fig.suptitle(title, fontsize=14)
+        plt.xlabel('Longitude')
+        plt.ylabel('Latitude')
 
-            plt.show()
+        plt.show()
 
-        return rf_grid, maxmin
+    return rf_grid, maxmin
 
 def cross_validate_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, pass_to_plot):
     '''Leave-one-out cross-validation procedure for RF
