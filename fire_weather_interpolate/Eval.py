@@ -99,13 +99,19 @@ def get_interpolated_val_in_fire(fire_shapefile, shapefile, latlon_dict, interpo
     '''This is a function to get the FWI metric value inside the fire.
     We will use to calculate the max FWI metrics for a fire.
     Parameters
-        fire_shapefile (str): path to the fire shapefile 
-        shapefile (str): path to the study area shapefile
-        latlon_dict (dict, loaded from json): dictionary of lat lon for each station 
-        interpolated_surface (np_array): an array of values in the study area 
-    Returns 
-        ival, max_ival (either, float): maximum value in fire, either the closest point to the convex hull of the fire or 
-        a sum of the points inside the fire
+    ----------
+        fire_shapefile : string
+            path to the fire shapefile 
+        shapefile : string
+            path to the study area shapefile
+        latlon_dict : dictionary
+            lookup dictionary of lat lon for each station 
+        interpolated_surface : ndarray
+            an array of values in the study area 
+    Returns
+    ----------
+        float
+            - maximum value in fire, either the closest point to the convex hull of the fire or a sum of the points inside the fire
     '''
     lat = []  # Initialize empty lists to store data
     lon = []
