@@ -35,11 +35,17 @@ import gpr as gpr
 
 def get_col_num_list(file_path,col_name): 
     '''Get the column in the look up file that corresponds to the correct data
-    Parameters: 
-        file_path (str): path to the lookup csv file, includes the file name
-        col_name (str): the column name of the data you want to use in the lookup file, ex. "ELEV"
-    Returns 
-        idx_list (list): list containing all columns in the lookup table that are called col_name
+
+    Parameters
+    ----------
+    file_path : string
+        path to the lookup csv file, includes the file name
+    col_name : string
+        the column name of the data you want to use in the lookup file, ex. "ELEV"
+    Returns
+    ----------
+    list
+        - list containing all columns in the lookup table that are called col_name
     '''
     col_nums = [] #Create empty list for the relevent column numbers.
     header = []
@@ -59,15 +65,21 @@ def get_col_num_list(file_path,col_name):
     return idx_list
     
 def finding_data_frm_lookup(projected_coordinates_list,file_path,idx_list):
-    '''Get the dictionary of values for each input point frm lookup file
+    '''Get the dictionary of values for each input point from the lookup file
+
     Parameters
-        projected_coordinates_list (list of tuples): list of coordinates that you want to find data
-        in the lookup file for, must be in lon, lat format 
-        file_path (str): file path to the lookup file, includes the file name and ending
-        idx_list (list): output of get_col_name_list, we will just take the first entry
-    Returns 
-        min_distance_L (dict): a dictionary of values for each coordinate (taken from the closest 
-        point in the lookup file to the input coordinate)
+    ----------
+    projected_coordinates_list : list
+        list of coordinates (list of tuples) that you want to find data in the lookup file for, must be in lon, lat format 
+    file_path : string
+        file path to the lookup file, includes the file name and ending
+    idx_list : list
+        output of get_col_name_list, we will just take the first entry
+        
+   Returns
+   ----------
+   dictionary
+       - a dictionary of values for each coordinate (taken from the closest point in the lookup file to the input coordinate)
     '''
     distance_dictionary = {} 
     L_dictionary = {}
@@ -116,12 +128,19 @@ def finding_data_frm_lookup(projected_coordinates_list,file_path,idx_list):
 def is_station_in_boreal(loc_dict,days_dict,boreal_shapefile):
     '''For the fire season code, we are only interested in stations within the boreal zone,
     so we need to get a list of stations that are located there.
+    
     Parameters
-        loc_dict (dict): locations of the stations
-        days_dict (dict): stations we are interested in, output of get_start_date_calendar_csv/end_date
-        boreal_shapefile (str): file path leading to the .shp file that delineates the boreal forest 
+    ----------
+    loc_dict : dictionary
+        locations of the stations
+    days_dict : dictionary
+        stations we are interested in, output of get_start_date_calendar_csv/end_date
+    boreal_shapefile : string
+        file path leading to the .shp file that delineates the boreal forest 
     Returns
-        boreal_dict (dict): dictionary, organized boreal_dict[station_name] = True 
+    ----------
+    dictionary
+        - dictionary of whether it is in area, organized boreal_dict[station_name] = True 
     '''
     boreal_dict = {}
     boreal_zone = gpd.read_file(boreal_shapefile)
@@ -150,14 +169,20 @@ def is_station_in_boreal(loc_dict,days_dict,boreal_shapefile):
 def calc_season_duration(start_surface,end_surface,year): 
     '''For fire season, once we have created the continuous surfaces, we need to calculate for 
     each pixel what is the estimated duration (for the year).
+    
     Parameters
-        start_surface (np_array): the array of the start dates generated from a function such as IDW()
-        end_surface (np_array): the array of the end dates 
-        *these need to be the same size and should automatically be 
-        year (int): the year that we are calculating the duration for, mostly needed to account for
-        a leap year
+    ----------
+    start_surface : ndarray
+        the array of the start dates generated from a function such as IDW()
+    end_surface : ndarray
+        the array of the end dates *these need to be the same size and should automatically be 
+    year : int
+        the year that we are calculating the duration for, mostly needed to account for a leap year
+             
     Returns
-        season_duration (np_array): an array of the study area for the estimated fire season in the array
+    ----------
+    ndarray
+        - an array of the study area for the estimated fire season in the array
     '''
     #Convert to days since January 1
     dJ = date(int(year), 1, 1)
@@ -173,8 +198,22 @@ def calc_season_duration(start_surface,end_surface,year):
     return season_duration
     
 def combine_stations(dictionary_daily,dictionary_hourly):
-    '''Combine dictionaries with station names as keys.For example, hourly stations
-    & daily stations for the fire season calculations.'''
+    '''Combine dictionaries with station names as keys. For example, hourly stations
+    & daily stations for the fire season calculations. Daily dictionary takes precedence,
+    meaning the overlapping key will be dropped from the hourly one 
+    
+    Parameters
+    ----------
+    dictionary_daily : dictionary
+        dictionary of daily stations and the weather values there
+    dictionary_hourly : dictionary
+        dictionary of hourly stations and the weather values there
+
+    Returns
+    ----------
+    dictionary
+        - dictionary contining information from both the hourly and daily stations 
+    '''
     #Which dictionary takes priority? For now, the daily dictionary will take priority over
     #the hourly dictionary, which means that an overlapping key will be dropped from the
     #hourly one
@@ -188,6 +227,31 @@ def combine_stations(dictionary_daily,dictionary_hourly):
 def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile,file_path_elev,idx_list,method):
     '''Get the fire season duration for every year in between the two input years
     and average them. Output the average array.
+
+    Parameters
+    ----------
+
+    year1 : int
+        first year taken into account
+    year2 : int
+        last year taken into account
+    file_path_daily : string
+        path to the daily weather csv files from Environment & Climate Change Canada
+    file_path_hourly : string
+        path to the hourly feather files
+    shapefile : string
+        path to the study area shapefile
+    file_path_elev : string
+        path to the elevation lookup file
+    idx_list : list
+        column index of elevation information in the lookup file
+    method : string
+        type of interpolation to use to create the yearly arrays, one of: 'IDW2', 'IDW3', 'IDW4', 'TPSS', 'RF'
+
+    Returns
+    ----------
+    ndarray
+        - average of each pixel of all the years considered in array format 
     '''
     list_of_arrays = [] 
     for year in range(int(year1),int(year2)+1):
@@ -217,7 +281,7 @@ def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile,fil
         elif method == 'IDW4':
 
             start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 4,True)
-            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 4,True,)
+            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 4,True)
 
         elif method == 'TPSS':
             num_stationsS = int(len(days_dict.keys()))
@@ -241,18 +305,22 @@ def stack_and_average(year1,year2,file_path_daily,file_path_hourly,shapefile,fil
     return averaged_voxels 
 
 def get_b(latlon_dict,file_path_slope,idx_slope,file_path_drainage,idx_drainage,shapefile):
-    '''Create a permanent lookup file for b for study area for future processing
-    This is used in overwinter dc procedure 
+    '''Create a permanent lookup file for b for study area for future processing to be used in overwinter DC procedure 
+
     Parameters
-        latlon_dict (dictionary, to be loaded from json file): dictionary of latitude and longitudes 
-        for the hourly stations
-        file_path_slope (str): path to the slope file, includes file name
-        idx_slope (list): index of the slope variable in the header of the slope lookup file 
-        file_path_drainage (str): path to the drainage file, includes file name
-        idx_drainage (list): index of the drainage variable in the header of the drainage lookup file 
-        shapefile (str): path to the shapefile of the study area (.shp format)
-    Returns 
-        The function will write a .json file to the hard drive, which can be loaded later. 
+    ----------
+    latlon_dict : dictionary
+        dictionary of latitude and longitudes for the hourly stations
+    file_path_slope : string
+        path to the slope file, includes file name
+    idx_slope : list
+        index of the slope variable in the header of the slope lookup file 
+    file_path_drainage : string
+        path to the drainage file, includes file name
+    idx_drainage : list
+        index of the drainage variable in the header of the drainage lookup file 
+    shapefile : string
+        path to the shapefile of the study area (.shp format)
     '''
 
     lat = [] #Initialize empty lists to store data 
@@ -330,14 +398,18 @@ def get_b(latlon_dict,file_path_slope,idx_slope,file_path_drainage,idx_drainage,
         json.dump(b_list, fp)
 
 def get_wind_speed(input_date,file_path): 
-    '''Create a dictionary for wind speed data on the input date 
+    '''Create a dictionary for wind speed data on the input date
+
     Parameters
-        input_date (str): input date for the date of interest, in the format: YYYY-MM-DD HH:MM
-        file_path (str): path to the feather files containing the hourly data from Environment & 
-        Climate Change Canada 
-    Returns 
-        ws_dictionary (dict): a dictionary of wind speed values for all the active & non-null stations
-        on the input date 
+    ----------
+    input_date : string
+        input date for the date of interest, in the format: YYYY-MM-DD HH:MM
+    file_path : string
+        path to the feather files containing the hourly data from Environment & Climate Change Canada 
+    Returns
+    ----------
+    dictionary
+        - a dictionary of wind speed values for all the active & non-null stations on the input date 
     '''
     
     ws_dictionary = {}
@@ -368,14 +440,18 @@ def get_wind_speed(input_date,file_path):
     return ws_dictionary
 
 def get_noon_temp(input_date,file_path):
-    '''Create a dictionary for noon temp data on the input date 
+    '''Create a dictionary for noon temp data on the input date
+
     Parameters
-        input_date (str): input date for the date of interest, in the format: YYYY-MM-DD HH:MM
-        file_path (str): path to the feather files containing the hourly data from Environment & 
-        Climate Change Canada 
-    Returns 
-        temp_dictionary (dict): a dictionary of temperature values for all the active & non-null stations
-        on the input date 
+    ----------
+    input_date : string
+        input date for the date of interest, in the format: YYYY-MM-DD HH:MM
+    file_path : string
+        path to the feather files containing the hourly data from Environment & Climate Change Canada 
+    Returns
+    ----------
+    dictionary
+        - a dictionary of temperature values for all the active & non-null stations on the input date 
     '''
     
     temp_dictionary = {}
@@ -412,14 +488,18 @@ def get_noon_temp(input_date,file_path):
     
     
 def get_relative_humidity(input_date,file_path):
-    '''Create a dictionary for rh% data on the input date 
+    '''Create a dictionary for rh% data on the input date
+
     Parameters
-        input_date (str): input date for the date of interest, in the format: YYYY-MM-DD HH:MM
-        file_path (str): path to the feather files containing the hourly data from Environment & 
-        Climate Change Canada 
-    Returns 
-        temp_dictionary (dict): a dictionary of relative humidity values for all the active & 
-        non-null stations on the input date 
+    ----------
+    input_date : string
+        input date for the date of interest, in the format: YYYY-MM-DD HH:MM
+    file_path : string
+        path to the feather files containing the hourly data from Environment & Climate Change Canada 
+    Returns
+    ----------
+    dictionary
+        - a dictionary of relative humidity values for all the active & non-null stations on the input date 
     '''
 
     RH_dictionary = {}
@@ -565,7 +645,7 @@ def get_pcp(input_date,file_path,date_dictionary):
         input_date (str): input date for the day of interest, in the format YYYY:MM:DD 
         file_path (str): file path to the daily feather files 
         date_dictionary (dict, loaded from .json): lookup file that has what day/month pairs each 
-        station is active on 
+        station is active on
     Returns 
         rain_dictionary (dict): dictionary containing rain amount for each station 
     '''
@@ -576,11 +656,13 @@ def get_pcp(input_date,file_path,date_dictionary):
     yearMonth = input_date[0:7]
 
     for station_name in os.listdir(file_path):
-        yearsMonths = date_dictionary[station_name[:-8]] #-8 bc we are now working with feather files 
+
+        yearsMonths = date_dictionary[station_name[:-8]] #-8 bc we are now working with feather files
 
         if yearMonth in yearsMonths:
 
             file = file_path+station_name
+
 
             df = feather.read_dataframe(file)
             try: 
