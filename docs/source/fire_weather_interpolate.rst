@@ -1,10 +1,10 @@
-fire\_weather\_interpolate package
+fire\_weather\_interpolate functions
 ==================================
 
 Submodules
 ----------
 
-fire\_weather\_interpolate.Eval module
+Eval 
 --------------------------------------
 
 .. automodule:: Eval
@@ -12,7 +12,7 @@ fire\_weather\_interpolate.Eval module
    :undoc-members:
    :show-inheritance:
 
-fire\_weather\_interpolate.auto\_select module
+auto\_select 
 ----------------------------------------------
 
 .. automodule:: auto_select
@@ -20,7 +20,7 @@ fire\_weather\_interpolate.auto\_select module
    :undoc-members:
    :show-inheritance:
 
-fire\_weather\_interpolate.cluster\_3d module
+cluster\_3d 
 ---------------------------------------------
 
 .. automodule:: cluster_3d
@@ -28,7 +28,7 @@ fire\_weather\_interpolate.cluster\_3d module
    :undoc-members:
    :show-inheritance:
 
-fire\_weather\_interpolate.fwi module
+fwi 
 -------------------------------------
 
 .. automodule:: fwi
@@ -36,7 +36,7 @@ fire\_weather\_interpolate.fwi module
    :undoc-members:
    :show-inheritance:
 
-fire\_weather\_interpolate.get\_data module
+get\_data 
 -------------------------------------------
 
 .. automodule:: get_data
@@ -44,7 +44,7 @@ fire\_weather\_interpolate.get\_data module
    :undoc-members:
    :show-inheritance:
 
-fire\_weather\_interpolate.gpr module
+gpr 
 -------------------------------------
 
 .. automodule:: gpr
@@ -52,7 +52,7 @@ fire\_weather\_interpolate.gpr module
    :undoc-members:
    :show-inheritance:
 
-fire\_weather\_interpolate.idew module
+idew 
 --------------------------------------
 
 .. automodule:: idew
@@ -60,7 +60,7 @@ fire\_weather\_interpolate.idew module
    :undoc-members:
    :show-inheritance:
 
-fire\_weather\_interpolate.idw module
+idw
 -------------------------------------
 
 .. automodule:: idw
@@ -68,7 +68,7 @@ fire\_weather\_interpolate.idw module
    :undoc-members:
    :show-inheritance:
 
-fire\_weather\_interpolate.make\_blocks module
+make\_blocks 
 ----------------------------------------------
 
 .. automodule:: make_blocks
@@ -76,7 +76,7 @@ fire\_weather\_interpolate.make\_blocks module
    :undoc-members:
    :show-inheritance:
 
-fire\_weather\_interpolate.rf module
+rf 
 ------------------------------------
 
 .. automodule:: rf
@@ -84,7 +84,7 @@ fire\_weather\_interpolate.rf module
    :undoc-members:
    :show-inheritance:
 
-fire\_weather\_interpolate.tps module
+tps 
 -------------------------------------
 
 .. automodule:: tps
