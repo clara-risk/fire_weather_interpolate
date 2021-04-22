@@ -1181,7 +1181,8 @@ def DMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yester
 
 def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yesterday, index, show, shapefile,
          mask, endMask):
-    '''Calculate the FFMC. 
+    '''Calculate the FFMC.
+
     Parameters
     ----------
     input_date : string
@@ -1452,7 +1453,8 @@ def ISI(ffmc, wind_grid, maxmin, show, shapefile, mask, endMask):
 
 
 def FWI(isi, bui, maxmin, show, shapefile, mask, endMask):
-    ''' Calculate FWI. 
+    ''' Calculate FWI.
+
     Parameters
     ----------
     isi : ndarray
