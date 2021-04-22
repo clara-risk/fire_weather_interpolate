@@ -1227,55 +1227,52 @@ def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yest
 
     rain_grid[rain_grid > 0.5] = rain_grid[rain_grid > 0.5] - 0.5
 
-    wmo[wmo >= 150] = wmo[wmo >= 150]+0.0015*(wmo[wmo >= 150]-150) *\
-        (wmo[wmo >= 150] - 150)*np.sqrt(rain_grid[wmo >= 150]) + 42.5\
-        * rain_grid[wmo >= 150]*np.exp(-100/(251-wmo[wmo >= 150])) *\
-        (1-np.exp(-6.93/rain_grid[wmo >= 150]))
+    wmo[wmo>150]= wmo[wmo>150]+42.5*rain_grid[wmo>150]*np.exp(-100/(251-wmo[wmo>150]))+0.0015*\
+                   (np.power((wmo[wmo>150]-150),2))
 
-    wmo[wmo < 150] = wmo[wmo < 150]+42.5*rain_grid[wmo < 150]*np.exp(-100/(251-wmo[wmo < 150]))\
-        * (1-np.exp(-6.93/rain_grid[wmo < 150]))
-
-    wmo[rain_grid < 0.5] = 147.2 * \
-        (101-ffmc_yesterday[rain_grid < 0.5]) / \
-        (59.5+ffmc_yesterday[rain_grid < 0.5])
+    wmo[wmo<=150] = wmo[wmo<=150]+42.5*rain_grid[wmo<=150]*(np.exp(-100/(251-wmo[wmo<=150])))*\
+                    (1-np.exp(-6.93/rain_grid[wmo<=150]))
 
     wmo[wmo > 250] = 250
 
-    ed = 0.942*np.power(rh_grid, 0.679)+(11*np.exp((rh_grid-100)/10))+0.18*(21.1-temp_grid)\
-        * (1-1/np.exp(rh_grid*0.115))
+    ed=0.942*np.power(rh_grid,0.679)+(11*np.exp((rh_grid-100)/10))+0.18*(21.1-temp_grid)\
+        *(1-np.exp(rh_grid*-0.115))
 
-    ew = 0.618*np.power(rh_grid, 0.753)+(10*np.exp((rh_grid-100)/10))+0.18*(21.1-temp_grid) *\
-        (1-1/np.exp(rh_grid*0.115))
-
+    
+    ew=0.618*np.power(rh_grid,0.753)+(10*np.exp((rh_grid-100)/10))+0.18*(21.1-temp_grid)*\
+        (1-np.exp(rh_grid*-0.115))
+    
     shape = rain_grid.shape
     z = np.zeros(shape)
-    z[np.where((wmo < ed) & (wmo < ew))] = 0.424*(1-np.power((rh_grid[np.where((wmo < ed) & (wmo < ew))]/100), 1.7))\
-        + 0.0694*np.sqrt(wind_grid[np.where((wmo < ed) & (wmo < ew))]) *\
-        (1-np.power((rh_grid[np.where((wmo < ed) & (wmo < ew))]/100), 8))
+    
+    if wmo<ed and wmo<ew: 
+        z=0.424*(1-np.power(((100-rh_grid)/100),1.7))+0.0694*np.sqrt(wind_grid)*(1-np.power(((100-rh_grid)/100),8))
 
-    z[np.where((wmo >= ed) & (wmo >= ew))] = 0
+        x=z*0.581*np.exp(0.0365*temp_grid)
 
-    x = z*0.581*np.exp(0.0365*temp_grid)
+        wm = np.zeros(shape)
 
-    shape = rain_grid.shape
-    wm = np.zeros(shape)
+        wm= ew-(ew-wmo)*(np.power(10,-x))
 
-    wm[np.where((wmo < ed) & (wmo < ew))] = ew[np.where((wmo < ed) & (wmo < ew))] -\
-        (ew[np.where((wmo < ed) & (wmo < ew))] -
-         wmo[np.where((wmo < ed) & (wmo < ew))])/(np.power(10, x[np.where((wmo < ed) & (wmo < ew))]))
 
-    wm[np.where((wmo >= ed) & (wmo >= ew))
-       ] = wmo[np.where((wmo >= ed) & (wmo >= ew))]
+    if wmo>=ew and wmo<=ed:
 
-    z[wmo > ed] = 0.424*(1-np.power((rh_grid[wmo > ed]/100), 1.7))+0.0694\
-                       * np.sqrt(wind_grid[wmo > ed])*(1-np.power((rh_grid[wmo > ed]/100), 8))
+        wm = wmo
 
-    x = z*0.581*np.exp(0.0365 * temp_grid)
-    wm[wmo > ed] = ed[wmo > ed] + \
-        (wmo[wmo > ed] - ed[wmo > ed])/(np.power(10, x[wmo > ed]))
 
-    ffmc1 = (59.5*(250-wm))/(147.2+wm)
+    if wmo>ed:
 
+
+        z = 0.424*(1-np.power(((rh_grid)/100),1.7))+0.0694\
+                       *np.sqrt(wind_grid)*(1-np.power(((rh_grid)/100),8))
+
+        x=z*0.581*np.exp(0.0365 * temp_grid)
+
+        wm = ed + (wmo - ed)*(np.power(10,-x))
+
+
+    ffmc1 = np.array((59.5*(250-wm))/(147.2+wm))
+    
     ffmc1[ffmc1 > 101] = 101
 
     ffmc1[ffmc1 < 0] = 0
@@ -1298,7 +1295,6 @@ def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yest
         plt.imshow(ffmc1, extent=(min_xProj_extent-1, max_xProj_extent+1, max_yProj_extent-1, min_yProj_extent+1), clip_path=circ,
                    clip_on=True)
 
-        # plt.imshow(ffmc1,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1))
         na_map.plot(ax=ax, color='white', edgecolor='k',
                     linewidth=2, zorder=10, alpha=0.1)
 
