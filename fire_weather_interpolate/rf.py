@@ -961,8 +961,6 @@ def spatial_groups_rf(idw_example_grid, loc_dict, Cvar_dict, shapefile, blocknum
               dictionary of weather variable values for each station
          shapefile : string
               path to the study area shapefile
-         d : int
-              the weighting for IDW interpolation
          blocknum : int
               number of blocks/clusters
          nfolds : int
