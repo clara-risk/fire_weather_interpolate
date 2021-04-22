@@ -35,7 +35,8 @@ def run_comparison(var_name, input_date, interpolation_types, rep, loc_dictionar
                    kernels={'temp': ['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)'], 'rh': ['307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)'],
                             'pcp': ['316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)'],
                             'wind': ['316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)']}):
-    '''Execute the shuffle-split cross-validation for the given interpolation types 
+    '''Execute the shuffle-split cross-validation for the given interpolation types
+
    Parameters
    ----------
         var_name : string
@@ -61,7 +62,8 @@ def run_comparison(var_name, input_date, interpolation_types, rep, loc_dictionar
         calc_phi : bool
              whether to calculate phi in the function, if True, phi can = None
         kernels : dictionary
-             the kernels for each weather variable for gaussian process regression 
+             the kernels for each weather variable for gaussian process regression
+             
         
    Returns
    ----------
@@ -167,7 +169,8 @@ def execute_sequential_calc(file_path_hourly, file_path_daily, file_path_daily_c
                             kernels={'temp': ['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)'], 'rh': ['307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)'],
                                      'pcp': ['316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)'],
                                      'wind': ['316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)']}):
-    '''Execute the DC, DMC, FFMC seq calculations  
+    '''Execute the DC, DMC, FFMC sequential calculations
+
     Parameters
     ----------
         file_path_hourly : string
@@ -207,7 +210,8 @@ def execute_sequential_calc(file_path_hourly, file_path_daily, file_path_daily_c
         kernels : dictionary
              the kernels for each weather variable for gaussian process regression
              
-    Returns 
+    Returns
+    ----------
         list
             - list of array of FWI codes for each day in fire season 
     '''
