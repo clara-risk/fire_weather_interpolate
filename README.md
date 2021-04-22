@@ -1,6 +1,8 @@
 Fire Weather Interpolate 
 
-A series of Python functions for interpolating the Canadian Forest Fire Weather Index variables. A lot of the code is based off of the R package cffdrs: 
+A series of Python functions for interpolating the Canadian Forest Fire Weather Index variables, evaluating interpolation methods using various cross-validation methods, and calculating fire season duration.
+
+A lot of the code is based off of the R package cffdrs: 
 
 https://github.com/cran/cffdrs/tree/master/R
 
