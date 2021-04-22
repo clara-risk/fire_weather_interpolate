@@ -1,5 +1,5 @@
-# -*- coding: latin1 -*-
-"""Spatial interpolation tools for calculation FWI metrics in Québec Ontario."""
+# -*- coding: utf-8 -*-
+"""Spatial interpolation tools for calculation FWI metrics in QuÃ©bec Ontario."""
 
 import os
 from setuptools import setup, find_packages, Extension
@@ -13,19 +13,21 @@ CLASSIFIERS = [
     "Topic :: Scientific/Engineering :: GIS",
 ]
 
-def requirements():
-    with open('requirements.txt') as f:
-        return f.read().strip().split('\n')
-    
-setup(name='fwi_interpolate',
-      version='0.0.1',
-      author='Clara',
-      author_email='clara.risk@mail.utoronto.ca',
-      description='Spatial interpolation tools for calculation FWI metrics in Québec Ontario',
-      classifiers=CLASSIFIERS,
-      install_requires=requirements(),
-      packages=find_packages(),
-      include_package_data=True,
+##def requirements():
+##    with open('requirements.txt') as f:
+##        return f.read().strip().split('\n')
+
+setup(
+    name='fire_weather_interpolate',
+    url='https://github.com/clara-risk/fire_weather_interpolate',
+    author='Clara Risk',
+    author_email='clara.risk@mail.utoronto.ca',
+    packages=['fire_weather_interpolate'],
+    install_requires=['numpy', 'pandas', 'matplotlib'],
+    version='0.1.1',
+    license='CC0',
+    description='Spatial interpolation tools for calculation FWI metrics in QuÃ©bec Ontario',
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown',
+    #project_urls={'Documentation': ''}
 )
-
-
