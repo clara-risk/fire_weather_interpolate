@@ -16,20 +16,19 @@ import os,sys
 import math,statistics
 
 def make_block(idw_grid,blocknum):
-    '''Divide the study area into blocks
+     '''Divide the study area into blocks
 
-   Parameters
-   ----------
-   idw_grid : ndarray
+     Parameters
+     ----------
+     idw_grid : ndarray
        the example idw grid to base the size of the group array off of
-   blocknum : int
-       number of blocks to create, either 4, 9, 16, 25
-       
-   Returns
-   ----------
-   ndarray
+     blocknum : int
+       number of blocks to create, either 4, 9, 16, 25   
+     Returns
+     ----------
+     ndarray
        - an array with the block value contained in each pixel 
-    '''
+     '''
      if blocknum == 4:
           shape = idw_grid.shape
           blocks = np.array_split(idw_grid,2) #We need to make like a quilt of values of the blocks and then search for stations that overlay a block
@@ -165,7 +164,6 @@ def sorting_stations(blocks,shapefile,loc_dict,Cvar_dict):
         dictionary with weather station locations
     Cvar_dict : dictionary
         the dictionary keyed by station containing the weather data 
-
     Returns
     ----------
     dictionary
