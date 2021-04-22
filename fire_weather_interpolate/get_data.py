@@ -532,13 +532,12 @@ def get_relative_humidity(input_date,file_path):
 
 def get_pcp_dictionary_by_year(file_path):
     '''Create a lookup file for the year_month that each daily station has data for faster 
-    processing later --> this is an input to get_pcp 
+    processing later --> this is an input to get_pcp
+    
     Parameters
-        file_path (str): file path to the daily csv files provided by Environment & Climate Change
-        Canada, including the name of the file 
-    Returns 
-        The function writes a .json file to the hard drive that can be read back into the code before
-        running get_pcp 
+    ----------
+    file_path : string
+        file path to the daily csv files provided by Environment & Climate Change Canada, including the name of the file 
     '''
     
     date_dictionary = {}
@@ -582,12 +581,11 @@ def get_pcp_dictionary_by_year(file_path):
         
 def get_daily_lat_lon(file_path):
     '''Get the latitude and longitude of the daily stations and store in a json file in the directory
+
     Parameters
-        file_path (str): file path to the daily csv files provided by Environment & Climate Change
-        Canada, including the name of the file 
-    Returns 
-        The function writes a .json file to the hard drive that can be read back into the code before
-        running get_pcp 
+    ----------
+    file_path : string
+        file path to the daily csv files provided by Environment & Climate Change Canada, including the name of the file 
     '''
     latlon_dictionary = {} 
     #for station_name in lat_lon_list: #This is the list of available stations on that day
@@ -640,14 +638,20 @@ def get_daily_lat_lon(file_path):
         json.dump(latlon_dictionary, fp)
         
 def get_pcp(input_date,file_path,date_dictionary):
-    '''Get a dictionary of the precipitation data from the feather files of the daily stations 
+    '''Get a dictionary of the precipitation data from the feather files of the daily stations
+
     Parameters
-        input_date (str): input date for the day of interest, in the format YYYY:MM:DD 
-        file_path (str): file path to the daily feather files 
-        date_dictionary (dict, loaded from .json): lookup file that has what day/month pairs each 
-        station is active on
-    Returns 
-        rain_dictionary (dict): dictionary containing rain amount for each station 
+    ----------
+    input_date : string
+        input date for the date of interest, in the format: YYYY-MM-DD HH:MM
+    file_path : string
+        path to the feather files containing the hourly data from Environment & Climate Change Canada
+    date_dictionary : dictionary
+        lookup file that has what day/month pairs each station is active on to speed up processing, loaded from the .json file 
+    Returns
+    ----------
+    dictionary
+        - dictionary containing rain amount for each station 
     '''
 
 
@@ -682,13 +686,12 @@ def get_pcp(input_date,file_path,date_dictionary):
     return rain_dictionary
     
 def get_lat_lon(file_path):
-    '''Get the latitude and longitude of the hourly stations and write to hard drive as a json file 
+    '''Get the latitude and longitude of the hourly stations and write to hard drive as a json file
+
     Parameters
-        file_path (str): file path to the hourly csv files provided by Environment & Climate Change
-        Canada, including the name of the file 
-    Returns 
-        The function writes a .json file to the hard drive that can be read back into the code before
-        running get_pcp 
+    ----------
+        file_path : string
+            file path to the hourly csv files provided by Environment & Climate Change Canada, including the name of the file 
     '''
     latlon_dictionary = {} 
 
@@ -738,12 +741,13 @@ def get_lat_lon(file_path):
         
 def convert_to_feather(file_path,out_path):
     '''Convert the Environment & Climate Change Canada csv files into feather files, to allow for faster processing
+
     Parameters
-        file_path (str): file path to the csv files provided by Environment & Climate Change
-        Canada, not including the name of the file 
-        out_path (str): where you want the new feather file to be written to in the computer, not including the new file name
-    Returns 
-        The function writes a feather file to the output directory
+    ----------
+    file_path : string
+        file path to the csv files provided by Environment & Climate Change Canada, not including the name of the file 
+    out_path : string
+        where you want the new feather file to be written to in the computer, not including the new file name
     '''
     for station_name in os.listdir(file_path):
         file = file_path+station_name
@@ -753,13 +757,21 @@ def convert_to_feather(file_path,out_path):
 
 def get_intersect_boolean_array(ecozone_shapefile,shapefile,show,expand_area):
     '''Obtain a boolean array of where the ecozone is 0 = pixel NOT in ecozone, otherwise 1
+
     Parameters
-        ecozone_shapefile (str): path to ecozone shapefile, inc name
-        shapefile (str): path to shapefile
-        show (bool): show a map if you want to check it has rasterized the shapefile correctly
-        expand_area (bool): expand study area by 200km 
+    ----------
+    ecozone_shapefile : string
+        path to ecozone shapefile, including name
+    shapefile : string
+        path to shapefile 
+    show : bool
+        show a map if you want to check it has rasterized the shapefile correctly
+    expand_area : bool
+        whether to expand study area by 200km 
     Returns
-        bool_initiate (np_array): array 1/0 if pixel was inside ecozone
+    ----------
+    ndarray
+        - array 1/0 if pixel was inside ecozone
     '''
     study_map = gpd.read_file(shapefile)
     eco_map = gpd.read_file(ecozone_shapefile)
@@ -834,11 +846,17 @@ def get_intersect_boolean_array(ecozone_shapefile,shapefile,show,expand_area):
     
 def get_average_in_ecozone(boolean_ecozone,continuous_surface):
     '''This is a function to get the average of the array cells with centroids that are within an ecozone
+
     Parameters
-        boolean_ecozone (np_array): a boolean array delineating the raster cells belonging to the ecozone
-        continuous_surface (np_array): an array of values for the study area
-    Returns 
-        average_value (float): the average if the array values that fall inside the ecozone
+    ----------
+    boolean_ecozone : ndarray
+        a boolean array delineating the raster cells belonging to the ecozone
+    continuous_surface : ndarray
+        an array of values for the study area
+    Returns
+    ----------
+    float
+        - the average if the array values that fall inside the ecozone
     '''
 
     continuous_surface[boolean_ecozone == 0] = -9999
@@ -848,31 +866,38 @@ def get_average_in_ecozone(boolean_ecozone,continuous_surface):
 
 
 def get_stations_plus_200km(latlon_dict,Cvar_dict,input_date,shapefile): 
-     '''Dictionary for plotting of the stations included in the analysis 
-     Parameters
-         latlon_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-         .json file
-         Cvar_dict (dict): dictionary of weather variable values for each station 
-         input_date (str): the date you want to interpolate for 
-         shapefile (str): path to the study area shapefile 
-     Returns
-         plotting_dict (dict): contains values only for stations inside study area plus 200km
-         '''
-     plotting_dictionary ={} #if expanding the study area, we need to return a dictionary of the stations used
-     lat = []
-     lon = []
-     Cvar = []
-     
-     source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83')
-     na_map = gpd.read_file(shapefile)
-     bounds = na_map.bounds
+    '''Dictionary for plotting of the stations included in the analysis
 
-     xmax = bounds['maxx']+200000
-     xmin= bounds['minx']-200000
-     ymax = bounds['maxy']+200000
-     ymin = bounds['miny']-200000
+    Parameters
+    ----------
+    latlon_dict : dictionary
+        the latitude and longitudes of the hourly stations
+    Cvar_dict : dictionary
+        dictionary of weather variable values for each station 
+    input_date : string
+        the date you want to interpolate for 
+    shapefile : string
+        path to the study area shapefile 
+    Returns
+    ----------
+    dictionary
+        - contains values only for stations inside study area plus 200km
+    '''
+    plotting_dictionary ={} #if expanding the study area, we need to return a dictionary of the stations used
+    lat = []
+    lon = []
+    Cvar = []
 
-     for station_name in Cvar_dict.keys():
+    source_proj = pyproj.Proj(proj='latlong', datum = 'NAD83')
+    na_map = gpd.read_file(shapefile)
+    bounds = na_map.bounds
+
+    xmax = bounds['maxx']+200000
+    xmin= bounds['minx']-200000
+    ymax = bounds['maxy']+200000
+    ymin = bounds['miny']-200000
+
+    for station_name in Cvar_dict.keys():
 
         if station_name in latlon_dict.keys():
 
@@ -886,6 +911,6 @@ def get_stations_plus_200km(latlon_dict,Cvar_dict,input_date,shapefile):
                  lon.append(float(longitude))
                  Cvar.append(cvar_val)
                  plotting_dictionary[station_name] = cvar_val
-     
-     #Can return plotting dictionary if need be, add 3rd to return statement
-     return plotting_dictionary
+
+    #Can return plotting dictionary if need be, add 3rd to return statement
+    return plotting_dictionary
