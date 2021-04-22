@@ -29,6 +29,7 @@ warnings.filterwarnings("ignore")
 def spatial_cluster(loc_dict, Cvar_dict, shapefile, cluster_num, file_path_elev, idx_list,
                     plot_2D, plot_3D, return_all):
     '''Spatial clustering based on scikit learn's agglomerative clustering
+
     Parameters
     ----------
          loc_dict : dictionary
@@ -48,7 +49,8 @@ def spatial_cluster(loc_dict, Cvar_dict, shapefile, cluster_num, file_path_elev,
          plot_3D : bool
               whether to plot maps of the clusters in 3d             
          return_all : bool
-            whether or not to return all the outputs (needed for selecting cluster size) 
+            whether or not to return all the outputs (needed for selecting cluster size)
+            
     Returns
     ----------
          dictionary
