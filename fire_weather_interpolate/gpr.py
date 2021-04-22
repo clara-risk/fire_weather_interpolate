@@ -482,9 +482,9 @@ def cross_validate_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_a
 
 def shuffle_split_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, cov_function, rep):
     '''Shuffle split cross-validation procedure for GPR
+
     Parameters
     ----------
-
     latlon_dict : dictionary
         the latitude and longitudes of the stations
     Cvar_dict : dictionary
