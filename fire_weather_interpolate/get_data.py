@@ -78,9 +78,9 @@ def finding_data_frm_lookup(projected_coordinates_list,file_path,idx_list):
     idx_list : list
         output of get_col_name_list, we will just take the first entry
         
-   Returns
-   ----------
-   dictionary
+    Returns
+    ----------
+    dictionary
        - a dictionary of values for each coordinate (taken from the closest point in the lookup file to the input coordinate)
     '''
     distance_dictionary = {} 
