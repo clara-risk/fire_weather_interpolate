@@ -23,7 +23,9 @@ setup(
     author='Clara Risk',
     author_email='clara.risk@mail.utoronto.ca',
     packages=['fire_weather_interpolate'],
-    install_requires=['numpy', 'pandas', 'matplotlib'],
+    install_requires=['numpy', 'pandas', 'matplotlib','sklearn','scipy',\
+                      'geopandas','shapely','json','feather','descartes',\
+                      'seaborn','statsmodels'],
     version='0.1.1',
     license='CC0',
     description='Spatial interpolation tools for calculation FWI metrics in Québec Ontario',
