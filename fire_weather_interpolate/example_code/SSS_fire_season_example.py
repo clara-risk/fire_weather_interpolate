@@ -3,8 +3,9 @@
 """
 Summary
 -------
-References
-----------
+Example code for executing stratified shuffle-split cross-validation for selecting
+spatial interpolation methods for calculating fire season duration.
+
 """
     
 #import
@@ -35,7 +36,6 @@ if __name__ == "__main__":
 
     file_path_daily = os.path.join(dirname, 'datasets/weather/daily_feather/')
     file_path_hourlyf = os.path.join(dirname, 'datasets/weather/hourly_feather/')
-    #file_path_hourly = 'C:/Users/clara/OneDrive/Documents/Thesis/fwi-interpolate/datasets/weather/hourly_csv/'
     file_path_daily = os.path.join(dirname, 'datasets/weather/all_daily/all_daily/')
     shapefile = os.path.join(dirname, 'datasets/study_area/QC_ON_albers_dissolve.shp')
     boreal_shapefile = os.path.join(dirname, 'datasets/study_area/boreal_forest_SP.shp')
@@ -76,20 +76,11 @@ if __name__ == "__main__":
                 start = time.time()
                 if var == 'start':
                     
-                    days_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily,year) #Get two things: start date for each station and the lat lon of the station
-                    if int(year) >= 2020: #When many hourly stations are added
-                        hourly_dictH, latlon_stationH = fwi.start_date_add_hourly(file_path_hourlyf,year)
-                        if hourly_dictH is not None: #Sometimes there are no stations with unbroken records
-                            days_dict = GD.combine_stations(days_dict,hourly_dictH)
-                            latlon_station = GD.combine_stations(latlon_station,latlon_stationH)                                   
+                    days_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily,year) #Get two things: start date for each station and the lat lon of the station                                
                 
                 elif var == 'end': 
                     days_dict, latlon_station = fwi.end_date_calendar_csv(file_path_daily,year,'sep') 
-                    if int(year) >= 2020: #When many hourly stations are added
-                        hourly_dictH, latlon_stationH = fwi.end_date_add_hourly(file_path_hourlyf,year)
-                        if hourly_dictH is not None: #Sometimes there are no stations with unbroken records
-                            days_dict = GD.combine_stations(days_dict,hourly_dictH)
-                            latlon_station = GD.combine_stations(latlon_station,latlon_stationH) 
+
                 else:
                     print('That is not a correct variable!')
 
