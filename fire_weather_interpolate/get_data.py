@@ -9,7 +9,9 @@ slope, drainage).
 
 References 
 ----------
-get_b relies on information from Lawson & Armitage (2008) 
+get_b relies on information from Lawson & Armitage (2008)
+
+Lawson, B., & Armitage, O. (2008). Weather Guide for the Canadian Forest Fire Danger Rating System. Natural Resources Canada.
 
 """
 
