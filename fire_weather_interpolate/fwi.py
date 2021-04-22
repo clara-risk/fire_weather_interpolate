@@ -906,26 +906,42 @@ def dc_overwinter_procedure(last_DC_val_before_shutdown_masked_reshape, overwint
 
 def DC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dc_yesterday, index, show, shapefile, mask, endMask,
        last_DC_val_before_shutdown, overwinter):
-    '''Calculate the DC. See cffdrs R code
+    '''Calculate the DC.
+
     Parameters
-        input_date (str): input date of interest
-        rain_grid: interpolated surface for rainfall on the date of interest
-        temp_grid: interpolated surface for temperature on the date of interest
-        wind_grid: interpolated surface for wind on the date of interest
-        maxmin: bounds of the study area 
-        dc_yesterday: array of DC values for yesterday (from the dc stack list/if this function
-        is being used inside dc_stack it is calculated then) 
-        index (int): index of the date since Mar 1
-        show (bool): whether you want to show the map 
-        shapefile (str): path to the study area shapefile
-        mask (np_array): mask for the start dates 
-        endMask (np_array): mask for the end days 
-        last_DC_val_before_shutdown (np_array): array for last dc values before cell shut down, if no areas 
-        required the procedure, you can input an empty array of the correct size (if not using overwinter, input
-        the empty array)
-        overwinter (bool): whether or not to implement the overwinter procedure 
-    Returns 
-        dc1 (np_array): array of dc values on the date on interest for the study area
+    ----------
+    input_date : string
+        input date of interest
+    rain_grid : ndarray
+        interpolated surface for rainfall on the date of interest
+    temp_grid : ndarray
+        interpolated surface for temperature on the date of interest
+    wind_grid : ndarray
+        interpolated surface for wind on the date of interest
+    maxmin : list
+        bounds of the study area 
+    dc_yesterday : ndarray
+        array of DC values for yesterday 
+    index : int
+        index of the date since Mar 1
+    show : bool
+        whether you want to show the map 
+    shapefile : string
+        path to the study area shapefile
+    mask : ndarray
+        mask for the start dates 
+    endMask : ndarray
+        mask for the end dates
+    last_DC_val_before_shutdown : ndarray
+        array for last dc values before cell shut down, if no areas required the procedure, you can input an empty
+        array of the correct size (if not using overwinter, input the empty array)
+    overwinter : bool
+        whether or not to implement the overwinter procedure
+        
+    Returns
+    ----------
+    ndarray 
+        - array of dc values on the date on interest for the study area
     '''
 
     yesterday_index = index-1
@@ -1035,7 +1051,8 @@ def DC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dc_yesterda
 
 def DMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yesterday, index, show, shapefile,
         mask, endMask):
-    '''Calculate the DMC. See cffdrs R code
+    '''Calculate the DMC.
+
     Parameters
         input_date (str): input date of interest
         rain_grid: interpolated surface for rainfall on the date of interest
@@ -1075,7 +1092,7 @@ def DMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yester
     temp_grid[temp_grid < -1.1] = -1.1
 
     # Log drying rate
-    rk = 1.84*(temp_grid+1.1)*(100-rh_grid)*ell01[month]*1.0E-4
+    rk = 1.894*(temp_grid+1.1)*(100-rh_grid)*ell01[month-1]*1.0E-6
 
     # Make empty dmc array
     new_shape = dmc_yesterday1.shape
@@ -1085,8 +1102,7 @@ def DMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yester
 
     netRain = 0.92*rain_grid-1.27
 
-    # initial moisture content, modified same as cffdrs package
-    wmi = 20 + 280/np.exp(0.023*dmc_yesterday1)
+    wmi = 20 + (np.exp(5.6348-(dmc_yesterday1/43.43)))
 
     # if else depending on yesterday dmc, eq.13
     b = np.zeros(new_shape)
@@ -1102,14 +1118,14 @@ def DMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yester
     # eq 14, modified in R package
     wmr = wmi + 1000 * netRain/(48.77 + b * netRain)
 
-    # eq 15 modified to be same as cffdrs package
-
-    pr0 = 43.43 * (5.6348 - np.log(wmr-20))  # natural logarithm
+    pr0 = np.array(244.72-(43.43 * (np.log(wmr-20)))
 
     pr0[pr0 < 0] = 0
 
-    rk_pr0 = pr0 + rk
-    rk_ydmc = dmc_yesterday1 + rk  # we want to add rk because that's the drying rate
+    rk_pr0 =pr0 + (100*rk)
+
+    rk_ydmc = dmc_yesterday1 + (100*rk) #we want to add rk because that's the drying rate
+                   
     dmc[netRain > 1.5] = rk_pr0[netRain > 1.5]
     dmc[netRain <= 1.5] = rk_ydmc[netRain <= 1.5]
 
