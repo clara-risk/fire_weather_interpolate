@@ -19,8 +19,8 @@ Code is translated from R package:
 https://github.com/cran/cffdrs/tree/master/R
 
 """
-    
-#import
+
+# import
 from shapely.geometry import Point
 import geopandas as gpd
 import numpy as np
@@ -30,7 +30,8 @@ from itertools import groupby
 from datetime import datetime, timedelta, date
 import pandas as pd
 import math
-import os, sys
+import os
+import sys
 import gc
 import feather
 import csv
@@ -44,11 +45,12 @@ import gpr as gpr
 import tps as tps
 import rf as rf
 
+# functions
+# Using the feather fires, which are copied faster to another computer, but the code is slower than
+# if we use the csv files
 
-#functions 
-#Using the feather fires, which are copied faster to another computer, but the code is slower than
-#if we use the csv files 
-def start_date_calendar(file_path_daily,year):
+
+def start_date_calendar(file_path_daily, year):
     '''Returns a dictionary of where each station meets the start up criteria, plus a reference dictionary for the lat lon of the stations
     Parameters
         file_path (str): path to the feather files containing the hourly data from Environment & 
@@ -59,96 +61,112 @@ def start_date_calendar(file_path_daily,year):
         latlon_dictionary (dict): the latitude and longitude of those stations 
     '''
 
-    #Input: path to hourly data, string of the year, i.e. '1998' 
-    maxTempList_dict = {} #Locations where we will store the data
+    # Input: path to hourly data, string of the year, i.e. '1998'
+    maxTempList_dict = {}  # Locations where we will store the data
     maxTemp_dictionary = {}
     date_dict = {}
     latlon_dictionary = {}
 
-    for station_name in os.listdir(file_path_hourly): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-        Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
-        temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
-        for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder
-            if year in csv: #Only open if it is the csv for the year of interest (this is contained in the csv name)
-                file = file_path_hourly+station_name+'/'+csv  #Open the file - for CAN data we use latin 1 due to à, é etc.
+    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
+    for station_name in os.listdir(file_path_hourly):
+        # We will need an empty dictionary to store the data due to data ordering issues
+        Temp_subdict = {}
+        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
+        # Loop through the csv in the station folder
+        for csv in os.listdir(file_path_hourly+station_name+'/'):
+            # Only open if it is the csv for the year of interest (this is contained in the csv name)
+            if year in csv:
+                # Open the file - for CAN data we use latin 1 due to à, é etc.
+                file = file_path_hourly+station_name+'/'+csv
                 df = feather.read_dataframe(file)
 
-                count = 0 
+                count = 0
 
                 for index, row in df.iterrows():
                     if count == 0:
-                        
-                        try: 
-                        
-                            latlon_dictionary[station_name] = (row['Latitude (y)'], row['ï»¿"Longitude (x)"']) #unicode characters at beginning, not sure why 
-                            
-                        except KeyError: 
-                            latlon_dictionary[station_name] = (row['Latitude (y)'], row[0]) #The start unicode problem changes based on the computer... lon should always be in place 0 anyways
+
+                        try:
+
+                            # unicode characters at beginning, not sure why
+                            latlon_dictionary[station_name] = (
+                                row['Latitude (y)'], row['ï»¿"Longitude (x)"'])
+
+                        except KeyError:
+                            # The start unicode problem changes based on the computer... lon should always be in place 0 anyways
+                            latlon_dictionary[station_name] = (
+                                row['Latitude (y)'], row[0])
                     if str(row['Year']) == year:
 
                         if str(row['Month']) == '3' or str(row['Month']) == '4' or str(row['Month']) == '5' or \
                            str(row['Month']) == '6' or str(row['Month']) == '7':
-                            
+
                             if str(row['Time']) == '13:00':
 
                                 if pd.notnull(row['Temp (Â°C)']):
 
-                                    Temp_subdict[str(row['Date/Time'])] = float(row['Temp (Â°C)'])
-                                    temp_list.append(float(row['Temp (Â°C)'])) #Get the 13h00 temperature, send to temp list
+                                    Temp_subdict[str(
+                                        row['Date/Time'])] = float(row['Temp (Â°C)'])
+                                    # Get the 13h00 temperature, send to temp list
+                                    temp_list.append(float(row['Temp (Â°C)']))
                                 else:
                                     Temp_subdict[str(row['Date/Time'])] = 'NA'
                                     temp_list.append('NA')
-                    count +=1 
+                    count += 1
 
         maxTemp_dictionary[station_name] = Temp_subdict
-        maxTempList_dict[station_name] = temp_list #Store the information for each station in the permanent dictionary 
+        # Store the information for each station in the permanent dictionary
+        maxTempList_dict[station_name] = temp_list
 
         vals = maxTempList_dict[station_name]
 
-        #if 'NA' not in vals and len(vals) == 153: #only consider the stations with unbroken records, num_days between March-July is 153
+        # if 'NA' not in vals and len(vals) == 153: #only consider the stations with unbroken records, num_days between March-July is 153
 
         varray = np.array(vals)
-        where_g12 = np.array(varray >= 12) #Where is the temperature >=12? 
+        where_g12 = np.array(varray >= 12)  # Where is the temperature >=12?
 
+        # Put the booleans in groups, ex. [True, True], [False, False, False]
+        groups = [list(j) for i, j in groupby(where_g12)]
 
-        groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
+        length = [x for x in groups if len(x) >= 3 and x[0] == True]
 
-        length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
-
-
-        if len(length) > 0: 
-            index = groups.index(length[0]) #Get the index of the group
-            group_len = [len(x) for x in groups] #Get length of each group
-            length_sofar = 0 #We need to get the number of days up to where the criteria is met 
-            for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+        if len(length) > 0:
+            index = groups.index(length[0])  # Get the index of the group
+            group_len = [len(x) for x in groups]  # Get length of each group
+            length_sofar = 0  # We need to get the number of days up to where the criteria is met
+            # loop through each group until you get to the index and add the length of that group
+            for i in range(0, index):
                 length_sofar += group_len[i]
 
-            #We need to filter out the stations with No Data before that point
-            #So slice to the index
+            # We need to filter out the stations with No Data before that point
+            # So slice to the index
             vals_behind = varray[0:length_sofar]
-            if 'NA' not in vals_behind: 
+            if 'NA' not in vals_behind:
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go two days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[
+                    length_sofar+3]  # Go two days ahead for the third day
 
-                d0 = date(int(year), 3, 1) #March 1, Year 
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
+                d0 = date(int(year), 3, 1)  # March 1, Year
+                # Convert to days since march 1 so we can interpolate
+                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10]))
                 delta = d1 - d0
-                day = int(delta.days) #Convert to integer 
-                date_dict[station_name] = day #Store the integer in the dictionary
+                day = int(delta.days)  # Convert to integer
+                # Store the integer in the dictionary
+                date_dict[station_name] = day
 
         else:
-            print('Station %s did not start up by September 1 or had NA values upstream of the start date.'%station_name) 
-            pass #Do not include the station - no start up by August 1 is pretty unrealistic I think... (?) 
-
-
+            print('Station %s did not start up by September 1 or had NA values upstream of the start date.' % station_name)
+            # Do not include the station - no start up by August 1 is pretty unrealistic I think... (?)
+            pass
 
             #print('The start date for %s for %s is %s'%(station_name,year,Sdate))
 
-    #Return the dates for each station
+    # Return the dates for each station
 
     return date_dict, latlon_dictionary
 
-def start_date_calendar_csv(file_path_daily,year):
+
+def start_date_calendar_csv(file_path_daily, year):
     '''Returns a dictionary of where each station meets the start up criteria, plus a reference dictionary for the lat lon of the stations
     Parameters
         file_path_daily (str): path to the csv files containing the hourly data from Environment & 
@@ -159,159 +177,182 @@ def start_date_calendar_csv(file_path_daily,year):
         latlon_dictionary (dict): the latitude and longitude of those stations 
     '''
 
-    #Input: path to hourly data, string of the year, i.e. '1998' 
-    maxTempList_dict = {} #Locations where we will store the data
+    # Input: path to hourly data, string of the year, i.e. '1998'
+    maxTempList_dict = {}  # Locations where we will store the data
     maxTemp_dictionary = {}
     date_dict = {}
     latlon_dictionary = {}
 
-    for station_name in os.listdir(file_path_daily): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-        Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
-        temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
-        count=0
-        #for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder 
-            #if year in csv: #Only open if it is the csv for the year of interest (this is contained in the csv name)
-                #+'/'+csv
-        with open(file_path_daily+station_name, encoding='latin1') as year_information: #Open the file - for CAN data we use latin 1 due to à, é etc. 
-            for row in year_information: #Look at each row 
-                information = row.rstrip('\n').split(',') #Split each row into a list so we can loop through 
-                information_stripped = [i.replace('"','') for i in information] #Get rid of extra quotes in the header
-                if count==0: #This is getting the first row 
-                    
-                    header= information_stripped
+    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
+    for station_name in os.listdir(file_path_daily):
+        # We will need an empty dictionary to store the data due to data ordering issues
+        Temp_subdict = {}
+        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
+        count = 0
+        # for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder
+        # if year in csv: #Only open if it is the csv for the year of interest (this is contained in the csv name)
+        # +'/'+csv
+        # Open the file - for CAN data we use latin 1 due to à, é etc.
+        with open(file_path_daily+station_name, encoding='latin1') as year_information:
+            for row in year_information:  # Look at each row
+                # Split each row into a list so we can loop through
+                information = row.rstrip('\n').split(',')
+                # Get rid of extra quotes in the header
+                information_stripped = [
+                    i.replace('"', '') for i in information]
+                if count == 0:  # This is getting the first row
 
+                    header = information_stripped
 
-                    keyword = 'max_temp' #Look for this keyword in the header 
-                    filter_out_keyword = 'flag' #We don't want flag temperature, we want to skip over it 
-                    idx_list1 = [i for i, x in enumerate(header) if keyword in x.lower() and filter_out_keyword not in x.lower()] #Get the index of the temperature column
+                    keyword = 'max_temp'  # Look for this keyword in the header
+                    filter_out_keyword = 'flag'  # We don't want flag temperature, we want to skip over it
+                    idx_list1 = [i for i, x in enumerate(header) if keyword in x.lower(
+                    ) and filter_out_keyword not in x.lower()]  # Get the index of the temperature column
 
-                    if len(idx_list1) > 1: # There should only be one field 
+                    if len(idx_list1) > 1:  # There should only be one field
                         print('The program is confused because there is more than one field name that could \
                         contain the temp data. Please check on this.')
                         sys.exit()
-                    keyword2 = 'date' #Getting the index of the datetime object so we can later make sure we are using 13h00 value 
-                    idx_list2 = [i for i, x in enumerate(header) if keyword2 in x.lower()]
+                    keyword2 = 'date'  # Getting the index of the datetime object so we can later make sure we are using 13h00 value
+                    idx_list2 = [i for i, x in enumerate(
+                        header) if keyword2 in x.lower()]
 
-                    if len(idx_list2) > 1: # There should only be one field 
+                    if len(idx_list2) > 1:  # There should only be one field
                         print('The program is confused because there is more than one field name that could \
                         contain the date. Please check on this.')
                         sys.exit()
 
-                    keyword3 = 'lat' #Here we use the same methods to get the latitude and longitude 
-                    idx_list3 = [i for i, x in enumerate(header) if keyword3 in x.lower()]
-                    if len(idx_list3) > 1: # There should only be one field 
+                    keyword3 = 'lat'  # Here we use the same methods to get the latitude and longitude
+                    idx_list3 = [i for i, x in enumerate(
+                        header) if keyword3 in x.lower()]
+                    if len(idx_list3) > 1:  # There should only be one field
                         print('The program is confused because there is more than one field name that could \
                         contain the latitude. Please check on this.')
                         sys.exit()
                     keyword4 = 'lon'
-                    idx_list4 = [i for i, x in enumerate(header) if keyword4 in x.lower()]
-                    if len(idx_list4) > 1: # There should only be one field 
+                    idx_list4 = [i for i, x in enumerate(
+                        header) if keyword4 in x.lower()]
+                    if len(idx_list4) > 1:  # There should only be one field
                         print('The program is confused because there is more than one field name that could \
                         contain the latitude. Please check on this.')
                         sys.exit()
-                        
-                if count > 0: #Now we are looking at the rest of the file, after the header 
 
-                    if count == 1: #Lat/lon will be all the same so only record it once
-                        try: #If the file is corrupted (it usually looks like a bunch of random characters) we will get an error, so we need a try/except loop
-                            lat =float(information_stripped[idx_list3[0]])
-                            lon =float(information_stripped[idx_list4[0]])
-                            latlon_dictionary[station_name[:-4]] = tuple((lat,lon)) #Get the lat lon and send the tuple to the dictionary 
-                        except:
-                            print('Something is wrong with the lat/lon header names for %s!'%(station_name))
-                            break 
+                if count > 0:  # Now we are looking at the rest of the file, after the header
 
-  
+                    if count == 1:  # Lat/lon will be all the same so only record it once
+                        # If the file is corrupted (it usually looks like a bunch of random characters) we will get an error, so we need a try/except loop
                         try:
-                            if information_stripped[idx_list2[0]][0:4] == year: #Make sure we have the right year 
+                            lat = float(information_stripped[idx_list3[0]])
+                            lon = float(information_stripped[idx_list4[0]])
+                            # Get the lat lon and send the tuple to the dictionary
+                            latlon_dictionary[station_name[:-4]
+                                              ] = tuple((lat, lon))
+                        except:
+                            print(
+                                'Something is wrong with the lat/lon header names for %s!' % (station_name))
+                            break
+
+                        try:
+                            # Make sure we have the right year
+                            if information_stripped[idx_list2[0]][0:4] == year:
                                 if information_stripped[idx_list2[0]][5:7] == '03' or information_stripped[idx_list2[0]][5:7] == '04' or \
                                    information_stripped[idx_list2[0]][5:7] == '05' or information_stripped[idx_list2[0]][5:7] == '06' or \
-                                   information_stripped[idx_list2[0]][5:7] == '07' or information_stripped[idx_list2[0]][5:7] == '08': #Make sure we are only considering months since March in case of heat wave in another month
-                                    #if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
-                                    Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
-                                    temp_list.append(float(information_stripped[idx_list1[0]])) #Get the 13h00 temperature, send to temp list
-                                    
+                                   information_stripped[idx_list2[0]][5:7] == '07' or information_stripped[idx_list2[0]][5:7] == '08':  # Make sure we are only considering months since March in case of heat wave in another month
+                                    # if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
+                                    Temp_subdict[information_stripped[idx_list2[0]]] = float(
+                                        information_stripped[idx_list1[0]])
+                                    # Get the 13h00 temperature, send to temp list
+                                    temp_list.append(
+                                        float(information_stripped[idx_list1[0]]))
 
-
-                        except: #In the case of a nodata value
+                        except:  # In the case of a nodata value
                             Temp_subdict[information_stripped[idx_list2[0]]] = -9999
                             temp_list.append(-9999)
-                            
 
-                    else: #Proceed down the rows 
+                    else:  # Proceed down the rows
                         try:
 
-                            if information_stripped[idx_list2[0]][0:4] == year: 
+                            if information_stripped[idx_list2[0]][0:4] == year:
                                 if information_stripped[idx_list2[0]][5:7] == '03' or information_stripped[idx_list2[0]][5:7] == '04' or information_stripped[idx_list2[0]][5:7] == '05'\
                                    or information_stripped[idx_list2[0]][5:7] == '06' or information_stripped[idx_list2[0]][5:7] == '07' or information_stripped[idx_list2[0]][5:7] == '08':
-                                    #if information_stripped[idx_list2[0]][11:13] == '13':
-                                    Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
-                                    temp_list.append(float(information_stripped[idx_list1[0]]))
-
-
+                                    # if information_stripped[idx_list2[0]][11:13] == '13':
+                                    Temp_subdict[information_stripped[idx_list2[0]]] = float(
+                                        information_stripped[idx_list1[0]])
+                                    temp_list.append(
+                                        float(information_stripped[idx_list1[0]]))
 
                         except:
                             Temp_subdict[information_stripped[idx_list2[0]]] = -9999
                             temp_list.append(-9999)
 
-                count+=1   
+                count += 1
 
         maxTemp_dictionary[station_name[:-4]] = Temp_subdict
-        maxTempList_dict[station_name[:-4]] = temp_list #Store the information for each station in the permanent dictionary 
+        # Store the information for each station in the permanent dictionary
+        maxTempList_dict[station_name[:-4]] = temp_list
 
         vals = maxTempList_dict[station_name[:-4]]
 
-        #if 'NA' not in vals and len(vals) == 184: #only consider the stations with unbroken records, num_days between March-August is 153
+        # if 'NA' not in vals and len(vals) == 184: #only consider the stations with unbroken records, num_days between March-August is 153
 
         varray = np.array(vals)
-        where_g12 = np.array(varray >= 12) #Where is the temperature >=12? 
+        where_g12 = np.array(varray >= 12)  # Where is the temperature >=12?
 
+        # Put the booleans in groups, ex. [True, True], [False, False, False]
+        groups = [list(j) for i, j in groupby(where_g12)]
 
-        groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
+        length = [x for x in groups if len(x) >= 3 and x[0] == True]
 
-        length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
+        if len(length) > 0:
 
-
-        if len(length) > 0: 
-
-            index = groups.index(length[0]) #Get the index of the group
-            group_len = [len(x) for x in groups] #Get length of each group
-            length_sofar = 0 #We need to get the number of days up to where the criteria is met 
-            for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+            index = groups.index(length[0])  # Get the index of the group
+            group_len = [len(x) for x in groups]  # Get length of each group
+            length_sofar = 0  # We need to get the number of days up to where the criteria is met
+            # loop through each group until you get to the index and add the length of that group
+            for i in range(0, index):
                 length_sofar += group_len[i]
 
-            #We need to filter out the stations with No Data before that point
-            #So slice to the index
+            # We need to filter out the stations with No Data before that point
+            # So slice to the index
             vals_behind = varray[0:length_sofar]
             if -9999 not in vals_behind:
-                try: 
+                try:
 
-                    Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day 
+                    # Go three days ahead for the fourth day
+                    Sdate = list(
+                        sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3]
 
-                    d0 = date(int(year), 3, 1) #March 1, Year 
-                    d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
+                    d0 = date(int(year), 3, 1)  # March 1, Year
+                    # Convert to days since march 1 so we can interpolate
+                    d1 = date(int(Sdate[0:4]), int(
+                        Sdate[5:7]), int(Sdate[8:10]))
                     delta = d1 - d0
-                    day = int(delta.days) #Convert to integer 
-                    date_dict[station_name[:-4]] = day #Store the integer in the dictionary
+                    day = int(delta.days)  # Convert to integer
+                    # Store the integer in the dictionary
+                    date_dict[station_name[:-4]] = day
                 except:
-                    print('There are no data values upstream! Need to take an alternative method.')
-                    Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar]
+                    print(
+                        'There are no data values upstream! Need to take an alternative method.')
+                    Sdate = list(
+                        sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar]
                     d0 = date(int(year), 3, 1)
-                    d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) + timedelta(days=3)
+                    d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(
+                        Sdate[8:10])) + timedelta(days=3)
                     delta = d1 - d0
-                    day = int(delta.days) #Convert to integer 
-                    date_dict[station_name[:-4]] = day 
-            
-        else:
-            #print('Station %s did not start up by September 1 or had NA values upstream of the start date.'%station_name[:-4]) 
-            pass #Do not include the station 
+                    day = int(delta.days)  # Convert to integer
+                    date_dict[station_name[:-4]] = day
 
+        else:
+            #print('Station %s did not start up by September 1 or had NA values upstream of the start date.'%station_name[:-4])
+            pass  # Do not include the station
 
             #print('The start date for %s for %s is %s'%(station_name[:-4],year,Sdate))
 
-    #Return the dates for each station
-    #print(date_dict)
-    return date_dict, latlon_dictionary 
+    # Return the dates for each station
+    # print(date_dict)
+    return date_dict, latlon_dictionary
+
 
 def start_date_add_hourly(file_path_hourly, year):
     ''' There are not enough daily stations for accurate calculation of the fire season duration in years after about 1996(?) so we need to add in some of the hourly ones. 
@@ -323,115 +364,131 @@ def start_date_add_hourly(file_path_hourly, year):
         date_dict (dict): start up date dictionary 
         latlon_dictionary (dict): dictionary of the station locations
     '''
-    maxTempList_dict = {} #Locations where we will store the data
+    maxTempList_dict = {}  # Locations where we will store the data
     maxTemp_dictionary = {}
     date_dictH = {}
     latlon_dictionary = {}
-    
-    for station_name in os.listdir(file_path_hourly): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
 
-        Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
-        temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
-        for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder
-            if csv[-16:-12] == year and (csv[-19:-17] == '03' or csv[-19:-17] == '04'or csv[-19:-17] == '05'\
-               or csv[-19:-17] == '06' or csv[-19:-17] == '07' or csv[-19:-17] == '08'): #Only open if it is the csv for the year of interest (this is contained in the csv name)
-                file = file_path_hourly+station_name+'/'+csv  #Open the file - for CAN data we use latin 1 due to à, é etc.
+    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
+    for station_name in os.listdir(file_path_hourly):
+
+        # We will need an empty dictionary to store the data due to data ordering issues
+        Temp_subdict = {}
+        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
+        # Loop through the csv in the station folder
+        for csv in os.listdir(file_path_hourly+station_name+'/'):
+            if csv[-16:-12] == year and (csv[-19:-17] == '03' or csv[-19:-17] == '04' or csv[-19:-17] == '05'
+               or csv[-19:-17] == '06' or csv[-19:-17] == '07' or csv[-19:-17] == '08'):  # Only open if it is the csv for the year of interest (this is contained in the csv name)
+                # Open the file - for CAN data we use latin 1 due to à, é etc.
+                file = file_path_hourly+station_name+'/'+csv
                 df = feather.read_dataframe(file)
-                unique_dates = set([x[0:10] for x in df['Date/Time'].unique()]) 
+                unique_dates = set([x[0:10] for x in df['Date/Time'].unique()])
                 count = 0
-                for dat in sorted(unique_dates): #We need dictionary insertion order maintained
+                # We need dictionary insertion order maintained
+                for dat in sorted(unique_dates):
                     if dat in Temp_subdict.keys():
                         #print('Date is already in the sub-dictionary')
                         break
-                    temp_24 = {} 
-                
+                    temp_24 = {}
+
                     for index, row in df.iterrows():
                         if count == 0:
-                            
-                            try: 
-                            
-                                latlon_dictionary[station_name] = (row['Latitude (y)'], row['ï»¿"Longitude (x)"']) #unicode characters at beginning, not sure why 
-                                
-                            except KeyError: 
-                                latlon_dictionary[station_name] = (row['Latitude (y)'], row[0]) #The start unicode problem changes based on the computer... lon should always be in place 0 anyways
+
+                            try:
+
+                                # unicode characters at beginning, not sure why
+                                latlon_dictionary[station_name] = (
+                                    row['Latitude (y)'], row['ï»¿"Longitude (x)"'])
+
+                            except KeyError:
+                                # The start unicode problem changes based on the computer... lon should always be in place 0 anyways
+                                latlon_dictionary[station_name] = (
+                                    row['Latitude (y)'], row[0])
 
                         if str(row['Year']) == year:
 
                             if str(row['Month']) == '3' or str(row['Month']) == '4' or str(row['Month']) == '5' or \
                                str(row['Month']) == '6' or str(row['Month']) == '7' or str(row['Month']) == '8':
-                                #if str(row['Time']) == '13:00':
+                                # if str(row['Time']) == '13:00':
                                 if str(row['Date/Time'])[0:10] == dat:
                                     if pd.notnull(row['Temp (Â°C)']):
                                         #print(float(row['Temp (Â°C)']))
-                                        temp_24[str(row['Date/Time'])] = float(row['Temp (Â°C)'])
+                                        temp_24[str(row['Date/Time'])
+                                                ] = float(row['Temp (Â°C)'])
                                         #temp_list.append(float(row['Temp (Â°C)']))
                                     else:
                                         pass
                         else:
-                             break
-                            
-                            
-                    if len(temp_24.values()) == 24: #Make sure unbroken record
-                    
-                                
-                        Temp_subdict[dat] = max(temp_24.values()) #Send max temp to dictionary 
-                        temp_list.append(max(temp_24.values())) #Get the 13h00 temperature, send to temp list
+                            break
+
+                    if len(temp_24.values()) == 24:  # Make sure unbroken record
+
+                        # Send max temp to dictionary
+                        Temp_subdict[dat] = max(temp_24.values())
+                        # Get the 13h00 temperature, send to temp list
+                        temp_list.append(max(temp_24.values()))
                     else:
                         Temp_subdict[dat] = 'NA'
                         temp_list.append('NA')
-                    count +=1 
+                    count += 1
 
         maxTemp_dictionary[station_name] = Temp_subdict
-        maxTempList_dict[station_name] = temp_list #Store the information for each station in the permanent dictionary 
+        # Store the information for each station in the permanent dictionary
+        maxTempList_dict[station_name] = temp_list
 
         vals = maxTempList_dict[station_name]
 
-        #if 'NA' not in vals and len(vals) == 184: #only consider the stations with unbroken records, num_days between March-July is 153
-            
+        # if 'NA' not in vals and len(vals) == 184: #only consider the stations with unbroken records, num_days between March-July is 153
 
         varray = np.array(vals)
-        where_g12 = np.array(varray >= 12) #Where is the temperature >=12? 
+        where_g12 = np.array(varray >= 12)  # Where is the temperature >=12?
 
+        # Put the booleans in groups, ex. [True, True], [False, False, False]
+        groups = [list(j) for i, j in groupby(where_g12)]
 
-        groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False]
-        
+        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
+        length = [x for x in groups if len(x) >= 3 and x[0] == True]
 
-        length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
-        
-
-        if len(length) > 0: 
-            index = groups.index(length[0]) #Get the index of the group
-            group_len = [len(x) for x in groups] #Get length of each group
-            length_sofar = 0 #We need to get the number of days up to where the criteria is met 
-            for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+        if len(length) > 0:
+            index = groups.index(length[0])  # Get the index of the group
+            group_len = [len(x) for x in groups]  # Get length of each group
+            length_sofar = 0  # We need to get the number of days up to where the criteria is met
+            # loop through each group until you get to the index and add the length of that group
+            for i in range(0, index):
                 length_sofar += group_len[i]
 
-            #We need to filter out the stations with No Data before that point
-            #So slice to the index
+            # We need to filter out the stations with No Data before that point
+            # So slice to the index
             vals_behind = varray[0:length_sofar]
-            if 'NA' not in vals_behind: 
+            if 'NA' not in vals_behind:
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go two days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[
+                    length_sofar+3]  # Go two days ahead for the third day
 
-                d0 = date(int(year), 3, 1) #March 1, Year 
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since march 1 so we can interpolate
+                d0 = date(int(year), 3, 1)  # March 1, Year
+                # Convert to days since march 1 so we can interpolate
+                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10]))
                 delta = d1 - d0
-                day = int(delta.days) #Convert to integer
-                if station_name in os.listdir(file_path_hourly): #avoid some hidden files 
-                    date_dictH[station_name] = day #Store the integer in the dictionary
+                day = int(delta.days)  # Convert to integer
+                # avoid some hidden files
+                if station_name in os.listdir(file_path_hourly):
+                    # Store the integer in the dictionary
+                    date_dictH[station_name] = day
                     print(station_name)
                     print(day)
 
         else:
-            print('Station %s did not start up by September 1.'%station_name) 
-            pass #Do not include the station - no start up by Sep 1 is pretty unrealistic I think... (?) 
+            print('Station %s did not start up by September 1.' % station_name)
+            # Do not include the station - no start up by Sep 1 is pretty unrealistic I think... (?)
+            pass
 
     if len(date_dictH.keys()) == 0:
-        return None, None #Save overhead associated with creating an empty dictionary 
+        return None, None  # Save overhead associated with creating an empty dictionary
     else:
-        return date_dictH, latlon_dictionary 
+        return date_dictH, latlon_dictionary
 
-def end_date_calendar(file_path_daily,year):
+
+def end_date_calendar(file_path_daily, year):
     '''Returns a dictionary of where each station meets the start up criteria, 
     plus a reference dictionary for the lat lon of the stations
     Parameters
@@ -442,29 +499,38 @@ def end_date_calendar(file_path_daily,year):
         date_dict (dict): dictionary containing the end date for each station (days since Oct 1)
         latlon_dictionary (dict): the latitude and longitude of those stations 
     '''
-    #Input: path to hourly data, string of the year, i.e. '1998'
-    maxTempList_dict = {} #Locations where we will store the data
+    # Input: path to hourly data, string of the year, i.e. '1998'
+    maxTempList_dict = {}  # Locations where we will store the data
     maxTemp_dictionary = {}
     date_dict = {}
     latlon_dictionary = {}
-    for station_name in os.listdir(file_path_hourly): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-        Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
-        temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
-        for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder
-            if year in csv: #Only open if it is the csv for the year of interest (this is contained in the csv name)
-                file = file_path_hourly+station_name+'/'+csv  #Open the file - for CAN data we use latin 1 due to à, é etc.
+    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
+    for station_name in os.listdir(file_path_hourly):
+        # We will need an empty dictionary to store the data due to data ordering issues
+        Temp_subdict = {}
+        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
+        # Loop through the csv in the station folder
+        for csv in os.listdir(file_path_hourly+station_name+'/'):
+            # Only open if it is the csv for the year of interest (this is contained in the csv name)
+            if year in csv:
+                # Open the file - for CAN data we use latin 1 due to à, é etc.
+                file = file_path_hourly+station_name+'/'+csv
                 df = feather.read_dataframe(file)
 
-                count = 0 
+                count = 0
 
                 for index, row in df.iterrows():
                     if count == 0:
-                        
-                        try: 
-                        
-                            latlon_dictionary[station_name] = (row['Latitude (y)'], row['ï»¿"Longitude (x)"']) #unicode characters at beginning, not sure why 
-                        except KeyError: 
-                            latlon_dictionary[station_name] = (row['Latitude (y)'], row[0]) #to allow the code to be moved computers 
+
+                        try:
+
+                            # unicode characters at beginning, not sure why
+                            latlon_dictionary[station_name] = (
+                                row['Latitude (y)'], row['ï»¿"Longitude (x)"'])
+                        except KeyError:
+                            # to allow the code to be moved computers
+                            latlon_dictionary[station_name] = (
+                                row['Latitude (y)'], row[0])
                     if str(row['Year']) == year:
 
                         if str(row['Month']) == '10' or str(row['Month']) == '11' or str(row['Month']) == '12':
@@ -472,58 +538,63 @@ def end_date_calendar(file_path_daily,year):
                             if str(row['Time']) == '13:00':
 
                                 if pd.notnull(row['Temp (Â°C)']):
-                                    Temp_subdict[row['Date/Time']] = float(row['Temp (Â°C)'])
-                                    temp_list.append(float(row['Temp (Â°C)'])) #Get the 13h00 temperature, send to temp list
+                                    Temp_subdict[row['Date/Time']
+                                                 ] = float(row['Temp (Â°C)'])
+                                    # Get the 13h00 temperature, send to temp list
+                                    temp_list.append(float(row['Temp (Â°C)']))
                                 else:
                                     Temp_subdict[row['Date/Time']] = 'NA'
                                     temp_list.append('NA')
-                    count +=1 
+                    count += 1
 
-                    
         maxTemp_dictionary[station_name] = Temp_subdict
-        maxTempList_dict[station_name] = temp_list #Store the information for each station in the permanent dictionary
+        # Store the information for each station in the permanent dictionary
+        maxTempList_dict[station_name] = temp_list
         vals = maxTempList_dict[station_name]
 
-        
-        #if 'NA' not in vals and len(vals) == 92: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
+        # if 'NA' not in vals and len(vals) == 92: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
 
         varray = np.array(vals)
-        where_g12 = np.array(varray < 5) #Where is the temperature < 5? 
+        where_g12 = np.array(varray < 5)  # Where is the temperature < 5?
 
+        # Put the booleans in groups, ex. [True, True], [False, False, False]
+        groups = [list(j) for i, j in groupby(where_g12)]
 
-        groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
+        length = [x for x in groups if len(x) >= 3 and x[0] == True]
 
-        length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
-
-        
-        index = groups.index(length[0]) #Get the index of the group
-        group_len = [len(x) for x in groups] #Get length of each group
-        length_sofar = 0 #We need to get the number of days up to where the criteria is met 
-        for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+        index = groups.index(length[0])  # Get the index of the group
+        group_len = [len(x) for x in groups]  # Get length of each group
+        length_sofar = 0  # We need to get the number of days up to where the criteria is met
+        # loop through each group until you get to the index and add the length of that group
+        for i in range(0, index):
             length_sofar += group_len[i]
 
-        #We need to filter out the stations with No Data before that point
-        #So slice to the index
+        # We need to filter out the stations with No Data before that point
+        # So slice to the index
         vals_behind = varray[0:length_sofar]
         if -9999 not in vals_behind:
-            try: 
+            try:
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go two days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[
+                    length_sofar+3]  # Go two days ahead for the third day
 
-                d0 = date(int(year), 9, 1) #Sep 1, Year 
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
+                d0 = date(int(year), 9, 1)  # Sep 1, Year
+                # Convert to days since Oct 1 so we can interpolate
+                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10]))
                 delta = d1 - d0
-                day = int(delta.days) #Convert to integer 
-                date_dict[station_name] = day #Store the integer in the dictionary
+                day = int(delta.days)  # Convert to integer
+                # Store the integer in the dictionary
+                date_dict[station_name] = day
             except:
-                print('Error!') 
-                print(sorted(maxTemp_dictionary[station_name[:-4]].keys())) 
-
+                print('Error!')
+                print(sorted(maxTemp_dictionary[station_name[:-4]].keys()))
 
             #print('The end date for %s for %s is %s'%(station_name,year,Sdate))
 
-    #Return the dates for each station
+    # Return the dates for each station
     return date_dict, latlon_dictionary
+
 
 def end_date_add_hourly(file_path_hourly, year):
     '''Returns a dictionary of where each station meets the end criteria, 
@@ -536,110 +607,125 @@ def end_date_add_hourly(file_path_hourly, year):
         date_dict (dict): dictionary containing the end date for each station (days since Oct 1)
         latlon_dictionary (dict): the latitude and longitude of those stations 
     '''
-    maxTempList_dict = {} #Locations where we will store the data
+    maxTempList_dict = {}  # Locations where we will store the data
     maxTemp_dictionary = {}
     date_dict = {}
     latlon_dictionary = {}
 
-    for station_name in os.listdir(file_path_hourly): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-        #print(station_name) 
-        Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
-        temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
-        for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder
-            if csv[-16:-12] == year and (csv[-19:-17] == '09' or csv[-19:-17] == '10'or csv[-19:-17] == '11'\
-               or csv[-19:-17] == '12'): #Only open if it is the csv for the year of interest (this is contained in the csv name)
-                file = file_path_hourly+station_name+'/'+csv  #Open the file - for CAN data we use latin 1 due to à, é etc.
+    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
+    for station_name in os.listdir(file_path_hourly):
+        # print(station_name)
+        # We will need an empty dictionary to store the data due to data ordering issues
+        Temp_subdict = {}
+        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
+        # Loop through the csv in the station folder
+        for csv in os.listdir(file_path_hourly+station_name+'/'):
+            if csv[-16:-12] == year and (csv[-19:-17] == '09' or csv[-19:-17] == '10' or csv[-19:-17] == '11'
+               or csv[-19:-17] == '12'):  # Only open if it is the csv for the year of interest (this is contained in the csv name)
+                # Open the file - for CAN data we use latin 1 due to à, é etc.
+                file = file_path_hourly+station_name+'/'+csv
                 df = feather.read_dataframe(file)
-                unique_dates = set([x[0:10] for x in df['Date/Time'].unique()]) 
+                unique_dates = set([x[0:10] for x in df['Date/Time'].unique()])
                 count = 0
-                for dat in sorted(unique_dates): #We need dictionary insertion order maintained
+                # We need dictionary insertion order maintained
+                for dat in sorted(unique_dates):
                     if dat in Temp_subdict.keys():
                         #print('Date is already in the sub-dictionary')
                         break
-                    temp_24 = {} 
-                
+                    temp_24 = {}
+
                     for index, row in df.iterrows():
                         if count == 0:
-                            
-                            try: 
-                            
-                                latlon_dictionary[station_name] = (row['Latitude (y)'], row['ï»¿"Longitude (x)"']) #unicode characters at beginning, not sure why 
-                                
-                            except KeyError: 
-                                latlon_dictionary[station_name] = (row['Latitude (y)'], row[0]) #The start unicode problem changes based on the computer... lon should always be in place 0 anyways
+
+                            try:
+
+                                # unicode characters at beginning, not sure why
+                                latlon_dictionary[station_name] = (
+                                    row['Latitude (y)'], row['ï»¿"Longitude (x)"'])
+
+                            except KeyError:
+                                # The start unicode problem changes based on the computer... lon should always be in place 0 anyways
+                                latlon_dictionary[station_name] = (
+                                    row['Latitude (y)'], row[0])
 
                         if str(row['Year']) == year:
 
                             if str(row['Month']) == '9' or str(row['Month']) == '10' or str(row['Month']) == '11' or \
                                str(row['Month']) == '12':
-                                #if str(row['Time']) == '13:00':
+                                # if str(row['Time']) == '13:00':
                                 if str(row['Date/Time'])[0:10] == dat:
                                     if pd.notnull(row['Temp (Â°C)']):
                                         #print(float(row['Temp (Â°C)']))
-                                        temp_24[str(row['Date/Time'])] = float(row['Temp (Â°C)'])
+                                        temp_24[str(row['Date/Time'])
+                                                ] = float(row['Temp (Â°C)'])
                                         #temp_list.append(float(row['Temp (Â°C)']))
                                     else:
                                         pass
                         else:
-                             break
-                            
-                            
-                    if len(temp_24.values()) == 24: #Make sure unbroken record
-                    
-                                
-                        Temp_subdict[dat] = max(temp_24.values()) #Send max temp to dictionary 
-                        temp_list.append(max(temp_24.values())) #Get the 13h00 temperature, send to temp list
+                            break
+
+                    if len(temp_24.values()) == 24:  # Make sure unbroken record
+
+                        # Send max temp to dictionary
+                        Temp_subdict[dat] = max(temp_24.values())
+                        # Get the 13h00 temperature, send to temp list
+                        temp_list.append(max(temp_24.values()))
                     else:
                         Temp_subdict[dat] = 'NA'
                         temp_list.append('NA')
-                    count +=1 
+                    count += 1
 
         maxTemp_dictionary[station_name] = Temp_subdict
-        maxTempList_dict[station_name] = temp_list #Store the information for each station in the permanent dictionary 
+        # Store the information for each station in the permanent dictionary
+        maxTempList_dict[station_name] = temp_list
 
         vals = maxTempList_dict[station_name]
 
-        #if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
+        # if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
 
         varray = np.array(vals)
-        where_g12 = np.array(varray < 5) #Where is the temperature < 5? 
+        where_g12 = np.array(varray < 5)  # Where is the temperature < 5?
 
+        # Put the booleans in groups, ex. [True, True], [False, False, False]
+        groups = [list(j) for i, j in groupby(where_g12)]
 
-        groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
+        length = [x for x in groups if len(x) >= 3 and x[0] == True]
 
-        length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
+        if len(length) > 0:
+            index = groups.index(length[0])  # Get the index of the group
 
-        
-        if len(length) > 0: 
-            index = groups.index(length[0]) #Get the index of the group
-
-            group_len = [len(x) for x in groups] #Get length of each group
-            length_sofar = 0 #We need to get the number of days up to where the criteria is met 
-            for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+            group_len = [len(x) for x in groups]  # Get length of each group
+            length_sofar = 0  # We need to get the number of days up to where the criteria is met
+            # loop through each group until you get to the index and add the length of that group
+            for i in range(0, index):
                 length_sofar += group_len[i]
 
-            #We need to filter out the stations with No Data before that point
-            #So slice to the index
+            # We need to filter out the stations with No Data before that point
+            # So slice to the index
             vals_behind = varray[0:length_sofar]
-            if 'NA' not in vals_behind: 
-            
+            if 'NA' not in vals_behind:
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go three days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[
+                    length_sofar+3]  # Go three days ahead for the third day
 
-                d0 = date(int(year), 9, 1) #Oct 1, Year 
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
+                d0 = date(int(year), 9, 1)  # Oct 1, Year
+                # Convert to days since Oct 1 so we can interpolate
+                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10]))
                 delta = d1 - d0
-                day = int(delta.days) #Convert to integer 
-                date_dict[station_name] = day #Store the integer in the dictionary
+                day = int(delta.days)  # Convert to integer
+                # Store the integer in the dictionary
+                date_dict[station_name] = day
 
         else:
-            print('Station %s did not end by December 31.'%station_name[:-4]) 
-            pass #Do not include the station 
+            print('Station %s did not end by December 31.' % station_name[:-4])
+            pass  # Do not include the station
 
     if len(date_dict.keys()) == 0:
-        return None, None #Save overhead associated with creating an empty dictionary 
+        return None, None  # Save overhead associated with creating an empty dictionary
     else:
         return date_dict, latlon_dictionary
+
 
 def end_date_add_hourly_csv(file_path_hourly, year):
     '''Returns a dictionary of where each station meets the end criteria, 
@@ -652,110 +738,127 @@ def end_date_add_hourly_csv(file_path_hourly, year):
         date_dict (dict): dictionary containing the end date for each station (days since Oct 1)
         latlon_dictionary (dict): the latitude and longitude of those stations 
     '''
-    maxTempList_dict = {} #Locations where we will store the data
+    maxTempList_dict = {}  # Locations where we will store the data
     maxTemp_dictionary = {}
     date_dict = {}
     latlon_dictionary = {}
 
-    for station_name in os.listdir(file_path_hourly): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-        #print(station_name) 
-        Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
-        temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
-        for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder
-            if csv[-12:-8] == year and (csv[-15:-13] == '09' or csv[-15:-13] == '10'or csv[-15:-13] == '11'\
-               or csv[-15:-13] == '12'): #Only open if it is the csv for the year of interest (this is contained in the csv name)
-                file = file_path_hourly+station_name+'/'+csv  #Open the file - for CAN data we use latin 1 due to à, é etc.
-                df = pd.read_csv(file) 
-                unique_dates = set([x[0:10] for x in df['Date/Time'].unique()]) 
+    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
+    for station_name in os.listdir(file_path_hourly):
+        # print(station_name)
+        # We will need an empty dictionary to store the data due to data ordering issues
+        Temp_subdict = {}
+        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
+        # Loop through the csv in the station folder
+        for csv in os.listdir(file_path_hourly+station_name+'/'):
+            if csv[-12:-8] == year and (csv[-15:-13] == '09' or csv[-15:-13] == '10' or csv[-15:-13] == '11'
+               or csv[-15:-13] == '12'):  # Only open if it is the csv for the year of interest (this is contained in the csv name)
+                # Open the file - for CAN data we use latin 1 due to à, é etc.
+                file = file_path_hourly+station_name+'/'+csv
+                df = pd.read_csv(file)
+                unique_dates = set([x[0:10] for x in df['Date/Time'].unique()])
                 count = 0
-                for dat in sorted(unique_dates): #We need dictionary insertion order maintained
+                # We need dictionary insertion order maintained
+                for dat in sorted(unique_dates):
                     if dat in Temp_subdict.keys():
                         #print('Date is already in the sub-dictionary')
                         break
-                    temp_24 = {} 
-                
+                    temp_24 = {}
+
                     for index, row in df.iterrows():
                         if count == 0:
-                            
-                            try: 
-                            
-                                latlon_dictionary[station_name] = (row['Latitude (y)'], row['ï»¿"Longitude (x)"']) #unicode characters at beginning, not sure why 
-                                
-                            except KeyError: 
-                                latlon_dictionary[station_name] = (row['Latitude (y)'], row[0]) #The start unicode problem changes based on the computer... lon should always be in place 0 anyways
+
+                            try:
+
+                                # unicode characters at beginning, not sure why
+                                latlon_dictionary[station_name] = (
+                                    row['Latitude (y)'], row['ï»¿"Longitude (x)"'])
+
+                            except KeyError:
+                                # The start unicode problem changes based on the computer... lon should always be in place 0 anyways
+                                latlon_dictionary[station_name] = (
+                                    row['Latitude (y)'], row[0])
 
                         if str(row['Year']) == year:
 
                             if str(row['Month']) == '9' or str(row['Month']) == '10' or str(row['Month']) == '11' or \
                                str(row['Month']) == '12':
-                                #if str(row['Time']) == '13:00':
+                                # if str(row['Time']) == '13:00':
                                 if str(row['Date/Time'])[0:10] == dat:
                                     if pd.notnull(row['Temp (°C)']):
                                         #print(float(row['Temp (Â°C)']))
-                                        temp_24[str(row['Date/Time'])] = float(row['Temp (°C)'])
+                                        temp_24[str(row['Date/Time'])
+                                                ] = float(row['Temp (°C)'])
                                         #temp_list.append(float(row['Temp (Â°C)']))
                                     else:
                                         pass
                         else:
-                             break
-                            
-                            
-                    if len(temp_24.values()) == 24: #Make sure unbroken record
-                    
-                                
-                        Temp_subdict[dat] = max(temp_24.values()) #Send max temp to dictionary 
-                        temp_list.append(max(temp_24.values())) #Get the 13h00 temperature, send to temp list
+                            break
+
+                    if len(temp_24.values()) == 24:  # Make sure unbroken record
+
+                        # Send max temp to dictionary
+                        Temp_subdict[dat] = max(temp_24.values())
+                        # Get the 13h00 temperature, send to temp list
+                        temp_list.append(max(temp_24.values()))
                     else:
                         Temp_subdict[dat] = 'NA'
                         temp_list.append('NA')
-                    count +=1 
+                    count += 1
 
         maxTemp_dictionary[station_name] = Temp_subdict
-        maxTempList_dict[station_name] = temp_list #Store the information for each station in the permanent dictionary 
+        # Store the information for each station in the permanent dictionary
+        maxTempList_dict[station_name] = temp_list
 
         vals = maxTempList_dict[station_name]
 
-        #if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
+        # if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
 
         varray = np.array(vals)
-        where_g12 = np.array(varray < 5) #Where is the temperature < 5? 
+        where_g12 = np.array(varray < 5)  # Where is the temperature < 5?
 
+        # Put the booleans in groups, ex. [True, True], [False, False, False]
+        groups = [list(j) for i, j in groupby(where_g12)]
 
-        groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
+        length = [x for x in groups if len(x) >= 3 and x[0] == True]
 
-        length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
-
-        if len(length) > 0: 
-            index = groups.index(length[0]) #Get the index of the group
-            group_len = [len(x) for x in groups] #Get length of each group
-            length_sofar = 0 #We need to get the number of days up to where the criteria is met 
-            for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+        if len(length) > 0:
+            index = groups.index(length[0])  # Get the index of the group
+            group_len = [len(x) for x in groups]  # Get length of each group
+            length_sofar = 0  # We need to get the number of days up to where the criteria is met
+            # loop through each group until you get to the index and add the length of that group
+            for i in range(0, index):
                 length_sofar += group_len[i]
 
-            #We need to filter out the stations with No Data before that point
-            #So slice to the index
+            # We need to filter out the stations with No Data before that point
+            # So slice to the index
             vals_behind = varray[0:length_sofar]
-            if 'NA' not in vals_behind: 
+            if 'NA' not in vals_behind:
 
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[length_sofar+3] #Go two days ahead for the third day 
+                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[
+                    length_sofar+3]  # Go two days ahead for the third day
 
-                d0 = date(int(year), 9, 1) #Oct 1, Year 
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
+                d0 = date(int(year), 9, 1)  # Oct 1, Year
+                # Convert to days since Oct 1 so we can interpolate
+                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10]))
                 delta = d1 - d0
-                day = int(delta.days) #Convert to integer 
-                date_dict[station_name] = day #Store the integer in the dictionary
+                day = int(delta.days)  # Convert to integer
+                # Store the integer in the dictionary
+                date_dict[station_name] = day
 
         else:
-            print('Station %s did not end by December 31.'%station_name[:-4]) 
-            pass #Do not include the station 
+            print('Station %s did not end by December 31.' % station_name[:-4])
+            pass  # Do not include the station
 
     if len(date_dict.keys()) == 0:
-        print('No stations') 
-        return None, None #Save overhead associated with creating an empty dictionary 
+        print('No stations')
+        return None, None  # Save overhead associated with creating an empty dictionary
     else:
         return date_dict, latlon_dictionary
 
-def end_date_calendar_csv(file_path_daily,year,search_month):
+
+def end_date_calendar_csv(file_path_daily, year, search_month):
     '''Returns a dictionary of where each station meets the end criteria see 
     Wotton & Flannigan 1993, plus a reference dictionary for the lat lon of the stations
     Parameters
@@ -767,191 +870,221 @@ def end_date_calendar_csv(file_path_daily,year,search_month):
         date_dict (dict): dictionary containing the end date for each station (days since Oct 1)
         latlon_dictionary (dict): the latitude and longitude of those stations 
     '''
-    #Input: path to hourly data, string of the year, i.e. '1998' 
-    maxTempList_dict = {} #Locations where we will store the data
+    # Input: path to hourly data, string of the year, i.e. '1998'
+    maxTempList_dict = {}  # Locations where we will store the data
     maxTemp_dictionary = {}
     date_dict = {}
     latlon_dictionary = {}
 
-    for station_name in os.listdir(file_path_daily): #The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-        Temp_subdict = {} #We will need an empty dictionary to store the data due to data ordering issues 
-        temp_list = [] #Initialize an empty list to temporarily store data we will later send to a permanent dictionary 
-        count=0
-        #for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder 
-            #if year in csv: #Only open if it is the csv for the year of interest (this is contained in the csv name)
+    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
+    for station_name in os.listdir(file_path_daily):
+        # We will need an empty dictionary to store the data due to data ordering issues
+        Temp_subdict = {}
+        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
+        count = 0
+        # for csv in os.listdir(file_path_hourly+station_name+'/'): #Loop through the csv in the station folder
+        # if year in csv: #Only open if it is the csv for the year of interest (this is contained in the csv name)
 
-        with open(file_path_daily+station_name, encoding='latin1') as year_information: #Open the file - for CAN data we use latin 1 due to à, é etc. 
-            for row in year_information: #Look at each row 
-                information = row.rstrip('\n').split(',') #Split each row into a list so we can loop through 
-                information_stripped = [i.replace('"','') for i in information] #Get rid of extra quotes in the header
-                if count==0: #This is getting the first row 
-                    
-                    header= information_stripped
+        # Open the file - for CAN data we use latin 1 due to à, é etc.
+        with open(file_path_daily+station_name, encoding='latin1') as year_information:
+            for row in year_information:  # Look at each row
+                # Split each row into a list so we can loop through
+                information = row.rstrip('\n').split(',')
+                # Get rid of extra quotes in the header
+                information_stripped = [
+                    i.replace('"', '') for i in information]
+                if count == 0:  # This is getting the first row
 
+                    header = information_stripped
 
+                    keyword = 'max_temp'  # Look for this keyword in the header
+                    filter_out_keyword = 'flag'  # We don't want flag temperature, we want to skip over it
+                    idx_list1 = [i for i, x in enumerate(header) if keyword in x.lower(
+                    ) and filter_out_keyword not in x.lower()]  # Get the index of the temperature column
 
-                    keyword = 'max_temp' #Look for this keyword in the header 
-                    filter_out_keyword = 'flag' #We don't want flag temperature, we want to skip over it 
-                    idx_list1 = [i for i, x in enumerate(header) if keyword in x.lower() and filter_out_keyword not in x.lower()] #Get the index of the temperature column
-
-                    if len(idx_list1) > 1: # There should only be one field 
+                    if len(idx_list1) > 1:  # There should only be one field
                         print('The program is confused because there is more than one field name that could \
                         contain the temp data. Please check on this.')
                         sys.exit()
-                    keyword2 = 'date' #Getting the index of the datetime object so we can later make sure we are using 13h00 value 
-                    idx_list2 = [i for i, x in enumerate(header) if keyword2 in x.lower()]
+                    keyword2 = 'date'  # Getting the index of the datetime object so we can later make sure we are using 13h00 value
+                    idx_list2 = [i for i, x in enumerate(
+                        header) if keyword2 in x.lower()]
 
-                    if len(idx_list2) > 1: # There should only be one field 
+                    if len(idx_list2) > 1:  # There should only be one field
                         print('The program is confused because there is more than one field name that could \
                         contain the date. Please check on this.')
                         sys.exit()
 
-                    keyword3 = 'lat' #Here we use the same methods to get the latitude and longitude 
-                    idx_list3 = [i for i, x in enumerate(header) if keyword3 in x.lower()]
-                    if len(idx_list3) > 1: # There should only be one field 
+                    keyword3 = 'lat'  # Here we use the same methods to get the latitude and longitude
+                    idx_list3 = [i for i, x in enumerate(
+                        header) if keyword3 in x.lower()]
+                    if len(idx_list3) > 1:  # There should only be one field
                         print('The program is confused because there is more than one field name that could \
                         contain the latitude. Please check on this.')
                         sys.exit()
                     keyword4 = 'lon'
-                    idx_list4 = [i for i, x in enumerate(header) if keyword4 in x.lower()]
-                    if len(idx_list4) > 1: # There should only be one field 
+                    idx_list4 = [i for i, x in enumerate(
+                        header) if keyword4 in x.lower()]
+                    if len(idx_list4) > 1:  # There should only be one field
                         print('The program is confused because there is more than one field name that could \
                         contain the latitude. Please check on this.')
                         sys.exit()
-                                
-                if count > 0: #Now we are looking at the rest of the file, after the header 
 
-                    if count == 1: #Lat/lon will be all the same so only record it once
-                        try: #If the file is corrupted (it usually looks like a bunch of random characters) we will get an error, so we need a try/except loop
-                            lat =float(information_stripped[idx_list3[0]])
-                            lon =float(information_stripped[idx_list4[0]])
-                            latlon_dictionary[station_name[:-4]] = tuple((lat,lon)) #Get the lat lon and send the tuple to the dictionary 
-                        except:
-                            print('Something is wrong with the lat/lon header names for %s!'%(station_name))
-                            break 
+                if count > 0:  # Now we are looking at the rest of the file, after the header
 
-  
+                    if count == 1:  # Lat/lon will be all the same so only record it once
+                        # If the file is corrupted (it usually looks like a bunch of random characters) we will get an error, so we need a try/except loop
                         try:
-                            if information_stripped[idx_list2[0]][0:4] == year: #Make sure we have the right year
-                                if search_month == 'sep': 
+                            lat = float(information_stripped[idx_list3[0]])
+                            lon = float(information_stripped[idx_list4[0]])
+                            # Get the lat lon and send the tuple to the dictionary
+                            latlon_dictionary[station_name[:-4]
+                                              ] = tuple((lat, lon))
+                        except:
+                            print(
+                                'Something is wrong with the lat/lon header names for %s!' % (station_name))
+                            break
+
+                        try:
+                            # Make sure we have the right year
+                            if information_stripped[idx_list2[0]][0:4] == year:
+                                if search_month == 'sep':
                                     if information_stripped[idx_list2[0]][5:7] == '09' or information_stripped[idx_list2[0]][5:7] == '10' or \
-                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12': #Make sure we are only considering months after October 
-                                        #if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
-                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
-                                        temp_list.append(float(information_stripped[idx_list1[0]])) #Get the max temperature, send to temp list
+                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12':  # Make sure we are only considering months after October
+                                        # if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
+                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(
+                                            information_stripped[idx_list1[0]])
+                                        # Get the max temperature, send to temp list
+                                        temp_list.append(
+                                            float(information_stripped[idx_list1[0]]))
                                 elif search_month == 'oct':
                                     if information_stripped[idx_list2[0]][5:7] == '10' or \
-                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12': #Make sure we are only considering months after October 
-                                        #if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
-                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
-                                        temp_list.append(float(information_stripped[idx_list1[0]])) #Get the max temperature, send to temp list
+                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12':  # Make sure we are only considering months after October
+                                        # if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
+                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(
+                                            information_stripped[idx_list1[0]])
+                                        # Get the max temperature, send to temp list
+                                        temp_list.append(
+                                            float(information_stripped[idx_list1[0]]))
                                 else:
                                     print('That is not a valid search month!')
                                     break
 
-
-                        except: #In the case of a nodata value
+                        except:  # In the case of a nodata value
                             Temp_subdict[information_stripped[idx_list2[0]]] = -9999
                             temp_list.append(-9999)
-                            
 
-                    else: #Proceed down the rows 
+                    else:  # Proceed down the rows
                         try:
 
-                            if information_stripped[idx_list2[0]][0:4] == year: 
-                                if search_month == 'sep': 
+                            if information_stripped[idx_list2[0]][0:4] == year:
+                                if search_month == 'sep':
                                     if information_stripped[idx_list2[0]][5:7] == '09' or information_stripped[idx_list2[0]][5:7] == '10' or \
-                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12': #Make sure we are only considering months after October 
-                                        #if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
-                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
-                                        temp_list.append(float(information_stripped[idx_list1[0]])) #Get the max temperature, send to temp list
+                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12':  # Make sure we are only considering months after October
+                                        # if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
+                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(
+                                            information_stripped[idx_list1[0]])
+                                        # Get the max temperature, send to temp list
+                                        temp_list.append(
+                                            float(information_stripped[idx_list1[0]]))
                                 elif search_month == 'oct':
                                     if information_stripped[idx_list2[0]][5:7] == '10' or \
-                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12': #Make sure we are only considering months after October 
-                                        #if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
-                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(information_stripped[idx_list1[0]])
-                                        temp_list.append(float(information_stripped[idx_list1[0]])) #Get the max temperature, send to temp list
+                                       information_stripped[idx_list2[0]][5:7] == '11' or information_stripped[idx_list2[0]][5:7] == '12':  # Make sure we are only considering months after October
+                                        # if information_stripped[idx_list2[0]][11:13] == '13': #We are only interested in checking the 13h00 temperature
+                                        Temp_subdict[information_stripped[idx_list2[0]]] = float(
+                                            information_stripped[idx_list1[0]])
+                                        # Get the max temperature, send to temp list
+                                        temp_list.append(
+                                            float(information_stripped[idx_list1[0]]))
                                 else:
                                     print('That is not a valid search month!')
                                     break
-
-
 
                         except:
                             Temp_subdict[information_stripped[idx_list2[0]]] = -9999
                             temp_list.append(-9999)
 
-                count+=1   
+                count += 1
 
         maxTemp_dictionary[station_name[:-4]] = Temp_subdict
-        maxTempList_dict[station_name[:-4]] = temp_list #Store the information for each station in the permanent dictionary 
+        # Store the information for each station in the permanent dictionary
+        maxTempList_dict[station_name[:-4]] = temp_list
 
         vals = maxTempList_dict[station_name[:-4]]
 
-        #if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92, Sep1-Dec31=122
+        # if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92, Sep1-Dec31=122
 
         varray = np.array(vals)
-        where_g12 = np.array(varray < 5) #Where is the temperature < 5? 
+        where_g12 = np.array(varray < 5)  # Where is the temperature < 5?
 
+        # Put the booleans in groups, ex. [True, True], [False, False, False]
+        groups = [list(j) for i, j in groupby(where_g12)]
 
-        groups = [list(j) for i, j in groupby(where_g12)] #Put the booleans in groups, ex. [True, True], [False, False, False] 
+        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
+        length = [x for x in groups if len(x) >= 3 and x[0] == True]
 
-        length = [x for x in groups if len(x) >= 3 and x[0] == True] #Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
-
-        
-        if len(length) > 0: 
-            index = groups.index(length[0]) #Get the index of the group
-            group_len = [len(x) for x in groups] #Get length of each group
-            length_sofar = 0 #We need to get the number of days up to where the criteria is met 
-            for i in range(0,index): #loop through each group until you get to the index and add the length of that group 
+        if len(length) > 0:
+            index = groups.index(length[0])  # Get the index of the group
+            group_len = [len(x) for x in groups]  # Get length of each group
+            length_sofar = 0  # We need to get the number of days up to where the criteria is met
+            # loop through each group until you get to the index and add the length of that group
+            for i in range(0, index):
                 length_sofar += group_len[i]
 
-            #We need to filter out the stations with No Data before that point
-            #So slice to the index
+            # We need to filter out the stations with No Data before that point
+            # So slice to the index
             vals_behind = varray[0:length_sofar]
             if -9999 not in vals_behind:
 
-                try: 
+                try:
 
-                    Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3] #Go three days ahead for the fourth day (end day) 
-                    if search_month == 'sep': 
-                        d0 = date(int(year), 9, 1) #Sep 1, Year
+                    # Go three days ahead for the fourth day (end day)
+                    Sdate = list(
+                        sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar+3]
+                    if search_month == 'sep':
+                        d0 = date(int(year), 9, 1)  # Sep 1, Year
                     elif search_month == 'oct':
-                        d0 = date(int(year), 10, 1) #Oct 1, Year
+                        d0 = date(int(year), 10, 1)  # Oct 1, Year
                     else:
                         print('That is not a valid search month!')
                         break
-                    d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) #Convert to days since Oct 1 so we can interpolate
+                    # Convert to days since Oct 1 so we can interpolate
+                    d1 = date(int(Sdate[0:4]), int(
+                        Sdate[5:7]), int(Sdate[8:10]))
                     delta = d1 - d0
-                    day = int(delta.days) #Convert to integer
-                    date_dict[station_name[:-4]] = day #Store the integer in the dictionary
+                    day = int(delta.days)  # Convert to integer
+                    # Store the integer in the dictionary
+                    date_dict[station_name[:-4]] = day
                 except:
-                    print('There are no data values upstream! Need to take an alternative method.')
-                    Sdate = list(sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar]
-                    if search_month == 'sep': 
-                        d0 = date(int(year), 9, 1) #Sep 1, Year
+                    print(
+                        'There are no data values upstream! Need to take an alternative method.')
+                    Sdate = list(
+                        sorted(maxTemp_dictionary[station_name[:-4]].keys()))[length_sofar]
+                    if search_month == 'sep':
+                        d0 = date(int(year), 9, 1)  # Sep 1, Year
                     elif search_month == 'oct':
-                        d0 = date(int(year), 10, 1) #Oct 1, Year
+                        d0 = date(int(year), 10, 1)  # Oct 1, Year
                     else:
                         print('That is not a valid search month!')
                         break
-                    d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10])) + timedelta(days=3)
+                    d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(
+                        Sdate[8:10])) + timedelta(days=3)
                     delta = d1 - d0
-                    day = int(delta.days) #Convert to integer 
-                    date_dict[station_name[:-4]] = day 
+                    day = int(delta.days)  # Convert to integer
+                    date_dict[station_name[:-4]] = day
 
         else:
-            #print('Station %s did not end by December 31.'%station_name[:-4]) 
-            pass #Do not include the station 
-
+            #print('Station %s did not end by December 31.'%station_name[:-4])
+            pass  # Do not include the station
 
         #print('The end date for %s for %s is %s'%(station_name,year,Sdate))
 
-    #Return the dates for each station
-    #print(date_dict)
+    # Return the dates for each station
+    # print(date_dict)
     return date_dict, latlon_dictionary
 
-def calc_season_change(earlier_array,later_array):
+
+def calc_season_change(earlier_array, later_array):
     '''Calculate the change between seasons so we can evaluate how much the season has changed over time.
     Parameters
         earlier_array (np_array): array of fire season duration values for the earlier year, ex 1919
@@ -962,8 +1095,9 @@ def calc_season_change(earlier_array,later_array):
     change_array = earlier_array-later_array
     return change_array
 
-def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx_list,shapefile,list_of_ecozone_names,year1,\
-                             year2,method,expand_area,add_hourly_stns):
+
+def calc_duration_in_ecozone(file_path_daily, file_path_hourly, file_path_elev, idx_list, shapefile, list_of_ecozone_names, year1,
+                             year2, method, expand_area, add_hourly_stns):
     '''Calculation the yearly duration between years 1-2 and output to dictionary for graphing
     Parameters
         file_path_daily (str): path to the daily files 
@@ -983,76 +1117,95 @@ def calc_duration_in_ecozone(file_path_daily,file_path_hourly,file_path_elev,idx
         duration_dict (dict): dictionary keyed by year then ecozone that contains a list of durations from year1-year2 (year2 inclusive)
     '''
     duration_dict = {}
-    for year in range(int(year1),int(year2)+1):
+    for year in range(int(year1), int(year2)+1):
         print('Processing...'+str(year))
-        days_dict, latlon_station = start_date_calendar_csv(file_path_daily,str(year))
-        end_dict, latlon_station2 = end_date_calendar_csv(file_path_daily,str(year))
-        if add_hourly_stns: 
-            if year >= 1994: 
-                hourly_dict, latlon_stationH = start_date_add_hourly(file_path_hourly, str(year))
-                hourly_end, latlon_stationE = end_date_add_hourly(file_path_hourly, str(year))
-                if hourly_dict is not None: 
-                    days_dict = GD.combine_stations(days_dict,hourly_dict)
-                    latlon_station = GD.combine_stations(latlon_station,latlon_stationH)
-                if hourly_end is not None: 
-                    end_dict = GD.combine_stations(end_dict,hourly_end)
-                    latlon_station2 = GD.combine_stations(latlon_station2,latlon_stationE)
+        days_dict, latlon_station = start_date_calendar_csv(
+            file_path_daily, str(year))
+        end_dict, latlon_station2 = end_date_calendar_csv(
+            file_path_daily, str(year))
+        if add_hourly_stns:
+            if year >= 1994:
+                hourly_dict, latlon_stationH = start_date_add_hourly(
+                    file_path_hourly, str(year))
+                hourly_end, latlon_stationE = end_date_add_hourly(
+                    file_path_hourly, str(year))
+                if hourly_dict is not None:
+                    days_dict = GD.combine_stations(days_dict, hourly_dict)
+                    latlon_station = GD.combine_stations(
+                        latlon_station, latlon_stationH)
+                if hourly_end is not None:
+                    end_dict = GD.combine_stations(end_dict, hourly_end)
+                    latlon_station2 = GD.combine_stations(
+                        latlon_station2, latlon_stationE)
 
-        if method == 'IDW2': 
+        if method == 'IDW2':
 
-            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 2, expand_area)
-            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 2, expand_area)
+            start_surface, maxmin = idw.IDW(latlon_station, days_dict, str(
+                year), 'Start', shapefile, False, 2, expand_area)
+            end_surface, maxmin = idw.IDW(latlon_station2, end_dict, str(
+                year), 'End', shapefile, False, 2, expand_area)
 
         elif method == 'IDW3':
-            
-            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 3, expand_area)
-            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 3, expand_area)
+
+            start_surface, maxmin = idw.IDW(latlon_station, days_dict, str(
+                year), 'Start', shapefile, False, 3, expand_area)
+            end_surface, maxmin = idw.IDW(latlon_station2, end_dict, str(
+                year), 'End', shapefile, False, 3, expand_area)
 
         elif method == 'IDW4':
 
-            start_surface,maxmin = idw.IDW(latlon_station,days_dict,str(year),'Start',shapefile, False, 4, expand_area)
-            end_surface,maxmin = idw.IDW(latlon_station2,end_dict,str(year),'End',shapefile, False, 4, expand_area)
+            start_surface, maxmin = idw.IDW(latlon_station, days_dict, str(
+                year), 'Start', shapefile, False, 4, expand_area)
+            end_surface, maxmin = idw.IDW(latlon_station2, end_dict, str(
+                year), 'End', shapefile, False, 4, expand_area)
 
-        elif method == 'TPSS': 
+        elif method == 'TPSS':
             num_stationsS = int(len(days_dict.keys()))
             phi_inputS = None
             num_stationsE = int(len(end_dict.keys()))
             #phi_inputE = int(num_stationsE)-(math.sqrt(2*num_stationsS))
             phi_inputE = None
-            start_surface,maxmin = tps.TPS(latlon_station,days_dict,str(year),'Start',shapefile,False,phi_inputS, expand_area,True)
-            end_surface,maxmin = tps.TPS(latlon_station2,end_dict,str(year),'End',shapefile,False,phi_inputE, expand_area,True)
+            start_surface, maxmin = tps.TPS(latlon_station, days_dict, str(
+                year), 'Start', shapefile, False, phi_inputS, expand_area, True)
+            end_surface, maxmin = tps.TPS(latlon_station2, end_dict, str(
+                year), 'End', shapefile, False, phi_inputE, expand_area, True)
 
         elif method == 'RF':
-            start_surface,maxmin = rf.random_forest_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list, expand_area)
-            end_surface,maxmin = rf.random_forest_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list, expand_area)
-
+            start_surface, maxmin = rf.random_forest_interpolator(latlon_station, days_dict, str(
+                year), 'Start', shapefile, False, file_path_elev, idx_list, expand_area)
+            end_surface, maxmin = rf.random_forest_interpolator(latlon_station2, end_dict, str(
+                year), 'End', shapefile, False, file_path_elev, idx_list, expand_area)
 
         elif method == 'GPR':
-            start_surface,maxmin = gpr.GPR_interpolator(latlon_station,days_dict,str(year),'Start',shapefile,False,file_path_elev,idx_list,0.1,expand_area)
-            end_surface,maxmin = gpr.GPR_interpolator(latlon_station2,end_dict,str(year),'End',shapefile,False,file_path_elev,idx_list,0.1,expand_area)    
-
+            start_surface, maxmin = gpr.GPR_interpolator(latlon_station, days_dict, str(
+                year), 'Start', shapefile, False, file_path_elev, idx_list, 0.1, expand_area)
+            end_surface, maxmin = gpr.GPR_interpolator(latlon_station2, end_dict, str(
+                year), 'End', shapefile, False, file_path_elev, idx_list, 0.1, expand_area)
 
         else:
-            print('Either that method does not exist or there is no support for it. You can use IDW2-4, TPSS, or RF') 
-            
+            print('Either that method does not exist or there is no support for it. You can use IDW2-4, TPSS, or RF')
+
         ecozones = list_of_ecozone_names
         yearly_dict = {}
-        cwd = os.getcwd()#get the working directory 
+        cwd = os.getcwd()  # get the working directory
         for zone in ecozones:
-            print(zone) 
-            ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp' #For this to work, the shapefiles MUST be in this location
-            boolean_map = GD.get_intersect_boolean_array(ecozone_shapefile,shapefile,False,expand_area)
-            dur_matrix = GD.calc_season_duration(start_surface,end_surface,year)
-            AvVal = GD.get_average_in_ecozone(boolean_map,dur_matrix)
+            print(zone)
+            # For this to work, the shapefiles MUST be in this location
+            ecozone_shapefile = cwd+'/ecozone_shp/'+zone+'.shp'
+            boolean_map = GD.get_intersect_boolean_array(
+                ecozone_shapefile, shapefile, False, expand_area)
+            dur_matrix = GD.calc_season_duration(
+                start_surface, end_surface, year)
+            AvVal = GD.get_average_in_ecozone(boolean_map, dur_matrix)
             yearly_dict[zone] = AvVal
-            print(AvVal) 
-    
+            print(AvVal)
+
         duration_dict[year] = yearly_dict
 
-    return duration_dict 
+    return duration_dict
 
 
-def get_date_index(year,input_date,month):
+def get_date_index(year, input_date, month):
     '''Get the number of days for the date of interest from the first of the month of interest
     Example, convert to days since March 1 
     Parameters
@@ -1064,12 +1217,15 @@ def get_date_index(year,input_date,month):
     '''
     d0 = date(int(year), month, 1)
     input_date = str(input_date)
-    d1 = date(int(input_date[0:4]), int(input_date[5:7]), int(input_date[8:10])) #convert to days since march 1/oct 1 so we can interpolate
+    # convert to days since march 1/oct 1 so we can interpolate
+    d1 = date(int(input_date[0:4]), int(
+        input_date[5:7]), int(input_date[8:10]))
     delta = d1 - d0
     day = int(delta.days)
     return day
 
-def make_start_date_mask(day_index,day_interpolated_surface):
+
+def make_start_date_mask(day_index, day_interpolated_surface):
     '''Turn the interpolated surface of start dates into a numpy array
     Parameters
         day_index (int): index of the day of interest since Mar 1
@@ -1080,11 +1236,14 @@ def make_start_date_mask(day_index,day_interpolated_surface):
     '''
     shape = day_interpolated_surface.shape
     new = np.ones(shape)
-    new[day_interpolated_surface <= day_index] = 1 #If the day in the interpolated surface is before the index, it is activated 
-    new[day_interpolated_surface > day_index] = np.nan #If it is the opposite it will be masked out, so assign it to np.nan (no data) 
+    # If the day in the interpolated surface is before the index, it is activated
+    new[day_interpolated_surface <= day_index] = 1
+    # If it is the opposite it will be masked out, so assign it to np.nan (no data)
+    new[day_interpolated_surface > day_index] = np.nan
     return new
 
-def make_end_date_mask(day_index,day_interpolated_surface):
+
+def make_end_date_mask(day_index, day_interpolated_surface):
     '''Turn the interpolated surface of end dates into a numpy array
     Parameters
         day_index (int): index of the day of interest since Oct 1
@@ -1095,12 +1254,15 @@ def make_end_date_mask(day_index,day_interpolated_surface):
     '''
     shape = day_interpolated_surface.shape
     new = np.ones(shape)
-    new[day_interpolated_surface <= day_index] = np.nan #If the day in the interpolated surface is before the index, its closed
-    new[day_interpolated_surface > day_index] = 1 #If it is the opposite it will be left open, so assign it to 1
+    # If the day in the interpolated surface is before the index, its closed
+    new[day_interpolated_surface <= day_index] = np.nan
+    # If it is the opposite it will be left open, so assign it to 1
+    new[day_interpolated_surface > day_index] = 1
     return new
 
-def get_overwinter_pcp(overwinter_dates, file_path_daily,start_surface,end_surface,maxmin, shapefile,
-                       show,date_dictionary,latlon_dictionary, file_path_elev,idx_list, json):
+
+def get_overwinter_pcp(overwinter_dates, file_path_daily, start_surface, end_surface, maxmin, shapefile,
+                       show, date_dictionary, latlon_dictionary, file_path_elev, idx_list, json):
     '''Get the total amount of overwinter pcp for the purpose of knowing where to use the 
     overwinter DC procedure 
     Parameters
@@ -1124,88 +1286,98 @@ def get_overwinter_pcp(overwinter_dates, file_path_daily,start_surface,end_surfa
         pcp_overwinter (np_array): array of interpolated overwinter precipitation for the study area 
         overwinter_reqd (np_array): array indicating where to do the overwinter DC procedure 
     '''
-    pcp_list = [] 
+    pcp_list = []
 
-    for o_dat in overwinter_dates: #dates is from Oct 1 year before to start day current year (up to Apr 1)
+    # dates is from Oct 1 year before to start day current year (up to Apr 1)
+    for o_dat in overwinter_dates:
         year = str(o_dat)[0:4]
-        index = overwinter_dates.index(o_dat) #we need to take index while its still a timestamp before convert to str
+        # we need to take index while its still a timestamp before convert to str
+        index = overwinter_dates.index(o_dat)
         o_dat = str(o_dat)
-        day_index= get_date_index(year,o_dat,3)
-        eDay_index = get_date_index(year,o_dat,10)
+        day_index = get_date_index(year, o_dat, 3)
+        eDay_index = get_date_index(year, o_dat, 10)
         if int(str(o_dat)[5:7]) >= 10:
 
-
             invertEnd = np.ones(end_surface.shape)
-            endMask = make_end_date_mask(eDay_index,end_surface)
-            invertEnd[endMask == 1] = 0 #0 in place of np.nan, because we use sum function later 
+            endMask = make_end_date_mask(eDay_index, end_surface)
+            # 0 in place of np.nan, because we use sum function later
+            invertEnd[endMask == 1] = 0
             invertEnd[np.where(np.isnan(endMask))] = 1
 
-            endMask = invertEnd 
-            mask = np.ones(start_surface.shape) #No stations will start up until the next spring
-        elif int(str(o_dat)[5:7]) < 10 and int(str(o_dat)[5:7]) >= 7: #All stations are in summer
+            endMask = invertEnd
+            # No stations will start up until the next spring
+            mask = np.ones(start_surface.shape)
+        # All stations are in summer
+        elif int(str(o_dat)[5:7]) < 10 and int(str(o_dat)[5:7]) >= 7:
 
             endMask = np.zeros(end_surface.shape)
             mask = np.zeros(start_surface.shape)
         else:
 
-            endMask = np.ones(end_surface.shape) #by this time (Jan 1) all stations are in winter
+            # by this time (Jan 1) all stations are in winter
+            endMask = np.ones(end_surface.shape)
             invertMask = np.ones(start_surface.shape)
-            mask = make_start_date_mask(day_index,start_surface)
-            invertMask[mask == 1] = 0 #If the station has started, stop counting it 
-            invertMask[np.where(np.isnan(mask))] = 1 #If the station is still closed, keep counting
+            mask = make_start_date_mask(day_index, start_surface)
+            # If the station has started, stop counting it
+            invertMask[mask == 1] = 0
+            # If the station is still closed, keep counting
+            invertMask[np.where(np.isnan(mask))] = 1
             mask = invertMask
 
-        rainfall = GD.get_pcp(str(o_dat)[0:10],file_path_daily,date_dictionary)
-        rain_grid,maxmin = idw.IDW(latlon_dictionary,rainfall,o_dat,'Precipitation',shapefile,False,1)
+        rainfall = GD.get_pcp(
+            str(o_dat)[0:10], file_path_daily, date_dictionary)
+        rain_grid, maxmin = idw.IDW(
+            latlon_dictionary, rainfall, o_dat, 'Precipitation', shapefile, False, 1)
 
         masked = rain_grid * mask * endMask
 
-        masked[np.where(np.isnan(masked))] = 0 #sum can't handle np.nan
+        masked[np.where(np.isnan(masked))] = 0  # sum can't handle np.nan
 
         pcp_list.append(masked)
 
-        
-    #when we sum, we need to treat nan as 0, otherwise any nan in the list will cause the whole val to be nan 
+    # when we sum, we need to treat nan as 0, otherwise any nan in the list will cause the whole val to be nan
     pcp_overwinter = sum(pcp_list)
 
-
     overwinter_reqd = np.ones(pcp_overwinter.shape)
-    overwinter_reqd[pcp_overwinter> 200] = np.nan #not Required
-    overwinter_reqd[pcp_overwinter <= 200] = 1 #required 
+    overwinter_reqd[pcp_overwinter > 200] = np.nan  # not Required
+    overwinter_reqd[pcp_overwinter <= 200] = 1  # required
 
-    if show: 
+    if show:
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
         max_xProj_extent = maxmin[2]
         min_xProj_extent = maxmin[3]
 
-        fig, ax = plt.subplots(figsize= (15,15))
+        fig, ax = plt.subplots(figsize=(15, 15))
         crs = {'init': 'esri:102001'}
 
         na_map = gpd.read_file(shapefile)
-        
-      
-        plt.imshow(overwinter_reqd,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)) 
-        na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
-            
+
+        plt.imshow(overwinter_reqd, extent=(min_xProj_extent-1,
+                   max_xProj_extent+1, max_yProj_extent-1, min_yProj_extent+1))
+        na_map.plot(ax=ax, color='white', edgecolor='k',
+                    linewidth=2, zorder=10, alpha=0.1)
+
         plt.gca().invert_yaxis()
-        
-        title = 'Areas Requiring Overwinter DC Procedure for %s'%(year)
+
+        title = 'Areas Requiring Overwinter DC Procedure for %s' % (year)
         fig.suptitle(title, fontsize=14)
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
-        
+
         plt.show()
 
     if json:
-        pcp_overwinter = list(pcp_overwinter.flatten()) #json cannot handle numpy arrays 
-        overwinter_reqd = list(overwinter_reqd.flatten()) 
+        # json cannot handle numpy arrays
+        pcp_overwinter = list(pcp_overwinter.flatten())
+        overwinter_reqd = list(overwinter_reqd.flatten())
 
-    return pcp_overwinter,overwinter_reqd #This is the array, This is a mask 
+    return pcp_overwinter, overwinter_reqd  # This is the array, This is a mask
 
-def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_interpolated_surface,end_interpolated_surface,
-             last_DC_val_before_shutdown,overwinter,file_path_elev,idx_list,date_dictionary,latlon_dict,latlon_dictionary,
-             json,interpolation_method):
+
+def dc_stack(dates, file_path_daily, file_path_hourly, var_name, shapefile, day_interpolated_surface, end_interpolated_surface,
+             last_DC_val_before_shutdown, overwinter, file_path_elev, idx_list, date_dictionary, latlon_dict, latlon_dictionary,
+             json, interpolation_method):
     '''Calc dc for each day in season. This is the only metric with overwinter procedure applied. 
     For notes see cffdrs R code.
     Parameters
@@ -1236,68 +1408,90 @@ def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_inter
     '''
 
     print(interpolation_method)
-    
-    dc_list = [] 
-    count = 0 
+
+    dc_list = []
+    count = 0
     for dat in dates:
-        gc.collect() 
+        gc.collect()
         year = str(dat)[0:4]
         index = dates.index(dat)
         dat = str(dat)
-        day_index= get_date_index(year,dat,3)
-        eDay_index = get_date_index(year,dat,10)
+        day_index = get_date_index(year, dat, 3)
+        eDay_index = get_date_index(year, dat, 10)
 
-        mask1 = make_start_date_mask(day_index,day_interpolated_surface)
+        mask1 = make_start_date_mask(day_index, day_interpolated_surface)
         if eDay_index < 0:
-            endMask = np.ones(end_interpolated_surface.shape) #in the case that the index is before Oct 1
-        else: 
-            endMask = make_end_date_mask(eDay_index,end_interpolated_surface)
+            # in the case that the index is before Oct 1
+            endMask = np.ones(end_interpolated_surface.shape)
+        else:
+            endMask = make_end_date_mask(eDay_index, end_interpolated_surface)
 
         hourly = str(dat)[0:10]+' 13:00'
-        
-        rainfall = GD.get_pcp(str(dat)[0:10],file_path_daily,date_dictionary)
-        wind = GD.get_wind_speed(hourly,file_path_hourly) #Using the list, get the data for wind speed for those stations on the input date
-        temp = GD.get_noon_temp(hourly,file_path_hourly) #Using the list, get the data for temperature for those stations on the input date
-        rh =GD.get_relative_humidity(hourly,file_path_hourly) #Using the list, get the data for rh% for those stations on the input date
 
-        #what type of interpolation are we using here?
+        rainfall = GD.get_pcp(str(dat)[0:10], file_path_daily, date_dictionary)
+        # Using the list, get the data for wind speed for those stations on the input date
+        wind = GD.get_wind_speed(hourly, file_path_hourly)
+        # Using the list, get the data for temperature for those stations on the input date
+        temp = GD.get_noon_temp(hourly, file_path_hourly)
+        # Using the list, get the data for rh% for those stations on the input date
+        rh = GD.get_relative_humidity(hourly, file_path_hourly)
 
-        if interpolation_method == 'IDW-1': 
+        # what type of interpolation are we using here?
 
-        
-            rain_grid, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
-            temp_grid, maxmin = idw.IDW(latlon_dict,temp,hourly,var_name,shapefile,False,1)
-            rh_grid, maxmin = idw.IDW(latlon_dict,rh,hourly,var_name,shapefile,False,1)
-            wind_grid, maxmin = idw.IDW(latlon_dict,wind,hourly,var_name,shapefile,False,1)
+        if interpolation_method == 'IDW-1':
 
-        if interpolation_method == 'IDW-2': 
+            rain_grid, maxmin = idw.IDW(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
+            temp_grid, maxmin = idw.IDW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, 1)
+            rh_grid, maxmin = idw.IDW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, 1)
+            wind_grid, maxmin = idw.IDW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, 1)
 
-        
-            rain_grid, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,2)
-            temp_grid, maxmin = idw.IDW(latlon_dict,temp,hourly,var_name,shapefile,False,2)
-            rh_grid, maxmin = idw.IDW(latlon_dict,rh,hourly,var_name,shapefile,False,2)
-            wind_grid, maxmin = idw.IDW(latlon_dict,wind,hourly,var_name,shapefile,False,2)
+        if interpolation_method == 'IDW-2':
+
+            rain_grid, maxmin = idw.IDW(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, 2)
+            temp_grid, maxmin = idw.IDW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, 2)
+            rh_grid, maxmin = idw.IDW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, 2)
+            wind_grid, maxmin = idw.IDW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, 2)
 
         if interpolation_method == 'IDEW-1':
 
-            rain_grid, maxmin, elev_array= idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,1)
-            temp_grid, maxmin, elev_array= idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            rh_grid, maxmin, elev_array = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            wind_grid, maxmin, elev_array= idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            
+            rain_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, file_path_elev, idx_list, 1)
+            temp_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, file_path_elev, idx_list, 1)
+            rh_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, file_path_elev, idx_list, 1)
+            wind_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, file_path_elev, idx_list, 1)
+
         if interpolation_method == 'IDEW-2':
 
-            rain_grid, maxmin, elev_array = idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,2)
-            temp_grid, maxmin, elev_array = idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            rh_grid, maxmin, elev_array = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            wind_grid, maxmin, elev_array = idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            rain_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, file_path_elev, idx_list, 2)
+            temp_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, file_path_elev, idx_list, 2)
+            rh_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, file_path_elev, idx_list, 2)
+            wind_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, file_path_elev, idx_list, 2)
 
         if interpolation_method == 'TPS':
 
-            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,0)
-            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,0)
-            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,0)
-            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,0)
+            rain_grid, maxmin = tps.TPS(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, 0)
+            temp_grid, maxmin = tps.TPS(
+                latlon_dict, temp, hourly, var_name, shapefile, False, 0)
+            rh_grid, maxmin = tps.TPS(
+                latlon_dict, rh, hourly, var_name, shapefile, False, 0)
+            wind_grid, maxmin = tps.TPS(
+                latlon_dict, wind, hourly, var_name, shapefile, False, 0)
 
         if interpolation_method == 'TPSS':
 
@@ -1305,121 +1499,163 @@ def dc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_inter
             num_stations_t = len(temp.keys())
             num_stations_rh = len(rh.keys())
             num_stations_w = len(wind.keys())
-            
-            smoothing_parameterR = int(num_stations_R)-(math.sqrt(2*num_stations_R))
-            smoothing_parameterT = int(num_stations_t)-(math.sqrt(2*num_stations_t))
-            smoothing_parameterRH = int(num_stations_rh)-(math.sqrt(2*num_stations_rh))
-            smoothing_parameterW = int(num_stations_w)-(math.sqrt(2*num_stations_w))
-            
-            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,smoothing_parameterR)
-            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,smoothing_parameterT)
-            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,smoothing_parameterRH)
-            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,smoothing_parameterW)
 
+            smoothing_parameterR = int(
+                num_stations_R)-(math.sqrt(2*num_stations_R))
+            smoothing_parameterT = int(
+                num_stations_t)-(math.sqrt(2*num_stations_t))
+            smoothing_parameterRH = int(
+                num_stations_rh)-(math.sqrt(2*num_stations_rh))
+            smoothing_parameterW = int(
+                num_stations_w)-(math.sqrt(2*num_stations_w))
+
+            rain_grid, maxmin = tps.TPS(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, smoothing_parameterR)
+            temp_grid, maxmin = tps.TPS(
+                latlon_dict, temp, hourly, var_name, shapefile, False, smoothing_parameterT)
+            rh_grid, maxmin = tps.TPS(
+                latlon_dict, rh, hourly, var_name, shapefile, False, smoothing_parameterRH)
+            wind_grid, maxmin = tps.TPS(
+                latlon_dict, wind, hourly, var_name, shapefile, False, smoothing_parameterW)
 
         if interpolation_method == 'OK':
 
-            models = ['exponential','gaussian','linear','spherical','power'] #The types of models we will test
-            model_rain = ok.get_best_model(models,latlon_dictionary,rainfall,shapefile,1,10) #run the procedure once, leaving 10 stations out for crossval
-            model_temp = ok.get_best_model(models,latlon_dict,temp,shapefile,1,10)
-            model_rh = ok.get_best_model(models,latlon_dict,rh,shapefile,1,10)
-            model_wind = ok.get_best_model(models,latlon_dict,wind,shapefile,1,10)
-            try: 
-                rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+            # The types of models we will test
+            models = ['exponential', 'gaussian',
+                      'linear', 'spherical', 'power']
+            # run the procedure once, leaving 10 stations out for crossval
+            model_rain = ok.get_best_model(
+                models, latlon_dictionary, rainfall, shapefile, 1, 10)
+            model_temp = ok.get_best_model(
+                models, latlon_dict, temp, shapefile, 1, 10)
+            model_rh = ok.get_best_model(
+                models, latlon_dict, rh, shapefile, 1, 10)
+            model_wind = ok.get_best_model(
+                models, latlon_dict, wind, shapefile, 1, 10)
+            try:
+                rain_grid, maxmin = ok.OKriging(
+                    latlon_dictionary, rainfall, dat, var_name, shapefile, model_rain, False)
             except:
-                try: 
+                try:
                     model_rain = 'linear'
-                    rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+                    rain_grid, maxmin = ok.OKriging(
+                        latlon_dictionary, rainfall, dat, var_name, shapefile, model_rain, False)
                 except:
-                    try: 
+                    try:
                         model_rain = 'exponential'
-                        rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+                        rain_grid, maxmin = ok.OKriging(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, model_rain, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
                         rain_grid = np.zeros(rain_grid_template.shape)
             try:
-                temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+                temp_grid, maxmin = ok.OKriging(
+                    latlon_dict, temp, hourly, var_name, shapefile, model_temp, False)
             except:
-                try: 
+                try:
                     model_temp = 'linear'
-                    temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
-                except: 
-                    try: 
+                    temp_grid, maxmin = ok.OKriging(
+                        latlon_dict, temp, hourly, var_name, shapefile, model_temp, False)
+                except:
+                    try:
                         model_temp = 'exponential'
-                        temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+                        temp_grid, maxmin = ok.OKriging(
+                            latlon_dict, temp, hourly, var_name, shapefile, model_temp, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
                         temp_grid = np.zeros(rain_grid_template.shape)
-            try: 
-                rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,model_rh,False)
+            try:
+                rh_grid, maxmin = ok.OKriging(
+                    latlon_dict, rh, hourly, var_name, shapefile, model_rh, False)
             except:
-                try: 
+                try:
                     model_rh = 'linear'
-                    rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,model_rh,False)
-                except: 
-                    try: 
+                    rh_grid, maxmin = ok.OKriging(
+                        latlon_dict, rh, hourly, var_name, shapefile, model_rh, False)
+                except:
+                    try:
                         model_rh = 'exponential'
-                        rh_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_rh,False)
+                        rh_grid, maxmin = ok.OKriging(
+                            latlon_dict, temp, hourly, var_name, shapefile, model_rh, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
                         rh_grid = np.zeros(rain_grid_template.shape)
-                
-            try: 
-                wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,model_wind,False)
+
+            try:
+                wind_grid, maxmin = ok.OKriging(
+                    latlon_dict, wind, hourly, var_name, shapefile, model_wind, False)
             except:
-                try: 
+                try:
                     model_wind = 'linear'
-                    wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,model_wind,False)
-                except: 
-                    try: 
+                    wind_grid, maxmin = ok.OKriging(
+                        latlon_dict, wind, hourly, var_name, shapefile, model_wind, False)
+                except:
+                    try:
                         model_wind = 'exponential'
-                        wind_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_wind,False)
+                        wind_grid, maxmin = ok.OKriging(
+                            latlon_dict, temp, hourly, var_name, shapefile, model_wind, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
-                        wind_grid = np.zeros(rain_grid_template.shape) #If the procedure fails, just generate 0s 
-            
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
+                        # If the procedure fails, just generate 0s
+                        wind_grid = np.zeros(rain_grid_template.shape)
+
         if interpolation_method == 'RF':
 
-            rain_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
-            temp_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            rh_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            wind_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rain_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, file_path_elev, idx_list)
+            temp_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dict, temp, hourly, var_name, shapefile, False, file_path_elev, idx_list)
+            rh_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dict, rh, hourly, var_name, shapefile, False, file_path_elev, idx_list)
+            wind_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dict, wind, hourly, var_name, shapefile, False, file_path_elev, idx_list)
 
-        if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
+        if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
 
             print('The entered interpolation method is not recognized')
-            sys.exit() 
-        
-        if count > 0:  
-            dc_array = dc_list[count-1] #the last one added will be yesterday's val, but there's a lag bc none was added when count was0, so just use count-1
+            sys.exit()
+
+        if count > 0:
+            # the last one added will be yesterday's val, but there's a lag bc none was added when count was0, so just use count-1
+            dc_array = dc_list[count-1]
             index = count-1
-            dc = DC(dat,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dc_array,index,False,shapefile,mask1,endMask,last_DC_val_before_shutdown,overwinter)
+            dc = DC(dat, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dc_array, index,
+                    False, shapefile, mask1, endMask, last_DC_val_before_shutdown, overwinter)
             dc_list.append(dc)
-        else: #Initialize procedure
+        else:  # Initialize procedure
             if overwinter:
                 rain_shape = rain_grid.shape
                 dc_initialize = np.zeros(rain_shape)
                 dc_initialize[np.isnan(last_DC_val_before_shutdown)] = 15
-                dc_initialize[~np.isnan(last_DC_val_before_shutdown)] = last_DC_val_before_shutdown[~np.isnan(last_DC_val_before_shutdown)]
+                dc_initialize[~np.isnan(last_DC_val_before_shutdown)] = last_DC_val_before_shutdown[~np.isnan(
+                    last_DC_val_before_shutdown)]
                 dc_list.append(dc_initialize*mask1)
-            else: 
+            else:
                 rain_shape = rain_grid.shape
-                dc_initialize = np.zeros(rain_shape)+15 #merge with the other overwinter array once it's calculated 
+                # merge with the other overwinter array once it's calculated
+                dc_initialize = np.zeros(rain_shape)+15
                 dc_yesterday1 = dc_initialize*mask1
-                dc_list.append(dc_yesterday1) #placeholder 
+                dc_list.append(dc_yesterday1)  # placeholder
         count += 1
 
     if json:
         dc_list = [i.tolist() for i in dc_list]
-        for arrayDC in dc_list: #Check for corruption before writing to json
-            is_it_corrupted = all(i >= 2000 for i in arrayDC) #the DC value should never be that high 
+        for arrayDC in dc_list:  # Check for corruption before writing to json
+            # the DC value should never be that high
+            is_it_corrupted = all(i >= 2000 for i in arrayDC)
             if is_it_corrupted:
-                print('There is a problem with the calculations. The DC value is too large.') 
+                print(
+                    'There is a problem with the calculations. The DC value is too large.')
 
     return dc_list
 
-def get_last_dc_before_shutdown(dc_list,endsurface,overwinter_reqd,show,maxmin):
+
+def get_last_dc_before_shutdown(dc_list, endsurface, overwinter_reqd, show, maxmin):
     '''Get an array of the last dc vals before station shutdown for winter for the study area 
     Parameters
         dc_list (list of np_array): a list of the interpolated surfaces for the drought code for 
@@ -1433,44 +1669,53 @@ def get_last_dc_before_shutdown(dc_list,endsurface,overwinter_reqd,show,maxmin):
         cells requiring overwinter procedure 
     '''
 
-    flatten_dc = list(map(lambda x:x.flatten(),dc_list)) #flatten the arrays for easier processing - avoid 3d array
-    stackDC = np.stack(flatten_dc,axis=-1) #Create an array from the list that we can index
+    # flatten the arrays for easier processing - avoid 3d array
+    flatten_dc = list(map(lambda x: x.flatten(), dc_list))
+    # Create an array from the list that we can index
+    stackDC = np.stack(flatten_dc, axis=-1)
 
-    days_since_mar1 = endsurface.flatten().astype(int)+214-1 #add 214 days (mar-aug31 to convert to days since March 1) to get index in the stack... based on make_end_date_mask() -1 for day before
+    # add 214 days (mar-aug31 to convert to days since March 1) to get index in the stack... based on make_end_date_mask() -1 for day before
+    days_since_mar1 = endsurface.flatten().astype(int)+214-1
 
-    last_DC_val_before_shutdown = stackDC[np.arange(len(stackDC)), days_since_mar1] #Index each cell in the array by the end date to get the last val
-    last_DC_val_before_shutdown_masked = last_DC_val_before_shutdown * overwinter_reqd.flatten() #Mask the areas that don't require the overwinter procedure
-    last_DC_val_before_shutdown_masked_reshape = last_DC_val_before_shutdown_masked.reshape(endsurface.shape)
+    # Index each cell in the array by the end date to get the last val
+    last_DC_val_before_shutdown = stackDC[np.arange(
+        len(stackDC)), days_since_mar1]
+    last_DC_val_before_shutdown_masked = last_DC_val_before_shutdown * \
+        overwinter_reqd.flatten()  # Mask the areas that don't require the overwinter procedure
+    last_DC_val_before_shutdown_masked_reshape = last_DC_val_before_shutdown_masked.reshape(
+        endsurface.shape)
 
-    if show: 
+    if show:
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
         max_xProj_extent = maxmin[2]
         min_xProj_extent = maxmin[3]
 
-        fig, ax = plt.subplots(figsize= (15,15))
+        fig, ax = plt.subplots(figsize=(15, 15))
         crs = {'init': 'esri:102001'}
 
         na_map = gpd.read_file(shapefile)
-        
-      
-        plt.imshow(last_DC_val_before_shutdown_masked_reshape,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)) 
-        na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
-            
+
+        plt.imshow(last_DC_val_before_shutdown_masked_reshape, extent=(
+            min_xProj_extent-1, max_xProj_extent+1, max_yProj_extent-1, min_yProj_extent+1))
+        na_map.plot(ax=ax, color='white', edgecolor='k',
+                    linewidth=2, zorder=10, alpha=0.1)
+
         plt.gca().invert_yaxis()
         cbar = plt.colorbar()
-        cbar.set_label('DC') 
-        
+        cbar.set_label('DC')
+
         title = 'Last DC'
         fig.suptitle(title, fontsize=14)
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
-        
+
         plt.show()
-        
+
     return last_DC_val_before_shutdown_masked_reshape
 
-def dc_overwinter_procedure(last_DC_val_before_shutdown_masked_reshape,overwinter_pcp,b_list):
+
+def dc_overwinter_procedure(last_DC_val_before_shutdown_masked_reshape, overwinter_pcp, b_list):
     '''Apply the overwinter procedure, see Wang et al. (2017) for more details 
     Parameters
         last_DC_val_before_shutdown_masked_reshape (np_array): output of get_last_dc_before_shutdown, array containing the last
@@ -1485,13 +1730,14 @@ def dc_overwinter_procedure(last_DC_val_before_shutdown_masked_reshape,overwinte
     b_array = np.array(b_list).reshape(overwinter_pcp.shape)
     Qf = 800 * np.exp(-last_DC_val_before_shutdown_masked_reshape / 400)
     Qs = a * Qf + b_array * (3.94 * overwinter_pcp)
-    DCs = 400 * np.log(800 / Qs) #this is natural logarithm 
+    DCs = 400 * np.log(800 / Qs)  # this is natural logarithm
 
     DCs[DCs < 15] = 15
     return DCs
-      
-def dmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_interpolated_surface,
-end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,latlon_dictionary,json,interpolation_method):
+
+
+def dmc_stack(dates, file_path_daily, file_path_hourly, var_name, shapefile, day_interpolated_surface,
+              end_interpolated_surface, file_path_elev, idx_list, date_dictionary, latlon_dict, latlon_dictionary, json, interpolation_method):
     '''Calc dmc for each day in fire season. For notes see cffdrs R code.
     Parameters
         dates (list): list of all dates within the fire season, inactive stations will be masked out 
@@ -1515,67 +1761,89 @@ end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,lat
         dmc_list (list of np_array): a list of the interpolated surfaces for the duff moisture code for 
         each day in the fire season 
     '''
-    dmc_list = [] 
-    count = 0 
+    dmc_list = []
+    count = 0
     for dat in dates:
-        index = dates.index(dat) #need to run BEFORE we convert to string 
-        gc.collect() 
+        index = dates.index(dat)  # need to run BEFORE we convert to string
+        gc.collect()
         year = str(dat)[0:4]
         dat = str(dat)
-        day_index= get_date_index(year,dat,3)
-        eDay_index = get_date_index(year,dat,10)
+        day_index = get_date_index(year, dat, 3)
+        eDay_index = get_date_index(year, dat, 10)
 
-        mask = make_start_date_mask(day_index,day_interpolated_surface)
+        mask = make_start_date_mask(day_index, day_interpolated_surface)
         if eDay_index < 0:
-            endMask = np.ones(end_interpolated_surface.shape) #in the case that the index is before Oct 1
-        else: 
-            endMask = make_end_date_mask(eDay_index,end_interpolated_surface)
-    
+            # in the case that the index is before Oct 1
+            endMask = np.ones(end_interpolated_surface.shape)
+        else:
+            endMask = make_end_date_mask(eDay_index, end_interpolated_surface)
+
         hourly = str(dat)[0:10]+' 13:00'
-        
-        rainfall = GD.get_pcp(str(dat)[0:10],file_path_daily,date_dictionary)
-        wind = GD.get_wind_speed(hourly,file_path_hourly) #Using the list, get the data for wind speed for those stations on the input date
-        temp = GD.get_noon_temp(hourly,file_path_hourly) #Using the list, get the data for temperature for those stations on the input date
-        rh = GD.get_relative_humidity(hourly,file_path_hourly) #Using the list, get the data for rh% for those stations on the input date
-        
-        #what type of interpolation are we using here?
 
-        if interpolation_method == 'IDW-1': 
+        rainfall = GD.get_pcp(str(dat)[0:10], file_path_daily, date_dictionary)
+        # Using the list, get the data for wind speed for those stations on the input date
+        wind = GD.get_wind_speed(hourly, file_path_hourly)
+        # Using the list, get the data for temperature for those stations on the input date
+        temp = GD.get_noon_temp(hourly, file_path_hourly)
+        # Using the list, get the data for rh% for those stations on the input date
+        rh = GD.get_relative_humidity(hourly, file_path_hourly)
 
-        
-            rain_grid, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
-            temp_grid, maxmin = idw.IDW(latlon_dict,temp,hourly,var_name,shapefile,False,1)
-            rh_grid, maxmin = idw.IDW(latlon_dict,rh,hourly,var_name,shapefile,False,1)
-            wind_grid, maxmin = idw.IDW(latlon_dict,wind,hourly,var_name,shapefile,False,1)
+        # what type of interpolation are we using here?
 
-        if interpolation_method == 'IDW-2': 
+        if interpolation_method == 'IDW-1':
 
-        
-            rain_grid, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,2)
-            temp_grid, maxmin = idw.IDW(latlon_dict,temp,hourly,var_name,shapefile,False,2)
-            rh_grid, maxmin = idw.IDW(latlon_dict,rh,hourly,var_name,shapefile,False,2)
-            wind_grid, maxmin = idw.IDW(latlon_dict,wind,hourly,var_name,shapefile,False,2)
+            rain_grid, maxmin = idw.IDW(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
+            temp_grid, maxmin = idw.IDW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, 1)
+            rh_grid, maxmin = idw.IDW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, 1)
+            wind_grid, maxmin = idw.IDW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, 1)
+
+        if interpolation_method == 'IDW-2':
+
+            rain_grid, maxmin = idw.IDW(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, 2)
+            temp_grid, maxmin = idw.IDW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, 2)
+            rh_grid, maxmin = idw.IDW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, 2)
+            wind_grid, maxmin = idw.IDW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, 2)
 
         if interpolation_method == 'IDEW-1':
 
-            rain_grid, maxmin, elev_array  = idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,1)
-            temp_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            rh_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            wind_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            
+            rain_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, file_path_elev, idx_list, 1)
+            temp_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, file_path_elev, idx_list, 1)
+            rh_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, file_path_elev, idx_list, 1)
+            wind_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, file_path_elev, idx_list, 1)
+
         if interpolation_method == 'IDEW-2':
 
-            rain_grid, maxmin, elev_array  = idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,2)
-            temp_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            rh_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            wind_grid, maxmin, elev_array  = idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            rain_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, file_path_elev, idx_list, 2)
+            temp_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, file_path_elev, idx_list, 2)
+            rh_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, file_path_elev, idx_list, 2)
+            wind_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, file_path_elev, idx_list, 2)
 
         if interpolation_method == 'TPS':
 
-            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,0)
-            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,0)
-            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,0)
-            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,0)
+            rain_grid, maxmin = tps.TPS(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, 0)
+            temp_grid, maxmin = tps.TPS(
+                latlon_dict, temp, hourly, var_name, shapefile, False, 0)
+            rh_grid, maxmin = tps.TPS(
+                latlon_dict, rh, hourly, var_name, shapefile, False, 0)
+            wind_grid, maxmin = tps.TPS(
+                latlon_dict, wind, hourly, var_name, shapefile, False, 0)
 
         if interpolation_method == 'TPSS':
 
@@ -1583,102 +1851,139 @@ end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,lat
             num_stations_t = len(temp.keys())
             num_stations_rh = len(rh.keys())
             num_stations_w = len(wind.keys())
-            
-            smoothing_parameterR = int(num_stations_R)-(math.sqrt(2*num_stations_R))
-            smoothing_parameterT = int(num_stations_t)-(math.sqrt(2*num_stations_t))
-            smoothing_parameterRH = int(num_stations_rh)-(math.sqrt(2*num_stations_rh))
-            smoothing_parameterW = int(num_stations_w)-(math.sqrt(2*num_stations_w))
-            
-            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,smoothing_parameterR)
-            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,smoothing_parameterT)
-            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,smoothing_parameterRH)
-            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,smoothing_parameterW)
 
+            smoothing_parameterR = int(
+                num_stations_R)-(math.sqrt(2*num_stations_R))
+            smoothing_parameterT = int(
+                num_stations_t)-(math.sqrt(2*num_stations_t))
+            smoothing_parameterRH = int(
+                num_stations_rh)-(math.sqrt(2*num_stations_rh))
+            smoothing_parameterW = int(
+                num_stations_w)-(math.sqrt(2*num_stations_w))
+
+            rain_grid, maxmin = tps.TPS(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, smoothing_parameterR)
+            temp_grid, maxmin = tps.TPS(
+                latlon_dict, temp, hourly, var_name, shapefile, False, smoothing_parameterT)
+            rh_grid, maxmin = tps.TPS(
+                latlon_dict, rh, hourly, var_name, shapefile, False, smoothing_parameterRH)
+            wind_grid, maxmin = tps.TPS(
+                latlon_dict, wind, hourly, var_name, shapefile, False, smoothing_parameterW)
 
         if interpolation_method == 'OK':
 
-            models = ['exponential','gaussian','linear','spherical','power'] #The types of models we will test
-            model_rain = ok.get_best_model(models,latlon_dictionary,rainfall,shapefile,1,10) #run the procedure once, leaving 10 stations out for crossval
-            model_temp = ok.get_best_model(models,latlon_dict,temp,shapefile,1,10)
-            model_rh = ok.get_best_model(models,latlon_dict,rh,shapefile,1,10)
-            model_wind = ok.get_best_model(models,latlon_dict,wind,shapefile,1,10)
-            try: 
-                rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+            # The types of models we will test
+            models = ['exponential', 'gaussian',
+                      'linear', 'spherical', 'power']
+            # run the procedure once, leaving 10 stations out for crossval
+            model_rain = ok.get_best_model(
+                models, latlon_dictionary, rainfall, shapefile, 1, 10)
+            model_temp = ok.get_best_model(
+                models, latlon_dict, temp, shapefile, 1, 10)
+            model_rh = ok.get_best_model(
+                models, latlon_dict, rh, shapefile, 1, 10)
+            model_wind = ok.get_best_model(
+                models, latlon_dict, wind, shapefile, 1, 10)
+            try:
+                rain_grid, maxmin = ok.OKriging(
+                    latlon_dictionary, rainfall, dat, var_name, shapefile, model_rain, False)
             except:
-                try: 
+                try:
                     model_rain = 'linear'
-                    rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+                    rain_grid, maxmin = ok.OKriging(
+                        latlon_dictionary, rainfall, dat, var_name, shapefile, model_rain, False)
                 except:
-                    try: 
+                    try:
                         model_rain = 'exponential'
-                        rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+                        rain_grid, maxmin = ok.OKriging(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, model_rain, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
                         rain_grid = np.zeros(rain_grid_template.shape)
             try:
-                temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+                temp_grid, maxmin = ok.OKriging(
+                    latlon_dict, temp, hourly, var_name, shapefile, model_temp, False)
             except:
-                try: 
+                try:
                     model_temp = 'linear'
-                    temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
-                except: 
-                    try: 
+                    temp_grid, maxmin = ok.OKriging(
+                        latlon_dict, temp, hourly, var_name, shapefile, model_temp, False)
+                except:
+                    try:
                         model_temp = 'exponential'
-                        temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+                        temp_grid, maxmin = ok.OKriging(
+                            latlon_dict, temp, hourly, var_name, shapefile, model_temp, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
                         temp_grid = np.zeros(rain_grid_template.shape)
-            try: 
-                rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,model_rh,False)
+            try:
+                rh_grid, maxmin = ok.OKriging(
+                    latlon_dict, rh, hourly, var_name, shapefile, model_rh, False)
             except:
-                try: 
+                try:
                     model_rh = 'linear'
-                    rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,model_rh,False)
-                except: 
-                    try: 
+                    rh_grid, maxmin = ok.OKriging(
+                        latlon_dict, rh, hourly, var_name, shapefile, model_rh, False)
+                except:
+                    try:
                         model_rh = 'exponential'
-                        rh_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_rh,False)
+                        rh_grid, maxmin = ok.OKriging(
+                            latlon_dict, temp, hourly, var_name, shapefile, model_rh, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
                         rh_grid = np.zeros(rain_grid_template.shape)
-                
-            try: 
-                wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,model_wind,False)
+
+            try:
+                wind_grid, maxmin = ok.OKriging(
+                    latlon_dict, wind, hourly, var_name, shapefile, model_wind, False)
             except:
-                try: 
+                try:
                     model_wind = 'linear'
-                    wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,model_wind,False)
-                except: 
-                    try: 
+                    wind_grid, maxmin = ok.OKriging(
+                        latlon_dict, wind, hourly, var_name, shapefile, model_wind, False)
+                except:
+                    try:
                         model_wind = 'exponential'
-                        wind_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_wind,False)
+                        wind_grid, maxmin = ok.OKriging(
+                            latlon_dict, temp, hourly, var_name, shapefile, model_wind, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
-                        wind_grid = np.zeros(rain_grid_template.shape) #If the procedure fails, just generate 0s 
-            
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
+                        # If the procedure fails, just generate 0s
+                        wind_grid = np.zeros(rain_grid_template.shape)
+
         if interpolation_method == 'RF':
 
-            rain_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
-            temp_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            rh_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            wind_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rain_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, file_path_elev, idx_list)
+            temp_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dict, temp, hourly, var_name, shapefile, False, file_path_elev, idx_list)
+            rh_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dict, rh, hourly, var_name, shapefile, False, file_path_elev, idx_list)
+            wind_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dict, wind, hourly, var_name, shapefile, False, file_path_elev, idx_list)
 
-        if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
+        if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
 
             print('The entered interpolation method is not recognized')
             sys.exit()
-            
-        if count > 0:  
-            dmc_array = dmc_list[count-1] #the last one added will be yesterday's val, but there's a lag bc none was added when count was0, so just use count-1
+
+        if count > 0:
+            # the last one added will be yesterday's val, but there's a lag bc none was added when count was0, so just use count-1
+            dmc_array = dmc_list[count-1]
             index = count-1
-            dmc = DMC(dat,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dmc_array,index,False,shapefile,mask,endMask)
+            dmc = DMC(dat, rain_grid, rh_grid, temp_grid, wind_grid,
+                      maxmin, dmc_array, index, False, shapefile, mask, endMask)
             dmc_list.append(dmc)
         else:
             rain_shape = rain_grid.shape
             dmc_initialize = np.zeros(rain_shape)+6
             dmc_yesterday1 = dmc_initialize*mask
-            dmc_list.append(dmc_yesterday1) #placeholder 
+            dmc_list.append(dmc_yesterday1)  # placeholder
         count += 1
 
     if json:
@@ -1686,9 +1991,10 @@ end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,lat
 
     return dmc_list
 
-def ffmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_interpolated_surface,
-               end_interpolated_surface,file_path_elev,idx_list,date_dictionary,latlon_dict,latlon_dictionary,
-               json,interpolation_method):
+
+def ffmc_stack(dates, file_path_daily, file_path_hourly, var_name, shapefile, day_interpolated_surface,
+               end_interpolated_surface, file_path_elev, idx_list, date_dictionary, latlon_dict, latlon_dictionary,
+               json, interpolation_method):
     '''Calc ffmc for each day in season. For notes see cffdrs R code.
     Parameters
         dates (list): list of all dates within the fire season, inactive stations will be masked out 
@@ -1712,66 +2018,88 @@ def ffmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_int
         ffmc_list (list of np_array): a list of the interpolated surfaces for the fine fuel moisture code for 
         each day in the fire season 
     '''
-    ffmc_list = [] 
-    count = 0 
+    ffmc_list = []
+    count = 0
     for dat in dates:
-        index = dates.index(dat) #need to run BEFORE we convert to string 
-        gc.collect() 
+        index = dates.index(dat)  # need to run BEFORE we convert to string
+        gc.collect()
         year = str(dat)[0:4]
-        dat = str(dat) #convert to str so that cython doesn't get confused 
-        day_index= get_date_index(year,dat,3)
-        eDay_index = get_date_index(year,dat,10)
+        dat = str(dat)  # convert to str so that cython doesn't get confused
+        day_index = get_date_index(year, dat, 3)
+        eDay_index = get_date_index(year, dat, 10)
 
-        mask = make_start_date_mask(day_index,day_interpolated_surface)
+        mask = make_start_date_mask(day_index, day_interpolated_surface)
         if eDay_index < 0:
-            endMask = np.ones(end_interpolated_surface.shape) #in the case that the index is before Oct 1
-        else: 
-            endMask = make_end_date_mask(eDay_index,end_interpolated_surface)
+            # in the case that the index is before Oct 1
+            endMask = np.ones(end_interpolated_surface.shape)
+        else:
+            endMask = make_end_date_mask(eDay_index, end_interpolated_surface)
 
         hourly = str(dat)[0:10]+' 13:00'
-        rainfall = GD.get_pcp(str(dat)[0:10],file_path_daily,date_dictionary)
-        wind = GD.get_wind_speed(hourly,file_path_hourly) #Using the list, get the data for wind speed for those stations on the input date
-        temp = GD.get_noon_temp(hourly,file_path_hourly) #Using the list, get the data for temperature for those stations on the input date
-        rh = GD.get_relative_humidity(hourly,file_path_hourly) #Using the list, get the data for rh% for those stations on the input date
-        
-        #what type of interpolation are we using here?
+        rainfall = GD.get_pcp(str(dat)[0:10], file_path_daily, date_dictionary)
+        # Using the list, get the data for wind speed for those stations on the input date
+        wind = GD.get_wind_speed(hourly, file_path_hourly)
+        # Using the list, get the data for temperature for those stations on the input date
+        temp = GD.get_noon_temp(hourly, file_path_hourly)
+        # Using the list, get the data for rh% for those stations on the input date
+        rh = GD.get_relative_humidity(hourly, file_path_hourly)
 
-        if interpolation_method == 'IDW-1': 
+        # what type of interpolation are we using here?
 
-        
-            rain_grid, maxmin = idw.IDW(latlon_dictionary,rainfall,str(dat),var_name,shapefile,False,1)
-            temp_grid, maxmin = idw.IDW(latlon_dict,temp,hourly,var_name,shapefile,False,1)
-            rh_grid, maxmin = idw.IDW(latlon_dict,rh,hourly,var_name,shapefile,False,1)
-            wind_grid, maxmin = idw.IDW(latlon_dict,wind,hourly,var_name,shapefile,False,1)
+        if interpolation_method == 'IDW-1':
 
-        if interpolation_method == 'IDW-2': 
+            rain_grid, maxmin = idw.IDW(latlon_dictionary, rainfall, str(
+                dat), var_name, shapefile, False, 1)
+            temp_grid, maxmin = idw.IDW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, 1)
+            rh_grid, maxmin = idw.IDW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, 1)
+            wind_grid, maxmin = idw.IDW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, 1)
 
-        
-            rain_grid, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,2)
-            temp_grid, maxmin = idw.IDW(latlon_dict,temp,hourly,var_name,shapefile,False,2)
-            rh_grid, maxmin = idw.IDW(latlon_dict,rh,hourly,var_name,shapefile,False,2)
-            wind_grid, maxmin = idw.IDW(latlon_dict,wind,hourly,var_name,shapefile,False,2)
+        if interpolation_method == 'IDW-2':
+
+            rain_grid, maxmin = idw.IDW(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, 2)
+            temp_grid, maxmin = idw.IDW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, 2)
+            rh_grid, maxmin = idw.IDW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, 2)
+            wind_grid, maxmin = idw.IDW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, 2)
 
         if interpolation_method == 'IDEW-1':
 
-            rain_grid, maxmin, elev_array = idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,1)
-            temp_grid, maxmin, elev_array = idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            rh_grid, maxmin, elev_array = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            wind_grid, maxmin, elev_array = idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,1)
-            
+            rain_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, file_path_elev, idx_list, 1)
+            temp_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, file_path_elev, idx_list, 1)
+            rh_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, file_path_elev, idx_list, 1)
+            wind_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, file_path_elev, idx_list, 1)
+
         if interpolation_method == 'IDEW-2':
 
-            rain_grid, maxmin, elev_array = idew.IDEW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list,2)
-            temp_grid, maxmin, elev_array = idew.IDEW(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            rh_grid, maxmin, elev_array = idew.IDEW(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
-            wind_grid, maxmin, elev_array = idew.IDEW(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list,2)
+            rain_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, file_path_elev, idx_list, 2)
+            temp_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, temp, hourly, var_name, shapefile, False, file_path_elev, idx_list, 2)
+            rh_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, rh, hourly, var_name, shapefile, False, file_path_elev, idx_list, 2)
+            wind_grid, maxmin, elev_array = idew.IDEW(
+                latlon_dict, wind, hourly, var_name, shapefile, False, file_path_elev, idx_list, 2)
 
         if interpolation_method == 'TPS':
 
-            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,0)
-            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,0)
-            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,0)
-            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,0)
+            rain_grid, maxmin = tps.TPS(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, 0)
+            temp_grid, maxmin = tps.TPS(
+                latlon_dict, temp, hourly, var_name, shapefile, False, 0)
+            rh_grid, maxmin = tps.TPS(
+                latlon_dict, rh, hourly, var_name, shapefile, False, 0)
+            wind_grid, maxmin = tps.TPS(
+                latlon_dict, wind, hourly, var_name, shapefile, False, 0)
 
         if interpolation_method == 'TPSS':
 
@@ -1779,103 +2107,140 @@ def ffmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_int
             num_stations_t = len(temp.keys())
             num_stations_rh = len(rh.keys())
             num_stations_w = len(wind.keys())
-            
-            smoothing_parameterR = int(num_stations_R)-(math.sqrt(2*num_stations_R))
-            smoothing_parameterT = int(num_stations_t)-(math.sqrt(2*num_stations_t))
-            smoothing_parameterRH = int(num_stations_rh)-(math.sqrt(2*num_stations_rh))
-            smoothing_parameterW = int(num_stations_w)-(math.sqrt(2*num_stations_w))
-            
-            rain_grid, maxmin = tps.TPS(latlon_dictionary,rainfall,dat,var_name,shapefile,False,smoothing_parameterR)
-            temp_grid, maxmin = tps.TPS(latlon_dict,temp,hourly,var_name,shapefile,False,smoothing_parameterT)
-            rh_grid, maxmin = tps.TPS(latlon_dict,rh,hourly,var_name,shapefile,False,smoothing_parameterRH)
-            wind_grid, maxmin = tps.TPS(latlon_dict,wind,hourly,var_name,shapefile,False,smoothing_parameterW)
+
+            smoothing_parameterR = int(
+                num_stations_R)-(math.sqrt(2*num_stations_R))
+            smoothing_parameterT = int(
+                num_stations_t)-(math.sqrt(2*num_stations_t))
+            smoothing_parameterRH = int(
+                num_stations_rh)-(math.sqrt(2*num_stations_rh))
+            smoothing_parameterW = int(
+                num_stations_w)-(math.sqrt(2*num_stations_w))
+
+            rain_grid, maxmin = tps.TPS(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, smoothing_parameterR)
+            temp_grid, maxmin = tps.TPS(
+                latlon_dict, temp, hourly, var_name, shapefile, False, smoothing_parameterT)
+            rh_grid, maxmin = tps.TPS(
+                latlon_dict, rh, hourly, var_name, shapefile, False, smoothing_parameterRH)
+            wind_grid, maxmin = tps.TPS(
+                latlon_dict, wind, hourly, var_name, shapefile, False, smoothing_parameterW)
 
         if interpolation_method == 'OK':
 
-            models = ['exponential','gaussian','linear','spherical','power'] #The types of models we will test
-            model_rain = ok.get_best_model(models,latlon_dictionary,rainfall,shapefile,1,10) #run the procedure once, leaving 10 stations out for crossval
-            model_temp = ok.get_best_model(models,latlon_dict,temp,shapefile,1,10)
-            model_rh = ok.get_best_model(models,latlon_dict,rh,shapefile,1,10)
-            model_wind = ok.get_best_model(models,latlon_dict,wind,shapefile,1,10)
-            try: 
-                rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+            # The types of models we will test
+            models = ['exponential', 'gaussian',
+                      'linear', 'spherical', 'power']
+            # run the procedure once, leaving 10 stations out for crossval
+            model_rain = ok.get_best_model(
+                models, latlon_dictionary, rainfall, shapefile, 1, 10)
+            model_temp = ok.get_best_model(
+                models, latlon_dict, temp, shapefile, 1, 10)
+            model_rh = ok.get_best_model(
+                models, latlon_dict, rh, shapefile, 1, 10)
+            model_wind = ok.get_best_model(
+                models, latlon_dict, wind, shapefile, 1, 10)
+            try:
+                rain_grid, maxmin = ok.OKriging(
+                    latlon_dictionary, rainfall, dat, var_name, shapefile, model_rain, False)
             except:
-                try: 
+                try:
                     model_rain = 'linear'
-                    rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+                    rain_grid, maxmin = ok.OKriging(
+                        latlon_dictionary, rainfall, dat, var_name, shapefile, model_rain, False)
                 except:
-                    try: 
+                    try:
                         model_rain = 'exponential'
-                        rain_grid, maxmin = ok.OKriging(latlon_dictionary,rainfall,dat,var_name,shapefile,model_rain,False)
+                        rain_grid, maxmin = ok.OKriging(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, model_rain, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
                         rain_grid = np.zeros(rain_grid_template.shape)
             try:
-                temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+                temp_grid, maxmin = ok.OKriging(
+                    latlon_dict, temp, hourly, var_name, shapefile, model_temp, False)
             except:
-                try: 
+                try:
                     model_temp = 'linear'
-                    temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
-                except: 
-                    try: 
+                    temp_grid, maxmin = ok.OKriging(
+                        latlon_dict, temp, hourly, var_name, shapefile, model_temp, False)
+                except:
+                    try:
                         model_temp = 'exponential'
-                        temp_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_temp,False)
+                        temp_grid, maxmin = ok.OKriging(
+                            latlon_dict, temp, hourly, var_name, shapefile, model_temp, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
                         temp_grid = np.zeros(rain_grid_template.shape)
-            try: 
-                rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,model_rh,False)
+            try:
+                rh_grid, maxmin = ok.OKriging(
+                    latlon_dict, rh, hourly, var_name, shapefile, model_rh, False)
             except:
-                try: 
+                try:
                     model_rh = 'linear'
-                    rh_grid, maxmin = ok.OKriging(latlon_dict,rh,hourly,var_name,shapefile,model_rh,False)
-                except: 
-                    try: 
+                    rh_grid, maxmin = ok.OKriging(
+                        latlon_dict, rh, hourly, var_name, shapefile, model_rh, False)
+                except:
+                    try:
                         model_rh = 'exponential'
-                        rh_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_rh,False)
+                        rh_grid, maxmin = ok.OKriging(
+                            latlon_dict, temp, hourly, var_name, shapefile, model_rh, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
                         rh_grid = np.zeros(rain_grid_template.shape)
-                
-            try: 
-                wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,model_wind,False)
+
+            try:
+                wind_grid, maxmin = ok.OKriging(
+                    latlon_dict, wind, hourly, var_name, shapefile, model_wind, False)
             except:
-                try: 
+                try:
                     model_wind = 'linear'
-                    wind_grid, maxmin = ok.OKriging(latlon_dict,wind,hourly,var_name,shapefile,model_wind,False)
-                except: 
-                    try: 
+                    wind_grid, maxmin = ok.OKriging(
+                        latlon_dict, wind, hourly, var_name, shapefile, model_wind, False)
+                except:
+                    try:
                         model_wind = 'exponential'
-                        wind_grid, maxmin = ok.OKriging(latlon_dict,temp,hourly,var_name,shapefile,model_wind,False)
+                        wind_grid, maxmin = ok.OKriging(
+                            latlon_dict, temp, hourly, var_name, shapefile, model_wind, False)
                     except:
-                        rain_grid_template, maxmin = idw.IDW(latlon_dictionary,rainfall,dat,var_name,shapefile,False,1)
-                        wind_grid = np.zeros(rain_grid_template.shape) #If the procedure fails, just generate 0s 
-            
+                        rain_grid_template, maxmin = idw.IDW(
+                            latlon_dictionary, rainfall, dat, var_name, shapefile, False, 1)
+                        # If the procedure fails, just generate 0s
+                        wind_grid = np.zeros(rain_grid_template.shape)
+
         if interpolation_method == 'RF':
 
-            rain_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dictionary,rainfall,dat,var_name,shapefile,False,file_path_elev,idx_list)
-            temp_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,temp,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            rh_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,rh,hourly,var_name,shapefile,False,file_path_elev,idx_list)
-            wind_grid, maxmin, elev_array = rf.random_forest_interpolator(latlon_dict,wind,hourly,var_name,shapefile,False,file_path_elev,idx_list)
+            rain_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dictionary, rainfall, dat, var_name, shapefile, False, file_path_elev, idx_list)
+            temp_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dict, temp, hourly, var_name, shapefile, False, file_path_elev, idx_list)
+            rh_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dict, rh, hourly, var_name, shapefile, False, file_path_elev, idx_list)
+            wind_grid, maxmin, elev_array = rf.random_forest_interpolator(
+                latlon_dict, wind, hourly, var_name, shapefile, False, file_path_elev, idx_list)
 
-        if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'\
+        if (interpolation_method == 'RF' or interpolation_method == 'OK' or interpolation_method == 'TPSS' or interpolation_method == 'TPS' or interpolation_method == 'IDEW-2'
            or interpolation_method == 'IDEW-1' or interpolation_method == 'IDW-2' or interpolation_method == 'IDW-1') != True:
 
             print('The entered interpolation method is not recognized')
             sys.exit()
-            
-        if count > 0:  
-            ffmc_array = ffmc_list[count-1] #the last one added will be yesterday's val, but there's a lag bc none was added when count was0, so just use count-1
+
+        if count > 0:
+            # the last one added will be yesterday's val, but there's a lag bc none was added when count was0, so just use count-1
+            ffmc_array = ffmc_list[count-1]
             index = count-1
-            ffmc = FFMC(dat,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,ffmc_array,index,False,shapefile,mask,endMask)
+            ffmc = FFMC(dat, rain_grid, rh_grid, temp_grid, wind_grid,
+                        maxmin, ffmc_array, index, False, shapefile, mask, endMask)
             ffmc_list.append(ffmc)
         else:
             rain_shape = rain_grid.shape
             ffmc_initialize = np.zeros(rain_shape)+85
             ffmc_yesterday1 = ffmc_initialize*mask
-            ffmc_list.append(ffmc_yesterday1) #placeholder
-                
-                
+            ffmc_list.append(ffmc_yesterday1)  # placeholder
+
         count += 1
 
     if json:
@@ -1883,8 +2248,9 @@ def ffmc_stack(dates,file_path_daily,file_path_hourly,var_name,shapefile,day_int
 
     return ffmc_list
 
-def DC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dc_yesterday,index,show,shapefile,mask,endMask,
-       last_DC_val_before_shutdown,overwinter):
+
+def DC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dc_yesterday, index, show, shapefile, mask, endMask,
+       last_DC_val_before_shutdown, overwinter):
     '''Calculate the DC. See cffdrs R code
     Parameters
         input_date (str): input date of interest
@@ -1906,107 +2272,114 @@ def DC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dc_yesterday,inde
     Returns 
         dc1 (np_array): array of dc values on the date on interest for the study area
     '''
-    
+
     yesterday_index = index-1
     if yesterday_index == -1:
         if overwinter:
             rain_shape = rain_grid.shape
             dc_initialize = np.zeros(rain_shape)
             dc_initialize[np.isnan(last_DC_val_before_shutdown)] = 15
-            dc_initialize[~np.isnan(last_DC_val_before_shutdown)] = last_DC_val_before_shutdown[~np.isnan(last_DC_val_before_shutdown)]
-            dc_yesterday1 = dc_initialize*mask 
-        else: 
+            dc_initialize[~np.isnan(last_DC_val_before_shutdown)] = last_DC_val_before_shutdown[~np.isnan(
+                last_DC_val_before_shutdown)]
+            dc_yesterday1 = dc_initialize*mask
+        else:
             rain_shape = rain_grid.shape
             dc_initialize = np.zeros(rain_shape)+15
             dc_yesterday1 = dc_initialize
-            dc_yesterday1 = dc_yesterday1*mask #mask out areas that haven't started
+            dc_yesterday1 = dc_yesterday1*mask  # mask out areas that haven't started
     else:
         if overwinter:
             dc_yesterday1 = dc_yesterday
-            dc_yesterday1[np.where(np.isnan(dc_yesterday1) & ~np.isnan(mask) & ~np.isnan(last_DC_val_before_shutdown))] = last_DC_val_before_shutdown[np.where(np.isnan(dc_yesterday1) & ~np.isnan(mask) & ~np.isnan(last_DC_val_before_shutdown))]
-            dc_yesterday1[np.where(np.isnan(dc_yesterday1) & ~np.isnan(mask) & np.isnan(last_DC_val_before_shutdown))] = 15
-        else: 
+            dc_yesterday1[np.where(np.isnan(dc_yesterday1) & ~np.isnan(mask) & ~np.isnan(last_DC_val_before_shutdown))] = last_DC_val_before_shutdown[np.where(
+                np.isnan(dc_yesterday1) & ~np.isnan(mask) & ~np.isnan(last_DC_val_before_shutdown))]
+            dc_yesterday1[np.where(np.isnan(dc_yesterday1) & ~np.isnan(
+                mask) & np.isnan(last_DC_val_before_shutdown))] = 15
+        else:
             dc_yesterday1 = dc_yesterday
-            dc_yesterday1[np.where(np.isnan(dc_yesterday1) & ~np.isnan(mask))] = 15 #set started pixels since yesterday to 15
+            # set started pixels since yesterday to 15
+            dc_yesterday1[np.where(
+                np.isnan(dc_yesterday1) & ~np.isnan(mask))] = 15
 
     input_date = str(input_date)
     month = int(input_date[6])
-    #Get day length factor
+    # Get day length factor
 
-    f101 = [-1.6,-1.6,-1.6,0.9,3.8,5.8,6.4,5,2.4,0.4,-1.6,-1.6]
+    f101 = [-1.6, -1.6, -1.6, 0.9, 3.8, 5.8, 6.4, 5, 2.4, 0.4, -1.6, -1.6]
 
-    #Put constraint on low end of temp
+    # Put constraint on low end of temp
     temp_grid[temp_grid < -2.8] = -2.8
 
-    #E22 potential evapT
+    # E22 potential evapT
 
     #pe = (0.36*(temp_grid+2.8)+f101[month])/2
 
-    #Checked code from 419 spreadsheet
+    # Checked code from 419 spreadsheet
     pe = (0.36*(temp_grid+2.8)+f101[month-1])
 
-    #Make empty dc array
+    # Make empty dc array
     new_shape = dc_yesterday1.shape
     dc = np.zeros(new_shape)
 
-    #starting rain
+    # starting rain
 
     netRain = 0.83*rain_grid-1.27
 
-    #eq 19
+    # eq 19
     smi = 800*np.exp(-1*dc_yesterday1/400)
 
-    #eq 21
-    #dr0 = dc_yesterday1 -400*np.log(1+3.937*netRain/smi) #log is the natural logarithm
+    # eq 21
+    # dr0 = dc_yesterday1 -400*np.log(1+3.937*netRain/smi) #log is the natural logarithm
 
-    #eq21 from 419 
+    # eq21 from 419
     dr_ini = np.array(smi+3.937*netRain)
     dr0 = np.array(400*np.log(800/dr_ini))
-    
-    dr0[dr0<0] = 0
+
+    dr0[dr0 < 0] = 0
     dr0[rain_grid <= 2.8] = dc_yesterday1[rain_grid <= 2.8]
 
     #dc1 = dr0 + pe
 
-    #from 419
-    
+    # from 419
+
     dc1 = np.array(dr0 + 0.5*pe)
     dc1[dc1 < 0] = 0
-        
+
     dc1 = dc1 * mask * endMask
-    if show == True: 
+    if show == True:
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
         max_xProj_extent = maxmin[2]
         min_xProj_extent = maxmin[3]
 
-        fig, ax = plt.subplots(figsize= (15,15))
+        fig, ax = plt.subplots(figsize=(15, 15))
         crs = {'init': 'esri:102001'}
 
         na_map = gpd.read_file(shapefile)
-        circ = PolygonPatch(na_map['geometry'][0],visible=False)
-        ax.add_patch(circ) 
-        plt.imshow(dc1,extent=(xProj_extent.min(),xProj_extent.max(),yProj_extent.max(),yProj_extent.min()),clip_path=circ, 
-                   clip_on=True) 
-      
-        #plt.imshow(dc1,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)) 
-        na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
-            
+        circ = PolygonPatch(na_map['geometry'][0], visible=False)
+        ax.add_patch(circ)
+        plt.imshow(dc1, extent=(xProj_extent.min(), xProj_extent.max(), yProj_extent.max(), yProj_extent.min()), clip_path=circ,
+                   clip_on=True)
+
+        # plt.imshow(dc1,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1))
+        na_map.plot(ax=ax, color='white', edgecolor='k',
+                    linewidth=2, zorder=10, alpha=0.1)
+
         plt.gca().invert_yaxis()
         cbar = plt.colorbar()
-        cbar.set_label('DC') 
-        
-        title = 'DC for %s'%(input_date) 
+        cbar.set_label('DC')
+
+        title = 'DC for %s' % (input_date)
         fig.suptitle(title, fontsize=14)
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
-        
+
         plt.show()
 
     return dc1
 
-def DMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dmc_yesterday,index,show,shapefile,
-        mask,endMask):
+
+def DMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yesterday, index, show, shapefile,
+        mask, endMask):
     '''Calculate the DMC. See cffdrs R code
     Parameters
         input_date (str): input date of interest
@@ -2031,102 +2404,100 @@ def DMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,dmc_yesterday,in
         rain_shape = rain_grid.shape
         dmc_initialize = np.zeros(rain_shape)+6
         dmc_yesterday1 = dmc_initialize*mask
-    else: 
+    else:
         dmc_yesterday1 = dmc_yesterday
-        dmc_yesterday1[np.where(np.isnan(dmc_yesterday1) & ~np.isnan(mask))] = 6
+        dmc_yesterday1[np.where(np.isnan(dmc_yesterday1)
+                                & ~np.isnan(mask))] = 6
 
     #dmc_yesterday = dmc_yesterday1.flatten()
     input_date = str(input_date)
     month = int(input_date[6])
-    #Get day length factor
+    # Get day length factor
 
     ell01 = [6.5, 7.5, 9, 12.8, 13.9, 13.9, 12.4, 10.9, 9.4, 8, 7, 6]
 
-    #Put constraint on low end of temp
+    # Put constraint on low end of temp
     temp_grid[temp_grid < -1.1] = -1.1
 
-    #Log drying rate
+    # Log drying rate
     rk = 1.84*(temp_grid+1.1)*(100-rh_grid)*ell01[month]*1.0E-4
 
-    #Make empty dmc array
+    # Make empty dmc array
     new_shape = dmc_yesterday1.shape
     dmc = np.zeros(new_shape)
 
-    #starting rain
+    # starting rain
 
     netRain = 0.92*rain_grid-1.27
 
-    #initial moisture content, modified same as cffdrs package
+    # initial moisture content, modified same as cffdrs package
     wmi = 20 + 280/np.exp(0.023*dmc_yesterday1)
 
-    #if else depending on yesterday dmc, eq.13
+    # if else depending on yesterday dmc, eq.13
     b = np.zeros(new_shape)
 
+    b[dmc_yesterday1 <= 33] = 100 / \
+        (0.5+0.3*dmc_yesterday1[dmc_yesterday1 <= 33])
+    b[(dmc_yesterday1 > 33) & (dmc_yesterday1 < 65)] = 14-1.3 * \
+        np.log(dmc_yesterday1[(dmc_yesterday1 > 33) &
+               (dmc_yesterday1 < 65)])  # np.log is ln
+    b[dmc_yesterday1 >= 65] = 6.5 * \
+        np.log(dmc_yesterday1[dmc_yesterday1 >= 65])-17.2
 
-    b[dmc_yesterday1 <= 33] = 100/(0.5+0.3*dmc_yesterday1[dmc_yesterday1 <= 33])
-    b[(dmc_yesterday1 > 33) & (dmc_yesterday1 < 65)] = 14-1.3*np.log(dmc_yesterday1[(dmc_yesterday1 > 33) & (dmc_yesterday1 < 65)]) # np.log is ln
-    b[dmc_yesterday1 >= 65] = 6.5*np.log(dmc_yesterday1[dmc_yesterday1 >= 65])-17.2
-        
-
-    #eq 14, modified in R package
+    # eq 14, modified in R package
     wmr = wmi + 1000 * netRain/(48.77 + b * netRain)
 
-    #eq 15 modified to be same as cffdrs package
-    
-    pr0 = 43.43 * (5.6348 - np.log(wmr-20)) #natural logarithm
+    # eq 15 modified to be same as cffdrs package
 
-    pr0[pr0 <0] = 0
-    
+    pr0 = 43.43 * (5.6348 - np.log(wmr-20))  # natural logarithm
 
-    rk_pr0 =pr0 + rk
-    rk_ydmc = dmc_yesterday1 + rk #we want to add rk because that's the drying rate 
+    pr0[pr0 < 0] = 0
+
+    rk_pr0 = pr0 + rk
+    rk_ydmc = dmc_yesterday1 + rk  # we want to add rk because that's the drying rate
     dmc[netRain > 1.5] = rk_pr0[netRain > 1.5]
     dmc[netRain <= 1.5] = rk_ydmc[netRain <= 1.5]
 
+    dmc[dmc < 0] = 0
 
+    dmc = dmc * mask * endMask  # mask out areas that haven't been activated
 
-    dmc[dmc < 0]=0
-
-    dmc = dmc * mask * endMask # mask out areas that haven't been activated
-
-
-
-    if show == True: 
+    if show == True:
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
         max_xProj_extent = maxmin[2]
         min_xProj_extent = maxmin[3]
 
-        fig, ax = plt.subplots(figsize= (15,15))
+        fig, ax = plt.subplots(figsize=(15, 15))
         crs = {'init': 'esri:102001'}
 
         na_map = gpd.read_file(shapefile)
-        
-        circ = PolygonPatch(na_map['geometry'][0],visible=False)
-        ax.add_patch(circ) 
-        plt.imshow(dmc,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1),clip_path=circ, 
-                   clip_on=True) 
-        
-      
-        #plt.imshow(dmc,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)) 
-        na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
-            
+
+        circ = PolygonPatch(na_map['geometry'][0], visible=False)
+        ax.add_patch(circ)
+        plt.imshow(dmc, extent=(min_xProj_extent-1, max_xProj_extent+1, max_yProj_extent-1, min_yProj_extent+1), clip_path=circ,
+                   clip_on=True)
+
+        # plt.imshow(dmc,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1))
+        na_map.plot(ax=ax, color='white', edgecolor='k',
+                    linewidth=2, zorder=10, alpha=0.1)
+
         plt.gca().invert_yaxis()
         cbar = plt.colorbar()
-        cbar.set_label('DMC') 
-        
-        title = 'DMC for %s'%(input_date) 
+        cbar.set_label('DMC')
+
+        title = 'DMC for %s' % (input_date)
         fig.suptitle(title, fontsize=14)
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
-        
+
         plt.show()
 
-    return dmc 
+    return dmc
 
 
-def FFMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,ffmc_yesterday,index,show,shapefile,
-         mask,endMask):
+def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yesterday, index, show, shapefile,
+         mask, endMask):
     '''Calculate the FFMC. See cffdrs R code
     Parameters
         input_date (str): input date of interest
@@ -2150,101 +2521,107 @@ def FFMC(input_date,rain_grid,rh_grid,temp_grid,wind_grid,maxmin,ffmc_yesterday,
     if yesterday_index == -1:
         rain_shape = rain_grid.shape
         ffmc_initialize = np.zeros(rain_shape)+85
-        ffmc_yesterday1 = ffmc_initialize*mask #mask out areas that haven't started
-    else: 
+        ffmc_yesterday1 = ffmc_initialize*mask  # mask out areas that haven't started
+    else:
         ffmc_yesterday1 = ffmc_yesterday
-        ffmc_yesterday1[np.where(np.isnan(ffmc_yesterday1) & ~np.isnan(mask))] = 85 #set started pixels since yesterday to 85
-
+        # set started pixels since yesterday to 85
+        ffmc_yesterday1[np.where(
+            np.isnan(ffmc_yesterday1) & ~np.isnan(mask))] = 85
 
     wmo = 147.2*(101-ffmc_yesterday)/(59.5+ffmc_yesterday)
 
     rain_grid[rain_grid > 0.5] = rain_grid[rain_grid > 0.5] - 0.5
 
-    wmo[wmo>=150]=wmo[wmo >= 150]+0.0015*(wmo[wmo >= 150]-150)*\
-                     (wmo[wmo >= 150]- 150)*np.sqrt(rain_grid[wmo >= 150]) + 42.5\
-                     *rain_grid[wmo >= 150]*np.exp(-100/(251-wmo[wmo >= 150]))*\
-                     (1-np.exp(-6.93/rain_grid[wmo >= 150]))
-    
-    wmo[wmo<150]=wmo[wmo<150]+42.5*rain_grid[wmo<150]*np.exp(-100/(251-wmo[wmo<150]))\
-                  *(1-np.exp(-6.93/rain_grid[wmo<150]))
+    wmo[wmo >= 150] = wmo[wmo >= 150]+0.0015*(wmo[wmo >= 150]-150) *\
+        (wmo[wmo >= 150] - 150)*np.sqrt(rain_grid[wmo >= 150]) + 42.5\
+        * rain_grid[wmo >= 150]*np.exp(-100/(251-wmo[wmo >= 150])) *\
+        (1-np.exp(-6.93/rain_grid[wmo >= 150]))
 
-    wmo[rain_grid < 0.5] = 147.2*(101-ffmc_yesterday[rain_grid < 0.5])/(59.5+ffmc_yesterday[rain_grid < 0.5])
+    wmo[wmo < 150] = wmo[wmo < 150]+42.5*rain_grid[wmo < 150]*np.exp(-100/(251-wmo[wmo < 150]))\
+        * (1-np.exp(-6.93/rain_grid[wmo < 150]))
 
-    wmo[wmo>250] = 250
+    wmo[rain_grid < 0.5] = 147.2 * \
+        (101-ffmc_yesterday[rain_grid < 0.5]) / \
+        (59.5+ffmc_yesterday[rain_grid < 0.5])
 
-    ed=0.942*np.power(rh_grid,0.679)+(11*np.exp((rh_grid-100)/10))+0.18*(21.1-temp_grid)\
-        *(1-1/np.exp(rh_grid*0.115))
-    
-    ew=0.618*np.power(rh_grid,0.753)+(10*np.exp((rh_grid-100)/10))+0.18*(21.1-temp_grid)*\
+    wmo[wmo > 250] = 250
+
+    ed = 0.942*np.power(rh_grid, 0.679)+(11*np.exp((rh_grid-100)/10))+0.18*(21.1-temp_grid)\
+        * (1-1/np.exp(rh_grid*0.115))
+
+    ew = 0.618*np.power(rh_grid, 0.753)+(10*np.exp((rh_grid-100)/10))+0.18*(21.1-temp_grid) *\
         (1-1/np.exp(rh_grid*0.115))
 
-    shape = rain_grid.shape 
+    shape = rain_grid.shape
     z = np.zeros(shape)
-    z[np.where((wmo<ed) & (wmo<ew))]=0.424*(1-np.power((rh_grid[np.where((wmo<ed) & (wmo<ew))]/100),1.7))\
-                          +0.0694*np.sqrt(wind_grid[np.where((wmo<ed) & (wmo<ew))])*\
-                  (1-np.power((rh_grid[np.where((wmo<ed) & (wmo<ew))]/100),8))
-    
+    z[np.where((wmo < ed) & (wmo < ew))] = 0.424*(1-np.power((rh_grid[np.where((wmo < ed) & (wmo < ew))]/100), 1.7))\
+        + 0.0694*np.sqrt(wind_grid[np.where((wmo < ed) & (wmo < ew))]) *\
+        (1-np.power((rh_grid[np.where((wmo < ed) & (wmo < ew))]/100), 8))
 
-    z[np.where((wmo>=ed) & (wmo>=ew))] = 0
+    z[np.where((wmo >= ed) & (wmo >= ew))] = 0
 
-    x=z*0.581*np.exp(0.0365*temp_grid)
+    x = z*0.581*np.exp(0.0365*temp_grid)
 
-    shape = rain_grid.shape 
-    wm = np.zeros(shape)    
+    shape = rain_grid.shape
+    wm = np.zeros(shape)
 
-    wm[np.where((wmo<ed) & (wmo<ew))]= ew[np.where((wmo<ed) & (wmo<ew))]-\
-                           (ew[np.where((wmo<ed) & (wmo<ew))]-\
-                            wmo[np.where((wmo<ed) & (wmo<ew))])/(np.power(10,x[np.where((wmo<ed) & (wmo<ew))]))
+    wm[np.where((wmo < ed) & (wmo < ew))] = ew[np.where((wmo < ed) & (wmo < ew))] -\
+        (ew[np.where((wmo < ed) & (wmo < ew))] -
+         wmo[np.where((wmo < ed) & (wmo < ew))])/(np.power(10, x[np.where((wmo < ed) & (wmo < ew))]))
 
-    wm[np.where((wmo>=ed) & (wmo>=ew))] = wmo[np.where((wmo>=ed) & (wmo>=ew))]
+    wm[np.where((wmo >= ed) & (wmo >= ew))
+       ] = wmo[np.where((wmo >= ed) & (wmo >= ew))]
 
-    z[wmo>ed] = 0.424*(1-np.power((rh_grid[wmo>ed]/100),1.7))+0.0694\
-                       *np.sqrt(wind_grid[wmo>ed])*(1-np.power((rh_grid[wmo>ed]/100),8))
+    z[wmo > ed] = 0.424*(1-np.power((rh_grid[wmo > ed]/100), 1.7))+0.0694\
+                       * np.sqrt(wind_grid[wmo > ed])*(1-np.power((rh_grid[wmo > ed]/100), 8))
 
-    x=z*0.581*np.exp(0.0365 * temp_grid)
-    wm[wmo>ed] = ed[wmo>ed] + (wmo[wmo>ed] - ed[wmo>ed])/(np.power(10,x[wmo>ed]))
+    x = z*0.581*np.exp(0.0365 * temp_grid)
+    wm[wmo > ed] = ed[wmo > ed] + \
+        (wmo[wmo > ed] - ed[wmo > ed])/(np.power(10, x[wmo > ed]))
 
     ffmc1 = (59.5*(250-wm))/(147.2+wm)
-    
+
     ffmc1[ffmc1 > 101] = 101
 
     ffmc1[ffmc1 < 0] = 0
 
-    ffmc1 = ffmc1*mask* endMask
+    ffmc1 = ffmc1*mask * endMask
 
-    if show: 
+    if show:
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
         max_xProj_extent = maxmin[2]
         min_xProj_extent = maxmin[3]
 
-        fig, ax = plt.subplots(figsize= (15,15))
+        fig, ax = plt.subplots(figsize=(15, 15))
         crs = {'init': 'esri:102001'}
 
         na_map = gpd.read_file(shapefile)
-        
-        circ = PolygonPatch(na_map['geometry'][0],visible=False)
-        ax.add_patch(circ) 
-        plt.imshow(ffmc1,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1),clip_path=circ, 
-                   clip_on=True) 
-        
-        #plt.imshow(ffmc1,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)) 
-        na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
-            
+
+        circ = PolygonPatch(na_map['geometry'][0], visible=False)
+        ax.add_patch(circ)
+        plt.imshow(ffmc1, extent=(min_xProj_extent-1, max_xProj_extent+1, max_yProj_extent-1, min_yProj_extent+1), clip_path=circ,
+                   clip_on=True)
+
+        # plt.imshow(ffmc1,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1))
+        na_map.plot(ax=ax, color='white', edgecolor='k',
+                    linewidth=2, zorder=10, alpha=0.1)
+
         plt.gca().invert_yaxis()
         cbar = plt.colorbar()
-        cbar.set_label('FFMC') 
-        
-        title = 'FFMC for %s'%(input_date) 
+        cbar.set_label('FFMC')
+
+        title = 'FFMC for %s' % (input_date)
         fig.suptitle(title, fontsize=14)
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
-        
+
         plt.show()
 
     return ffmc1
 
-def BUI(dmc,dc,maxmin,show,shapefile,mask,endMask): #BUI can be calculated on the fly
+
+def BUI(dmc, dc, maxmin, show, shapefile, mask, endMask):  # BUI can be calculated on the fly
     ''' Calculate BUI
     Parameters
         dmc (np_array): the dmc array for the date of interest
@@ -2259,54 +2636,56 @@ def BUI(dmc,dc,maxmin,show,shapefile,mask,endMask): #BUI can be calculated on th
     '''
     shape = dmc.shape
     bui1 = np.zeros(shape)
-    
+
     bui1[np.where((dmc == 0) & (dc == 0))] = 0
-    bui1[np.where((dmc > 0) & (dc > 0))] = 0.8 * dc[np.where((dmc > 0) & (dc > 0))]*\
-                                          dmc[np.where((dmc > 0) & (dc > 0))]/(dmc[np.where((dmc > 0) & (dc > 0))]\
-                                          + 0.4 * dc[np.where((dmc > 0) & (dc > 0))])
+    bui1[np.where((dmc > 0) & (dc > 0))] = 0.8 * dc[np.where((dmc > 0) & (dc > 0))] *\
+        dmc[np.where((dmc > 0) & (dc > 0))]/(dmc[np.where((dmc > 0) & (dc > 0))]
+                                             + 0.4 * dc[np.where((dmc > 0) & (dc > 0))])
     p = np.zeros(shape)
     p[dmc == 0] = 0
     p[dmc > 0] = (dmc[dmc > 0] - bui1[dmc > 0])/dmc[dmc > 0]
 
-    cc = 0.92 + (np.power((0.0114 * dmc),1.7))
-    
+    cc = 0.92 + (np.power((0.0114 * dmc), 1.7))
+
     bui0 = dmc - cc * p
 
     bui0[bui0 < 0] = 0
 
     bui1[bui1 < dmc] = bui0[bui1 < dmc]
 
-    bui1 = bui1*mask* endMask
+    bui1 = bui1*mask * endMask
 
-    if show: 
+    if show:
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
         max_xProj_extent = maxmin[2]
         min_xProj_extent = maxmin[3]
 
-        fig, ax = plt.subplots(figsize= (15,15))
+        fig, ax = plt.subplots(figsize=(15, 15))
         crs = {'init': 'esri:102001'}
 
         na_map = gpd.read_file(shapefile)
-        
-      
-        plt.imshow(bui1,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)) 
-        na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
-            
+
+        plt.imshow(bui1, extent=(min_xProj_extent-1,
+                   max_xProj_extent+1, max_yProj_extent-1, min_yProj_extent+1))
+        na_map.plot(ax=ax, color='white', edgecolor='k',
+                    linewidth=2, zorder=10, alpha=0.1)
+
         plt.gca().invert_yaxis()
         cbar = plt.colorbar()
-        cbar.set_label('BUI') 
-        
-        title = 'BUI for %s'%(input_date) 
+        cbar.set_label('BUI')
+
+        title = 'BUI for %s' % (input_date)
         fig.suptitle(title, fontsize=14)
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
-        
+
         plt.show()
 
     return bui1
 
-def ISI(ffmc,wind_grid,maxmin,show,shapefile,mask,endMask):
+
+def ISI(ffmc, wind_grid, maxmin, show, shapefile, mask, endMask):
     ''' Calculate ISI
     Parameters
         ffmc (np_array): ffmc array for the date of interest
@@ -2322,45 +2701,44 @@ def ISI(ffmc,wind_grid,maxmin,show,shapefile,mask,endMask):
 
     fm = 147.2 * (101 - ffmc)/(59.5 + ffmc)
 
-    
     fW = np.exp(0.05039 * wind_grid)
-    
 
     fF = 91.9 * np.exp((-0.1386) * fm) * (1 + (fm**5.31) / 49300000)
 
-
     isi = 0.208 * fW * fF
-    
-    isi = isi*mask* endMask
-    if show: 
+
+    isi = isi*mask * endMask
+    if show:
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
         max_xProj_extent = maxmin[2]
         min_xProj_extent = maxmin[3]
 
-        fig, ax = plt.subplots(figsize= (15,15))
+        fig, ax = plt.subplots(figsize=(15, 15))
         crs = {'init': 'esri:102001'}
 
         na_map = gpd.read_file(shapefile)
-        
-      
-        plt.imshow(isi,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)) 
-        na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
-            
+
+        plt.imshow(isi, extent=(min_xProj_extent-1, max_xProj_extent +
+                   1, max_yProj_extent-1, min_yProj_extent+1))
+        na_map.plot(ax=ax, color='white', edgecolor='k',
+                    linewidth=2, zorder=10, alpha=0.1)
+
         plt.gca().invert_yaxis()
         cbar = plt.colorbar()
-        cbar.set_label('ISI') 
-        
-        title = 'ISI for %s'%(input_date) 
+        cbar.set_label('ISI')
+
+        title = 'ISI for %s' % (input_date)
         fig.suptitle(title, fontsize=14)
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
-        
+
         plt.show()
-        
+
     return isi
 
-def FWI(isi,bui,maxmin,show,shapefile,mask,endMask):
+
+def FWI(isi, bui, maxmin, show, shapefile, mask, endMask):
     ''' Calculate FWI
     Parameters
         isi (np_array): calculated isi surface for the date of interest 
@@ -2377,44 +2755,49 @@ def FWI(isi,bui,maxmin,show,shapefile,mask,endMask):
     shape = isi.shape
     bb = np.zeros(shape)
 
-    bb[bui > 80] = 0.1 * isi[bui > 80] * (1000/(25 + 108.64/np.exp(0.023 * bui[bui > 80])))
-    bb[bui <= 80] =  0.1 * isi[bui <= 80] * (0.626 * np.power(bui[bui <= 80],0.809) + 2)
+    bb[bui > 80] = 0.1 * isi[bui > 80] * \
+        (1000/(25 + 108.64/np.exp(0.023 * bui[bui > 80])))
+    bb[bui <= 80] = 0.1 * isi[bui <= 80] * \
+        (0.626 * np.power(bui[bui <= 80], 0.809) + 2)
 
     fwi = np.zeros(shape)
     fwi[bb <= 1] = bb[bb <= 1]
-    fwi[bb > 1] = np.exp(2.72 * ((0.434 * np.log(bb[bb > 1]))**0.647)) #natural logarithm 
+    # natural logarithm
+    fwi[bb > 1] = np.exp(2.72 * ((0.434 * np.log(bb[bb > 1]))**0.647))
 
     fwi = fwi * mask * endMask
 
-    if show: 
+    if show:
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
         max_xProj_extent = maxmin[2]
         min_xProj_extent = maxmin[3]
 
-        fig, ax = plt.subplots(figsize= (15,15))
+        fig, ax = plt.subplots(figsize=(15, 15))
         crs = {'init': 'esri:102001'}
 
         na_map = gpd.read_file(shapefile)
-        
-      
-        plt.imshow(fwi,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)) 
-        na_map.plot(ax = ax,color='white',edgecolor='k',linewidth=2,zorder=10,alpha=0.1)
-            
+
+        plt.imshow(fwi, extent=(min_xProj_extent-1, max_xProj_extent +
+                   1, max_yProj_extent-1, min_yProj_extent+1))
+        na_map.plot(ax=ax, color='white', edgecolor='k',
+                    linewidth=2, zorder=10, alpha=0.1)
+
         plt.gca().invert_yaxis()
         cbar = plt.colorbar()
-        cbar.set_label('FWI') 
-        
-        title = 'FWI for %s'%(input_date) 
+        cbar.set_label('FWI')
+
+        title = 'FWI for %s' % (input_date)
         fig.suptitle(title, fontsize=14)
         plt.xlabel('Longitude')
         plt.ylabel('Latitude')
-        
+
         plt.show()
- 
+
     return fwi
 
-def plot_july(fwi_list,maxmin,year,var,shapefile,shapefile2):
+
+def plot_july(fwi_list, maxmin, year, var, shapefile, shapefile2):
     ''' Visualize all values for July. **DO NOT HAVE TO CHANGE INDEX IF LEAP YEAR** WHY? B/C WE ARE COUNTING FRM MAR1
     Parameters
         fwi_list (list): list of fwi metric arrays for a certain measure (i.e. dmc)
@@ -2429,8 +2812,9 @@ def plot_july(fwi_list,maxmin,year,var,shapefile,shapefile2):
 
     fig = plt.figure()
     COUNT = 0
-    for index in range(121,152): #The range refers to the start and end indexes of where July is in the list 
-        ax = fig.add_subplot(4,8,COUNT+1)
+    # The range refers to the start and end indexes of where July is in the list
+    for index in range(121, 152):
+        ax = fig.add_subplot(4, 8, COUNT+1)
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
         max_xProj_extent = maxmin[2]
@@ -2438,39 +2822,38 @@ def plot_july(fwi_list,maxmin,year,var,shapefile,shapefile2):
 
         max_list = []
 
-        for arr in fwi_list: 
+        for arr in fwi_list:
 
             max_list.append(np.amax(arr))
 
         maxval = max(max_list)
 
         crs = {'init': 'esri:102001'}
-        plt.rcParams["font.family"] = "Calibri" #"Times New Roman"
+        plt.rcParams["font.family"] = "Calibri"  # "Times New Roman"
         plt.rcParams.update({'font.size': 16})
-        #plt.rcParams['image.cmap']='RdYlBu_r'
-        #plt.rcParams['image.cmap']='Spectral_r'
-        plt.rcParams['image.cmap']='RdYlGn_r'
+        # plt.rcParams['image.cmap']='RdYlBu_r'
+        # plt.rcParams['image.cmap']='Spectral_r'
+        plt.rcParams['image.cmap'] = 'RdYlGn_r'
 
         na_map = gpd.read_file(shapefile)
         bor_map = gpd.read_file(shapefile2)
 
         title = str(COUNT+1)
-        circ = PolygonPatch(bor_map['geometry'][0],visible=False)
+        circ = PolygonPatch(bor_map['geometry'][0], visible=False)
         ax.add_patch(circ)
-        
-        im = ax.imshow(fwi_list[index],extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)\
-                       ,vmin=0,vmax=maxval, clip_path=circ, clip_on=True,origin='upper')
-        na_map.plot(ax = ax,facecolor="none",edgecolor='k',linewidth=1)
 
-        ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+        im = ax.imshow(fwi_list[index], extent=(min_xProj_extent-1, max_xProj_extent+1, max_yProj_extent-1,
+                       min_yProj_extent+1), vmin=0, vmax=maxval, clip_path=circ, clip_on=True, origin='upper')
+        na_map.plot(ax=ax, facecolor="none", edgecolor='k', linewidth=1)
+
+        ax.tick_params(axis='both', which='both', bottom=False, top=False,
+                       labelbottom=False, right=False, left=False, labelleft=False)
         ax.ticklabel_format(useOffset=False, style='plain')
 
         ax.set_title(title)
         ax.invert_yaxis()
 
-        COUNT+=1
-
-
+        COUNT += 1
 
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
@@ -2479,11 +2862,12 @@ def plot_july(fwi_list,maxmin,year,var,shapefile,shapefile2):
     plt.subplots_adjust(bottom=0.1, right=0.8, top=0.9)
     fig.text(0.5, 0.04, 'Longitude', ha='center')
     fig.text(0.04, 0.5, 'Latitude', va='center', rotation='vertical')
-    #title = '%s for June %s'%(var,year) #No title for now 
+    # title = '%s for June %s'%(var,year) #No title for now
     #fig.suptitle(title, fontsize=14)
     plt.show()
 
-def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
+
+def plot_june(fwi_list, maxmin, year, var, shapefile, shapefile2):
     ''' Visualize all values for June. **DO NOT HAVE TO CHANGE INDEX IF LEAP YEAR** WHY? B/C WE ARE COUNTING FRM MAR1
     Parameters
         fwi_list (list): list of fwi metric arrays for a certain measure (i.e. dmc)
@@ -2498,8 +2882,9 @@ def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
 
     fig = plt.figure()
     COUNT = 0
-    for index in range(91,121): #The range refers to the start and end indexes of where June is in the list 
-        ax = fig.add_subplot(4,8,COUNT+1)
+    # The range refers to the start and end indexes of where June is in the list
+    for index in range(91, 121):
+        ax = fig.add_subplot(4, 8, COUNT+1)
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
         max_xProj_extent = maxmin[2]
@@ -2509,7 +2894,7 @@ def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
 
         for arr in fwi_list:
 
-            if np.isfinite(np.amax(arr.flatten())): 
+            if np.isfinite(np.amax(arr.flatten())):
 
                 max_list.append(np.amax(arr.flatten()))
 
@@ -2517,46 +2902,47 @@ def plot_june(fwi_list,maxmin,year,var,shapefile,shapefile2):
         print(maxval)
 
         crs = {'init': 'esri:102001'}
-        plt.rcParams["font.family"] = "Calibri" #"Times New Roman"
+        plt.rcParams["font.family"] = "Calibri"  # "Times New Roman"
         plt.rcParams.update({'font.size': 16})
-        #plt.rcParams['image.cmap']='RdYlBu_r'
-        #plt.rcParams['image.cmap']='Spectral_r'
-        plt.rcParams['image.cmap']='RdYlGn_r'
+        # plt.rcParams['image.cmap']='RdYlBu_r'
+        # plt.rcParams['image.cmap']='Spectral_r'
+        plt.rcParams['image.cmap'] = 'RdYlGn_r'
 
         na_map = gpd.read_file(shapefile)
         bor_map = gpd.read_file(shapefile2)
 
         title = str(COUNT+1)
-        circ = PolygonPatch(bor_map['geometry'][0],visible=False)
+        circ = PolygonPatch(bor_map['geometry'][0], visible=False)
         ax.add_patch(circ)
-        
-        im = ax.imshow(fwi_list[index],extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)\
-                       ,vmin=0,vmax=maxval, clip_path=circ, clip_on=True,origin='upper')
-        na_map.plot(ax = ax,facecolor="none",edgecolor='k',linewidth=1)
 
-        ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+        im = ax.imshow(fwi_list[index], extent=(min_xProj_extent-1, max_xProj_extent+1, max_yProj_extent-1,
+                       min_yProj_extent+1), vmin=0, vmax=maxval, clip_path=circ, clip_on=True, origin='upper')
+        na_map.plot(ax=ax, facecolor="none", edgecolor='k', linewidth=1)
+
+        ax.tick_params(axis='both', which='both', bottom=False, top=False,
+                       labelbottom=False, right=False, left=False, labelleft=False)
         ax.ticklabel_format(useOffset=False, style='plain')
 
         ax.set_title(title)
         ax.invert_yaxis()
 
-        COUNT+=1
-
-
+        COUNT += 1
 
     fig.subplots_adjust(right=0.85)
     #cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
     cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
-    cbar1 = fig.colorbar(im, orientation="vertical", cax=cbar_ax, pad=0.2, aspect=10)
+    cbar1 = fig.colorbar(im, orientation="vertical",
+                         cax=cbar_ax, pad=0.2, aspect=10)
     cbar1.set_label(var)
     plt.subplots_adjust(bottom=0.1, right=0.8, top=0.9)
     #fig.text(0.5, 0.04, 'Longitude', ha='center')
     #fig.text(0.04, 0.5, 'Latitude', va='center', rotation='vertical')
-    #title = '%s for June %s'%(var,year) #No title for now 
+    # title = '%s for June %s'%(var,year) #No title for now
     #fig.suptitle(title, fontsize=14)
     plt.show()
 
-def plot_all(fwi_list,maxmin,year,var,shapefile,shapefile2):
+
+def plot_all(fwi_list, maxmin, year, var, shapefile, shapefile2):
     ''' Visualize all values for all in list. **DO NOT HAVE TO CHANGE INDEX IF LEAP YEAR** WHY? B/C WE ARE COUNTING FRM MAR1
     Parameters
         fwi_list (list): list of fwi metric arrays for a certain measure (i.e. dmc)
@@ -2571,8 +2957,9 @@ def plot_all(fwi_list,maxmin,year,var,shapefile,shapefile2):
 
     fig = plt.figure()
     COUNT = 0
-    for index in range(0,len(fwi_list)): #The range refers to the start and end indexes of where June is in the list 
-        ax = fig.add_subplot(4,8,COUNT+1)
+    # The range refers to the start and end indexes of where June is in the list
+    for index in range(0, len(fwi_list)):
+        ax = fig.add_subplot(4, 8, COUNT+1)
         min_yProj_extent = maxmin[0]
         max_yProj_extent = maxmin[1]
         max_xProj_extent = maxmin[2]
@@ -2580,39 +2967,38 @@ def plot_all(fwi_list,maxmin,year,var,shapefile,shapefile2):
 
         max_list = []
 
-        for arr in fwi_list: 
+        for arr in fwi_list:
 
             max_list.append(np.amax(arr))
 
         maxval = max(max_list)
 
         crs = {'init': 'esri:102001'}
-        plt.rcParams["font.family"] = "Calibri" #"Times New Roman"
+        plt.rcParams["font.family"] = "Calibri"  # "Times New Roman"
         plt.rcParams.update({'font.size': 16})
-        #plt.rcParams['image.cmap']='RdYlBu_r'
-        #plt.rcParams['image.cmap']='Spectral_r'
-        plt.rcParams['image.cmap']='RdYlGn_r'
+        # plt.rcParams['image.cmap']='RdYlBu_r'
+        # plt.rcParams['image.cmap']='Spectral_r'
+        plt.rcParams['image.cmap'] = 'RdYlGn_r'
 
         na_map = gpd.read_file(shapefile)
         bor_map = gpd.read_file(shapefile2)
 
         title = str(COUNT+1)
-        circ = PolygonPatch(bor_map['geometry'][0],visible=False)
+        circ = PolygonPatch(bor_map['geometry'][0], visible=False)
         ax.add_patch(circ)
-        
-        im = ax.imshow(fwi_list[index],extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1)\
-                       ,vmin=0,vmax=maxval, clip_path=circ, clip_on=True,origin='upper')
-        na_map.plot(ax = ax,facecolor="none",edgecolor='k',linewidth=1)
 
-        ax.tick_params(axis='both', which='both', bottom=False, top=False, labelbottom=False, right=False, left=False, labelleft=False)
+        im = ax.imshow(fwi_list[index], extent=(min_xProj_extent-1, max_xProj_extent+1, max_yProj_extent-1,
+                       min_yProj_extent+1), vmin=0, vmax=maxval, clip_path=circ, clip_on=True, origin='upper')
+        na_map.plot(ax=ax, facecolor="none", edgecolor='k', linewidth=1)
+
+        ax.tick_params(axis='both', which='both', bottom=False, top=False,
+                       labelbottom=False, right=False, left=False, labelleft=False)
         ax.ticklabel_format(useOffset=False, style='plain')
 
         ax.set_title(title)
         ax.invert_yaxis()
 
-        COUNT+=1
-
-
+        COUNT += 1
 
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
@@ -2621,12 +3007,12 @@ def plot_all(fwi_list,maxmin,year,var,shapefile,shapefile2):
     plt.subplots_adjust(bottom=0.1, right=0.8, top=0.9)
     fig.text(0.5, 0.04, 'Longitude', ha='center')
     fig.text(0.04, 0.5, 'Latitude', va='center', rotation='vertical')
-    #title = '%s for June %s'%(var,year) #No title for now 
+    # title = '%s for June %s'%(var,year) #No title for now
     #fig.suptitle(title, fontsize=14)
     plt.show()
 
-    
-def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,search_date_end,search_date_start):
+
+def extract_fire_season_frm_NFDB(file_path, year1, year2, ecozone_path, out_path, search_date_end, search_date_start):
     '''Get the first and last lightning-caused ignitions from the database in ecozone
     Parameters
         file_path (str): path to ignition lookup file
@@ -2643,52 +3029,55 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
     '''
     first_fire = []
     last_fire = []
-    year_list = [] 
-    for year in range(year1,year2+1):
+    year_list = []
+    for year in range(year1, year2+1):
         print('Processing..........'+str(year))
         fire_locs = []
         lookup_dict = {}
         data = pd.read_csv(file_path)
-        df2 = data.loc[data['YEAR'] == year] 
-        #df2 = df2.loc[df2['CAUSE'] == 'L'] 
-        df2 = df2.loc[(df2['SRC_AGENCY'] == 'ON') | (df2['SRC_AGENCY'] == 'QC')] 
+        df2 = data.loc[data['YEAR'] == year]
+        #df2 = df2.loc[df2['CAUSE'] == 'L']
+        df2 = df2.loc[(df2['SRC_AGENCY'] == 'ON') |
+                      (df2['SRC_AGENCY'] == 'QC')]
         fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
-        initiate_dict = list(zip(df2['FIRE_ID'],df2['LATITUDE'], df2['LONGITUDE'],df2['REP_DATE']))
-        lookup_dict = {i[0]: [i[1],i[2],i[3]] for i  in initiate_dict}
+        initiate_dict = list(
+            zip(df2['FIRE_ID'], df2['LATITUDE'], df2['LONGITUDE'], df2['REP_DATE']))
+        lookup_dict = {i[0]: [i[1], i[2], i[3]] for i in initiate_dict}
 
-        #How many fires in the year??
+        # How many fires in the year??
         print('Number of fires in year: '+str(len(initiate_dict)))
 
-        proj_dict = {} 
-        #Project the latitude and longitudes
-        for k,v in lookup_dict.items():
+        proj_dict = {}
+        # Project the latitude and longitudes
+        for k, v in lookup_dict.items():
             lat = v[0]
             lon = v[1]
-            x,y = pyproj.Proj('esri:102001')(lon,lat)
-            #Make sure v2 is not before Mar 1
+            x, y = pyproj.Proj('esri:102001')(lon, lat)
+            # Make sure v2 is not before Mar 1
 
             try:
-                if search_date_start == 'mar': 
+                if search_date_start == 'mar':
 
-                    d0 = date(int(str(v[2])[0:4]), 3, 1) #Revert to Mar 1
-                    d_End = date(int(str(v[2])[0:4]), 12, 1) #Dec 1 
-                    d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
-                    if d0 <= d1 and d_End > d1: #Exclude fires occurring before Mar 1 and after Dec 1 
-                        proj_dict[k] = [x,y,v[2]]
-                elif search_date_start == 'feb': #Feb 1
+                    d0 = date(int(str(v[2])[0:4]), 3, 1)  # Revert to Mar 1
+                    d_End = date(int(str(v[2])[0:4]), 12, 1)  # Dec 1
+                    d1 = date(int(str(v[2])[0:4]), int(
+                        v[2][5:7]), int(v[2][8:10]))
+                    if d0 <= d1 and d_End > d1:  # Exclude fires occurring before Mar 1 and after Dec 1
+                        proj_dict[k] = [x, y, v[2]]
+                elif search_date_start == 'feb':  # Feb 1
                     d0 = date(int(str(v[2])[0:4]), 2, 1)
-                    d_End = date(int(str(v[2])[0:4]), 12, 1) #Dec 1 
-                    d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
-                    if d0 <= d1 and d_End > d1: #Exclude fires occurring before Feb 1 and after Dec 1 
-                        proj_dict[k] = [x,y,v[2]]
+                    d_End = date(int(str(v[2])[0:4]), 12, 1)  # Dec 1
+                    d1 = date(int(str(v[2])[0:4]), int(
+                        v[2][5:7]), int(v[2][8:10]))
+                    if d0 <= d1 and d_End > d1:  # Exclude fires occurring before Feb 1 and after Dec 1
+                        proj_dict[k] = [x, y, v[2]]
                 else:
                     print('That is not a valid search date!')
-                    
+
             except:
                 print('Skipping nan value!')
 
-
-        #check if leap
+        # check if leap
         is_leap = isleap(int(year))
         if not is_leap:
             num_days_to_feb = 31
@@ -2703,88 +3092,91 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
             num_days_to_oct = 31+29+31+30+31+30+31+31+30
             num_days_to_dec = 31+29+31+30+31+30+31+31+30+31+30
 
-        #Get fires inside the ecozone
+        # Get fires inside the ecozone
         eco_zone = gpd.read_file(ecozone_path)
         ecoDF = gpd.GeoDataFrame(eco_zone)
         ecoDF_union = ecoDF.geometry.unary_union
 
         updating_list_first = []
         updating_list_last = []
-        num_fires_in_zone = 0 
-        for k,v  in proj_dict.items():
+        num_fires_in_zone = 0
+        for k, v in proj_dict.items():
 
             latitude = float(v[1])
             longitude = float(v[0])
 
-            fire_loc = Point((latitude,longitude))
+            fire_loc = Point((latitude, longitude))
             pointDF = pd.DataFrame([fire_loc])
             gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
             if (eco_zone.geometry.contains(gdf.geometry)).any():
-                
 
-                if len(updating_list_first) > 0 and len(str(v[2])) == 19: #filter out nan
-                    num_fires_in_zone +=1 
-
+                # filter out nan
+                if len(updating_list_first) > 0 and len(str(v[2])) == 19:
+                    num_fires_in_zone += 1
 
                     if updating_list_first[0] > v[2]:
-                        #Get days since January 1
+                        # Get days since January 1
 
-                        
                         updating_list_first[0] = v[2]
-                        #print('Overwrite first!') 
-                        #print(v[2])
+                        #print('Overwrite first!')
+                        # print(v[2])
                 elif len(updating_list_first) == 0:
-                    num_fires_in_zone +=1 
+                    num_fires_in_zone += 1
 
                     d1 = date(int(v[2][0:4]), int(v[2][5:7]), int(v[2][8:10]))
-                    #Calculate from Jan 1
+                    # Calculate from Jan 1
                     d0 = date(int(v[2][0:4]), 1, 1)
                     delta_check = d1 - d0
 
-                    if search_date_end == 'sep': 
+                    if search_date_end == 'sep':
 
-                        if delta_check < timedelta(days=num_days_to_sep): #only if it is before sep 1
+                        # only if it is before sep 1
+                        if delta_check < timedelta(days=num_days_to_sep):
                             updating_list_first.append(v[2])
 
                     elif search_date_end == 'oct':
-                        if delta_check < timedelta(days=num_days_to_oct): #only if it is before sep 1
+                        # only if it is before sep 1
+                        if delta_check < timedelta(days=num_days_to_oct):
                             updating_list_first.append(v[2])
                     else:
-                        print('That is not a valid search date!') 
-                        
+                        print('That is not a valid search date!')
+
                 else:
-                    print('Date is nodata')  
-                    
+                    print('Date is nodata')
+
                 if len(updating_list_last) > 0 and len(str(v[2])) == 19:
                     if updating_list_last[0] < v[2]:
 
                         updating_list_last[0] = v[2]
                        #print('Overwrite last!')
-                       #print(v[2])
+                       # print(v[2])
                 elif len(updating_list_last) == 0:
 
-
                     d0 = date(int(str(v[2])[0:4]), 1, 1)
-                    d1 = date(int(str(v[2])[0:4]), int(v[2][5:7]), int(v[2][8:10]))
-                    if d0 < d1: #Exclude jan 1
+                    d1 = date(int(str(v[2])[0:4]), int(
+                        v[2][5:7]), int(v[2][8:10]))
+                    if d0 < d1:  # Exclude jan 1
                         updating_list_last.append(v[2])
                 else:
                     print('Date is nodata')
 
-        print(num_fires_in_zone) 
+        print(num_fires_in_zone)
 
         if len(updating_list_first) > 0:
-            if search_date_start == 'mar': 
-                d0 = date(int(updating_list_first[0][0:4]), 3, 1) #Jan 1 --> Mar 1 Dec 28
+            if search_date_start == 'mar':
+                # Jan 1 --> Mar 1 Dec 28
+                d0 = date(int(updating_list_first[0][0:4]), 3, 1)
             elif search_date_start == 'feb':
-                d0 = date(int(updating_list_first[0][0:4]), 2, 1) #Jan 1 --> Mar 1 Dec 28
+                # Jan 1 --> Mar 1 Dec 28
+                d0 = date(int(updating_list_first[0][0:4]), 2, 1)
             else:
-                print('That is not a valid search date!') 
-            d1 = date(int(updating_list_first[0][0:4]), int(updating_list_first[0][5:7]), int(updating_list_first[0][8:10]))
+                print('That is not a valid search date!')
+            d1 = date(int(updating_list_first[0][0:4]), int(
+                updating_list_first[0][5:7]), int(updating_list_first[0][8:10]))
 
             delta = d1 - d0
 
-            #Calculate from Jan 1
+            # Calculate from Jan 1
 
             d0_jan1 = date(int(updating_list_first[0][0:4]), 1, 1)
             delta_print_to_file = d1 - d0_jan1
@@ -2806,32 +3198,35 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
             first_fire.append(-9999)
         if len(updating_list_last) > 0:
 
-            if search_date_end == 'sep': 
-            
-                d0 = date(int(updating_list_last[0][0:4]), 9, 1) #Sep 1- revert
+            if search_date_end == 'sep':
+
+                # Sep 1- revert
+                d0 = date(int(updating_list_last[0][0:4]), 9, 1)
 
             elif search_date_end == 'oct':
-                d0 = date(int(updating_list_last[0][0:4]), 10, 1) #Sep 1- revert
+                # Sep 1- revert
+                d0 = date(int(updating_list_last[0][0:4]), 10, 1)
 
             else:
                 print('That is not a valid search date!')
-                
-            d1 = date(int(updating_list_last[0][0:4]), int(updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
+
+            d1 = date(int(updating_list_last[0][0:4]), int(
+                updating_list_last[0][5:7]), int(updating_list_last[0][8:10]))
             delta = d1 - d0
 
-            #Calculate from Jan 1
+            # Calculate from Jan 1
 
             d0_jan1 = date(int(updating_list_last[0][0:4]), 1, 1)
             delta_print_to_file = d1 - d0_jan1
 
             if 'd' not in str(delta_print_to_file)[0:3]:
-                if delta >= timedelta(days=0): 
+                if delta >= timedelta(days=0):
                     last_fire.append(str(delta_print_to_file)[0:3])
                     #print('Last fire: '+str(delta)[0:3])
                 else:
                     last_fire.append(-9999)
             else:
-                if delta >= timedelta(days=0): 
+                if delta >= timedelta(days=0):
                     last_fire.append(str(delta_print_to_file)[0:1])
                     #print('Last fire: '+str(delta)[0:1])
                 else:
@@ -2841,13 +3236,12 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
             last_fire.append(-9999)
 
         print('There are '+str(num_fires_in_zone) + ' fires in the zone')
-        if num_fires_in_zone <= 5: #Not enough fires
+        if num_fires_in_zone <= 5:  # Not enough fires
             first_fire[-1] = -9999
             last_fire[-1] = -9999
 
         print(first_fire[-1])
         print(last_fire[-1])
-            
 
         year_list.append(year)
         if int(last_fire[-1]) < 150 and int(last_fire[-1]) != -9999:
@@ -2855,21 +3249,20 @@ def extract_fire_season_frm_NFDB(file_path,year1,year2,ecozone_path,out_path,sea
             print(last_fire[-1])
         if int(first_fire[-1]) < 31 and int(first_fire[-1]) != -9999:
             print('Error 2!')
-            print(first_fire[-1]) 
-
+            print(first_fire[-1])
 
     print(year_list)
     if len(year_list) != len(first_fire) or len(year_list) != len(last_fire):
-        print('Error! A year is missing a value!') 
-    rows = zip(year_list,first_fire,last_fire)
-    #Print to a results file
+        print('Error! A year is missing a value!')
+    rows = zip(year_list, first_fire, last_fire)
+    # Print to a results file
     with open(out_path, "w") as f:
-        writer = csv.writer(f,lineterminator = '\n')
+        writer = csv.writer(f, lineterminator='\n')
         for row in rows:
             writer.writerow(row)
-        
 
-def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_path,out_path,search_date_end,search_date_start):
+
+def extract_fire_season_frm_fire_archive_report(file_path, year1, year2, ecozone_path, out_path, search_date_end, search_date_start):
     '''Get the first and last lightning-caused ignitions from the extra dataset 
     Parameters
         file_path (str): path to ignition lookup file
@@ -2887,28 +3280,28 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
     '''
     first_fire = []
     last_fire = []
-    year_list = [] 
-    for year in range(year1,year2+1):
+    year_list = []
+    for year in range(year1, year2+1):
         print('Processing..........'+str(year))
         fire_locs = []
         lookup_dict = {}
         data = pd.read_csv(file_path)
-        df2 = data.loc[data['FIRE_YEAR'] == year] 
-        #df2 = df.loc[df['GENERAL_CAUSE'] == 'LTG'] #All fires 
+        df2 = data.loc[data['FIRE_YEAR'] == year]
+        # df2 = df.loc[df['GENERAL_CAUSE'] == 'LTG'] #All fires
         fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
-        initiate_dict = list(zip(df2['UNIQUE_ID'],df2['LATITUDE'], df2['LONGITUDE'],df2['C_START_DATE_DayofYear']))
-        lookup_dict = {i[0]: [i[1],i[2],i[3]] for i  in initiate_dict}
+        initiate_dict = list(zip(
+            df2['UNIQUE_ID'], df2['LATITUDE'], df2['LONGITUDE'], df2['C_START_DATE_DayofYear']))
+        lookup_dict = {i[0]: [i[1], i[2], i[3]] for i in initiate_dict}
 
-        proj_dict = {} 
-        #Project the latitude and longitudes
-        for k,v in lookup_dict.items():
+        proj_dict = {}
+        # Project the latitude and longitudes
+        for k, v in lookup_dict.items():
             lat = v[0]
             lon = v[1]
-            x,y = pyproj.Proj('esri:102001')(lon,lat)
-            proj_dict[k] = [x,y,v[2]]
+            x, y = pyproj.Proj('esri:102001')(lon, lat)
+            proj_dict[k] = [x, y, v[2]]
 
-
-        #check if leap
+        # check if leap
         is_leap = isleap(int(year))
         if is_leap:
             num_days_to_feb = 31
@@ -2920,28 +3313,27 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
             num_days_to_march = 31+29
             num_days_to_sep = 31+29+31+30+31+30+31+31
             num_days_to_oct = 31+29+31+30+31+30+31+31+30
-        
-            
-        #Get fires inside the ecozone
+
+        # Get fires inside the ecozone
         eco_zone = gpd.read_file(ecozone_path)
         ecoDF = gpd.GeoDataFrame(eco_zone)
         ecoDF_union = ecoDF.geometry.unary_union
 
         updating_list_first = []
         updating_list_last = []
-        num_fires_in_zone = 0 
-        for k,v  in proj_dict.items():
+        num_fires_in_zone = 0
+        for k, v in proj_dict.items():
 
             latitude = float(v[1])
             longitude = float(v[0])
 
-            fire_loc = Point((latitude,longitude))
+            fire_loc = Point((latitude, longitude))
             pointDF = pd.DataFrame([fire_loc])
             gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
             if (eco_zone.geometry.contains(gdf.geometry)).any():
                 num_fires_in_zone += 1
-                if search_date_start == 'mar': 
-                    if v[2] >=  num_days_to_march: #1 is Jan 1, we exclude
+                if search_date_start == 'mar':
+                    if v[2] >= num_days_to_march:  # 1 is Jan 1, we exclude
                         if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
                             updating_list_first[0] = v[2]
                         elif len(updating_list_first) == 0:
@@ -2949,7 +3341,7 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
                         else:
                             print('...')
                 elif search_date_start == 'feb':
-                    if v[2] >=  num_days_to_feb: #1 is Jan 1, we exclude
+                    if v[2] >= num_days_to_feb:  # 1 is Jan 1, we exclude
                         if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
                             updating_list_first[0] = v[2]
                         elif len(updating_list_first) == 0:
@@ -2958,11 +3350,11 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
                             print('...')
 
                 else:
-                    print('That is not a valid report date!') 
+                    print('That is not a valid report date!')
 
-                #End date
-                if search_date_end == 'sep': 
-                    if v[2] >= num_days_to_sep: #1 is Jan 1, we exclude
+                # End date
+                if search_date_end == 'sep':
+                    if v[2] >= num_days_to_sep:  # 1 is Jan 1, we exclude
                         if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
                             updating_list_last[0] = v[2]
                         elif len(updating_list_last) == 0:
@@ -2970,7 +3362,7 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
                         else:
                             print('...')
                 elif search_date_end == 'oct':
-                    if v[2] >= num_days_to_oct: #1 is Jan 1, we exclude
+                    if v[2] >= num_days_to_oct:  # 1 is Jan 1, we exclude
                         if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
                             updating_list_last[0] = v[2]
                         elif len(updating_list_last) == 0:
@@ -2978,38 +3370,38 @@ def extract_fire_season_frm_fire_archive_report(file_path,year1,year2,ecozone_pa
                         else:
                             print('...')
                 else:
-                    print('That is not a valid report date!') 
-                    
-            #if len(updating_list_first) > 0:
+                    print('That is not a valid report date!')
+
+            # if len(updating_list_first) > 0:
                 #print('First fire: '+str(updating_list_first[0]))
-            #if len(updating_list_last) > 0:
-                #print('Last fire: '+str(updating_list_last[0])) 
+            # if len(updating_list_last) > 0:
+                #print('Last fire: '+str(updating_list_last[0]))
         year_list.append(year)
-        try: 
+        try:
             first_fire.append(updating_list_first[0])
         except:
             first_fire.append(-9999)
-        try: 
-            last_fire.append(updating_list_last[0]) 
+        try:
+            last_fire.append(updating_list_last[0])
         except:
             last_fire.append(-9999)
 
-        if num_fires_in_zone <= 5: #Not enough fires
+        if num_fires_in_zone <= 5:  # Not enough fires
             first_fire[-1] = -9999
             last_fire[-1] = -9999
-        print(num_fires_in_zone) 
+        print(num_fires_in_zone)
         print(first_fire[-1])
-        print(last_fire[-1])        
+        print(last_fire[-1])
 
-    rows = zip(year_list,first_fire,last_fire)
-    #Print to a results file
+    rows = zip(year_list, first_fire, last_fire)
+    # Print to a results file
     with open(out_path, "w") as f:
-        writer = csv.writer(f,lineterminator = '\n')
+        writer = csv.writer(f, lineterminator='\n')
         for row in rows:
             writer.writerow(row)
 
 
-def select_and_output_earliest_year(file_path1,file_path2,year1,year2,out_path):
+def select_and_output_earliest_year(file_path1, file_path2, year1, year2, out_path):
     '''Get the first and last lightning-caused ignitions from the two sources using the csv files
     (we are basically combining them) 
     Parameters
@@ -3022,35 +3414,33 @@ def select_and_output_earliest_year(file_path1,file_path2,year1,year2,out_path):
         first_date (str): first lightning caused ignition in ecozone
         last_date (str): last lightning caused ignition in ecozone
         writes output to csv file
-    '''   
-    #Get the pandas dataframes
+    '''
+    # Get the pandas dataframes
     first_fire = []
     last_fire = []
-    year_list = [] 
-    for year in range(year1,year2+1):
+    year_list = []
+    for year in range(year1, year2+1):
         year_list.append(year)
         print('Processing..........'+str(year))
         fire_locs = []
         lookup_dict = {}
         data = pd.read_csv(file_path1)
         df = data.loc[data['YEAR'] == year]
-        initiate_dict = list(zip(df['YEAR'],df['START'], df['END']))
-        lookup_dict = {i[0]: [i[1],i[2]] for i  in initiate_dict}
+        initiate_dict = list(zip(df['YEAR'], df['START'], df['END']))
+        lookup_dict = {i[0]: [i[1], i[2]] for i in initiate_dict}
         data2 = pd.read_csv(file_path2)
         df2 = data2.loc[data2['YEAR'] == year]
-        initiate_dict2 = list(zip(df2['YEAR'],df2['START'], df2['END']))
-        lookup_dict2 = {i[0]: [i[1],i[2]] for i  in initiate_dict2}
+        initiate_dict2 = list(zip(df2['YEAR'], df2['START'], df2['END']))
+        lookup_dict2 = {i[0]: [i[1], i[2]] for i in initiate_dict2}
 
-        
-        #which column value is smaller for the start date?
-        #which column is larger for the end date?
+        # which column value is smaller for the start date?
+        # which column is larger for the end date?
 
-
-        if lookup_dict2[year][0] == -9999 and lookup_dict[year][0] == -9999: #if both are NaN 
+        if lookup_dict2[year][0] == -9999 and lookup_dict[year][0] == -9999:  # if both are NaN
             first_fire.append(-9999)
         else:
             if (lookup_dict2[year][0] <= lookup_dict[year][0]) and lookup_dict2[year][0] != -9999:
-                first_fire.append(lookup_dict2[year][0]) #the earlier one
+                first_fire.append(lookup_dict2[year][0])  # the earlier one
 
             elif lookup_dict[year][0] == -9999:
                 first_fire.append(lookup_dict2[year][0])
@@ -3058,10 +3448,10 @@ def select_and_output_earliest_year(file_path1,file_path2,year1,year2,out_path):
                 first_fire.append(lookup_dict[year][0])
             else:
                 first_fire.append(lookup_dict[year][0])
-            
+
         if lookup_dict2[year][1] == -9999 and lookup_dict[year][1] == -9999:
             last_fire.append(-9999)
-        else: 
+        else:
             if (lookup_dict2[year][1] >= lookup_dict[year][1]) and lookup_dict[year][1] != -9999:
                 last_fire.append(lookup_dict2[year][1])
 
@@ -3072,10 +3462,10 @@ def select_and_output_earliest_year(file_path1,file_path2,year1,year2,out_path):
             else:
                 last_fire.append(lookup_dict[year][1])
 
-    #write the merged file to a new file 
-    rows = zip(year_list,first_fire,last_fire)
-    #Print to a results file
+    # write the merged file to a new file
+    rows = zip(year_list, first_fire, last_fire)
+    # Print to a results file
     with open(out_path, "w") as f:
-        writer = csv.writer(f,lineterminator = '\n')
+        writer = csv.writer(f, lineterminator='\n')
         for row in rows:
             writer.writerow(row)
