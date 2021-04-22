@@ -624,8 +624,6 @@ def spatial_kfold_rf(idw_example_grid, loc_dict, Cvar_dict, shapefile, file_path
               dictionary of weather variable values for each station
          shapefile : string
               path to the study area shapefile
-         d : int
-              the weighting for IDW interpolation
          file_path_elev : string
               path to the elevation lookup file
          elev_array : ndarray
