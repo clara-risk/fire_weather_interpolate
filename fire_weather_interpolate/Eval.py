@@ -1072,9 +1072,9 @@ def check_p_value(path_to_excel_spreadsheet):
     '''Quality-control for p-value calculation
     Parameters
     ----------
-       path_to_excel_spreadsheet : string
-           path to the spreadsheet containing the fire season start/end values,
-           Notes: No trailing 0s in speadsheet, no space after parameter name in header
+    path_to_excel_spreadsheet : string
+        path to the spreadsheet containing the fire season start/end values,
+        Notes: No trailing 0s in speadsheet, no space after parameter name in header
     '''
 
     df = pd.read_csv(path_to_excel_spreadsheet)
