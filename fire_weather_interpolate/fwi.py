@@ -1054,21 +1054,33 @@ def DMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yester
     '''Calculate the DMC.
 
     Parameters
-        input_date (str): input date of interest
-        rain_grid: interpolated surface for rainfall on the date of interest
-        rh_grid: interpolated surface for relative humidity on the date of interest
-        temp_grid: interpolated surface for temperature on the date of interest
-        wind_grid: interpolated surface for wind on the date of interest
-        maxmin: bounds of the study area 
-        dmc_yesterday: array of DMC values for yesterday (from the dmc stack list/if this function
-        is being used inside dmc_stack it is calculated then) 
-        index (int): index of the date since Mar 1
-        show (bool): whether you want to show the map 
-        shapefile (str): path to the study area shapefile
-        mask (np_array): mask for the start dates 
-        endMask (np_array): mask for the end days 
-    Returns 
-        dmc (np_array): array of dmc values on the date on interest for the study area
+    ----------
+    input_date : string
+        input date of interest
+    rain_grid : ndarray
+        interpolated surface for rainfall on the date of interest
+    temp_grid : ndarray
+        interpolated surface for temperature on the date of interest
+    wind_grid : ndarray
+        interpolated surface for wind on the date of interest
+    maxmin : list
+        bounds of the study area 
+    dc_yesterday : ndarray
+        array of DC values for yesterday 
+    index : int
+        index of the date since Mar 1
+    show : bool
+        whether you want to show the map 
+    shapefile : string
+        path to the study area shapefile
+    mask : ndarray
+        mask for the start dates 
+    endMask : ndarray
+        mask for the end dates
+    Returns
+    ----------
+    ndarray
+        - array of dmc values on the date on interest for the study area
     '''
     yesterday_index = index-1
 
@@ -1169,23 +1181,35 @@ def DMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yester
 
 def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yesterday, index, show, shapefile,
          mask, endMask):
-    '''Calculate the FFMC. See cffdrs R code
+    '''Calculate the FFMC. 
     Parameters
-        input_date (str): input date of interest
-        rain_grid: interpolated surface for rainfall on the date of interest
-        rh_grid: interpolated surface for relative humidity on the date of interest
-        temp_grid: interpolated surface for temperature on the date of interest
-        wind_grid: interpolated surface for wind on the date of interest
-        maxmin: bounds of the study area 
-        ffmc_yesterday: array of FFMC values for yesterday (from the ffmc stack list/if this function
-        is being used inside ffmc_stack it is calculated then) 
-        index (int): index of the date since Mar 1
-        show (bool): whether you want to show the map 
-        shapefile (str): path to the study area shapefile
-        mask (np_array): mask for the start dates 
-        endMask (np_array): mask for the end days 
-    Returns 
-        ffmc1 (np_array): array of ffmc values on the date on interest for the study area
+    ----------
+    input_date : string
+        input date of interest
+    rain_grid : ndarray
+        interpolated surface for rainfall on the date of interest
+    temp_grid : ndarray
+        interpolated surface for temperature on the date of interest
+    wind_grid : ndarray
+        interpolated surface for wind on the date of interest
+    maxmin : list
+        bounds of the study area 
+    dc_yesterday : ndarray
+        array of DC values for yesterday 
+    index : int
+        index of the date since Mar 1
+    show : bool
+        whether you want to show the map 
+    shapefile : string
+        path to the study area shapefile
+    mask : ndarray
+        mask for the start dates 
+    endMask : ndarray
+        mask for the end dates
+    Returns
+    ----------
+    ndarray
+        - array of ffmc values on the date on interest for the study area
     '''
     yesterday_index = index-1
 
