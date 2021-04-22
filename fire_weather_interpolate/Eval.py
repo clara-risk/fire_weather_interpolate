@@ -7,9 +7,7 @@ Functions to evaluate the outputs of the FWI metrics functions, such as ridge re
 
 References
 ----------
-See: 
-https://en.wikipedia.org/wiki/Tikhonov_regularization
-https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeCV.html
+See: https://en.wikipedia.org/wiki/Tikhonov_regularization; https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeCV.html
 """
 
 # import
@@ -44,7 +42,8 @@ from statsmodels.genmod.generalized_linear_model import GLMResults
 
 def plot_LOOCV_error(loc_dict, error_dictionary, shapefile, var_name):
     '''Print a map of the LOOCV error (not absolute valued) so we can see the variation in error
-    accross the study area 
+    accross the study area
+    
     Parameters
     ----------
         loc_dict : dictionary
@@ -100,6 +99,7 @@ def plot_LOOCV_error(loc_dict, error_dictionary, shapefile, var_name):
 def get_interpolated_val_in_fire(fire_shapefile, shapefile, latlon_dict, interpolated_surface):
     '''This is a function to get the FWI metric value inside the fire.
     We will use to calculate the max FWI metrics for a fire.
+    
     Parameters
     ----------
         fire_shapefile : string
@@ -109,7 +109,8 @@ def get_interpolated_val_in_fire(fire_shapefile, shapefile, latlon_dict, interpo
         latlon_dict : dictionary
             lookup dictionary of lat lon for each station 
         interpolated_surface : ndarray
-            an array of values in the study area 
+            an array of values in the study area
+            
     Returns
     ----------
         float
@@ -218,7 +219,8 @@ def get_interpolated_val_in_fire(fire_shapefile, shapefile, latlon_dict, interpo
 def highest_value_first_four_days(fire_shapefile, shapefile, latlon_dict,
                                   interpolated_surface_d1, interpolated_surface_d2,
                                   interpolated_surface_d3, interpolated_surface_d4):
-    '''Function to return the highest FWI values in a fire for four input arrays  
+    '''Function to return the highest FWI values in a fire for four input arrays
+
     Parameters
     ----------
         fire_shapefile : string
@@ -229,9 +231,10 @@ def highest_value_first_four_days(fire_shapefile, shapefile, latlon_dict,
             lookup dictionary of lat lon for each station 
         interpolated_surface_d1,d2,d3,d4 :ndarray
             an array of values in the study area, in the first four days of the fire
+            
     Returns
     ----------
-        max_val : float
+        float
             - maximum value for first four days since report date 
     '''
 
@@ -250,10 +253,12 @@ def highest_value_first_four_days(fire_shapefile, shapefile, latlon_dict,
 
 def get_report_date_plus_three(fire_shapefile):
     '''Function to return the first four days of the fire
+
     Parameters
     ----------
         fire_shapefile : string
-            path to the fire shapefile 
+            path to the fire shapefile
+            
     Returns
     ----------
         fire_dates : list
@@ -271,7 +276,8 @@ def get_report_date_plus_three(fire_shapefile):
 
 def ridge_regression(path_to_excel_spreadsheet, var1, var2, var3, var4, var5, var6, var7, var8, var9,
                      var10, all_variables, plot_distributions, plot_residual_histogram, transform):
-    '''Make a ridge regression model and print out the resulting coefficients and (if True) the histogram of residuals 
+    '''Make a ridge regression model and print out the resulting coefficients and (if True) the histogram of residuals
+
     Parameters
     ----------
         path_to_excel_spreadsheet : string
@@ -401,6 +407,7 @@ def stratify_size(df, size_condition, all_variables, var1, var2, var3, var4, var
                   var8, var9, var10):
     '''This is a sub-function that will be called to stratify the fires based on size in the
     ridge regression (stratify) function.
+    
     Parameters
     ----------
     df : pandas dataframe
@@ -411,6 +418,7 @@ def stratify_size(df, size_condition, all_variables, var1, var2, var3, var4, var
         if True, create an array with all the variables (not just FWI metrics) for regression
     var1-10 : string
         variable names, corresponding to the header names
+        
     Returns
     ----------
     ndarray
@@ -452,7 +460,8 @@ def stratify_size(df, size_condition, all_variables, var1, var2, var3, var4, var
 def stratify_dataset(df, stratify_condition, size_condition, all_variables,
                      var1, var2, var3, var4, var5, var6, var7, var8, var9, var10):
     '''This is a sub-function that will be called to stratify the fires based on different
-    characteristics in the ridge regression (stratify) function. 
+    characteristics in the ridge regression (stratify) function.
+    
     Parameters
     ----------
     df : pandas dataframe
@@ -466,6 +475,7 @@ def stratify_dataset(df, stratify_condition, size_condition, all_variables,
         if True, create an array with all the variables (not just FWI metrics) for regression
     var1-10 : string
         variable names, corresponding to the header names
+        
     Returns
     ----------
     ndarray
@@ -551,7 +561,8 @@ def stratify_dataset(df, stratify_condition, size_condition, all_variables,
 def ridge_regression_stratify(path_to_excel_spreadsheet, var1, var2, var3, var4, var5, var6, var7, var8, var9, var10, all_variables,
                               plot_distributions, plot_residual_histogram, stratify_condition, size_condition, ecozone_condition):
     '''Make a ridge regression model stratified based on different ecozones and fire characteristics
-    and print out the resulting coefficients and (if True) the histogram of residuals 
+    and print out the resulting coefficients and (if True) the histogram of residuals
+    
     Parameters
     ----------
         path_to_excel_spreadsheet : string
@@ -649,10 +660,12 @@ def ridge_regression_stratify(path_to_excel_spreadsheet, var1, var2, var3, var4,
 
 def get_RMSE(absolute_error_dictionary):
     '''Calculate RMSE
+
     Parameters
     ----------
         absolute_error_dictionary : dictionary
             dictionary output from the cross-validation procedure
+            
     Returns
     ----------
         float
@@ -665,11 +678,13 @@ def get_RMSE(absolute_error_dictionary):
 
 
 def get_MAE(absolute_error_dictionary):
-    '''Calculate mean absolute error 
+    '''Calculate mean absolute error
+
     Parameters
     ----------
         absolute_error_dictionary : dictionary
             dictionary output from the cross-validation procedure
+            
     Returns
     ----------
         float
@@ -684,7 +699,8 @@ def get_MAE(absolute_error_dictionary):
 
 
 def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4, save_path):
-    '''Check if a fire is inside a zone (ecozone, intensively managed zone, etc.) 
+    '''Check if a fire is inside a zone (ecozone, intensively managed zone, etc.)
+
     Parameters
     ----------
         file_path : string
@@ -695,9 +711,8 @@ def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4, save_p
             names of the zones, Zone1 is required, the rest are optional, takes up to 4
             Note: if you are not using the other three zones, input "None"
         save_path : string
-            path where you want to save the output text file 
-    Returns
-        Prints out the fires plus what zone it is in
+            path where you want to save the output text file
+            
     '''
     dirname = file_path_zones
     fire_dates = []
@@ -811,7 +826,8 @@ def is_it_in_zone(file_path, file_path_zones, Zone1, Zone2, Zone3, Zone4, save_p
 
 
 def plot(shapefile, maxmin, idw1_grid, idw2_grid, idew1_grid, idew2_grid, tpss_grid, rf_grid, ok_grid, varname):
-    '''Plot all the maps for the different spatial interpolation methods on one figure 
+    '''Plot all the maps for the different spatial interpolation methods on one figure
+
     Parameters
     ----------
          shapefile : string
@@ -903,7 +919,8 @@ def plot(shapefile, maxmin, idw1_grid, idw2_grid, idew1_grid, idew2_grid, tpss_g
 
 
 def select_random_station(groups, blocknum, replacement, used_stations):
-    '''Select a random station from each group for bagging xval 
+    '''Select a random station from each group for bagging xval
+
     Parameters
     ----------
         groups : dictionary
@@ -913,7 +930,8 @@ def select_random_station(groups, blocknum, replacement, used_stations):
         replacement : bool
             whether or not to use replacement 
         used_stations : list
-            empty list if using replacement, if not, it is a list of already used stations 
+            empty list if using replacement, if not, it is a list of already used stations
+            
     Returns
     ----------
         dictionary 
@@ -951,7 +969,8 @@ def select_random_station(groups, blocknum, replacement, used_stations):
 
 
 def linear_regression(path_to_excel_spreadsheet, plot_distributions, plot_residual_histogram, transform):
-    '''Make a linear regression model and print out the resulting coefficients and (if True) the histogram of residuals 
+    '''Make a linear regression model and print out the resulting coefficients and (if True) the histogram of residuals
+
     Parameters
     ----------
        path_to_excel_spreadsheet : string
@@ -1070,6 +1089,7 @@ def linear_regression(path_to_excel_spreadsheet, plot_distributions, plot_residu
 
 def check_p_value(path_to_excel_spreadsheet):
     '''Quality-control for p-value calculation
+
     Parameters
     ----------
     path_to_excel_spreadsheet : string
