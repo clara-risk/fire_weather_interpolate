@@ -7,7 +7,7 @@ Functions to evaluate the outputs of the FWI metrics functions, such as ridge re
 
 References
 ----------
-See: https://en.wikipedia.org/wiki/Tikhonov_regularization; https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeCV.html
+https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeCV.html
 """
 
 # import
