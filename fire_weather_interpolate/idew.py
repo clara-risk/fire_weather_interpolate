@@ -3,10 +3,12 @@
 """
 Summary
 -------
+
 Code for inverse distance elevation weighting with a weight of 0.8 for distance (Euclidean) and 0.2 for distance (vertical). 
 
 References
 ----------
+
 For weights: 
 
 Daly, C., Gibson, W. P., Taylor, G. H., Johnson, G. L., & Pasteris, P. (2002). 
@@ -34,6 +36,7 @@ warnings.filterwarnings("ignore")
 def IDEW(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, file_path_elev,
          idx_list, d):
     '''Inverse distance elevation weighting
+
     Parameters
     ----------
          latlon_dict : dictionary
@@ -230,6 +233,7 @@ def IDEW(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, file_pat
 def cross_validate_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array,
                         idx_list, d):
     '''Leave-one-out cross-validation procedure for IDEW
+
     Parameters
     ----------
          latlon_dict : dictionary
@@ -245,7 +249,8 @@ def cross_validate_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_
          idx_list : int
               position of the elevation column in the lookup file
          d : int
-              the weighting for IDW interpolation            
+              the weighting for IDW interpolation
+              
     Returns
     ----------
          dictionary
@@ -420,6 +425,7 @@ def cross_validate_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_
 def shuffle_split_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list,
                        d, rep):
     '''Shuffle-split cross-validation with 50/50 training test split
+
    Parameters
    ----------
         loc_dict : dictionary
@@ -438,6 +444,7 @@ def shuffle_split_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_a
              the weighting for IDW interpolation
         rep : int
              number of replications
+             
    Returns
    ----------
         float
@@ -619,6 +626,7 @@ def shuffle_split_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_a
 def spatial_kfold_IDEW(loc_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list,
                        d, block_num,blocking_type):
     '''Spatially blocked k-folds cross-validation procedure for IDEW
+
     Parameters
     ----------
          idw_example_grid  : ndarray
@@ -641,6 +649,7 @@ def spatial_kfold_IDEW(loc_dict, Cvar_dict, shapefile, file_path_elev, elev_arra
               number of blocks/clusters
          blocking_type : string
               whether to use clusters or blocks
+              
     Returns
     ----------
          float
@@ -811,7 +820,9 @@ def spatial_kfold_IDEW(loc_dict, Cvar_dict, shapefile, file_path_elev, elev_arra
 
 def select_block_size_IDEW(nruns, group_type, loc_dict, Cvar_dict, idw_example_grid,
                            shapefile, file_path_elev, idx_list, elev_array, d):
-    '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, in order to select the block/cluster size
+    '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation,
+    in order to select the block/cluster size
+    
     Parameters
     ----------
          nruns : int
@@ -834,6 +845,7 @@ def select_block_size_IDEW(nruns, group_type, loc_dict, Cvar_dict, idw_example_g
               array for elevation, create using IDEW interpolation (this is a trick to speed up code)
          d : int
               the weighting for IDW interpolation
+              
     Returns
     ----------
          int
@@ -908,6 +920,7 @@ def select_block_size_IDEW(nruns, group_type, loc_dict, Cvar_dict, idw_example_g
 def spatial_groups_IDEW(idw_example_grid, loc_dict, Cvar_dict, shapefile, d, blocknum, nfolds, replacement, dictionary_Groups,
                         file_path_elev, idx_list, elev_array):
     '''Stratified shuffle-split cross-validation procedure
+
     Parameters
     ----------
          idw_example_grid  : ndarray
@@ -930,6 +943,7 @@ def spatial_groups_IDEW(idw_example_grid, loc_dict, Cvar_dict, shapefile, d, blo
               dictionary of what groups (clusters) the stations belong to
          elev_array : ndarray
              array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+             
     Returns
     ----------
          dictionary
