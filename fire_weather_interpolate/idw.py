@@ -7,6 +7,7 @@ Code for interpolating weather data using inverse distance weighting interpolati
 
 References
 ----------
+
 Code for IDW modified from https://stackoverflow.com/questions/3104781/inverse-distance-weighted-idw-interpolation-with-python?rq=1 (answer by Joe Kington)
 
 Kington, J. "Inverse Distance Weighted (IDW) Interpolation with Python" https://stackoverflow.com/questions/3104781/inverse-distance-weighted-idw-interpolation-with-python?rq=1. Jun 2010.
