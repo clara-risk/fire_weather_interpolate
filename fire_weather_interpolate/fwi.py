@@ -1130,7 +1130,7 @@ def DMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yester
     # eq 14, modified in R package
     wmr = wmi + 1000 * netRain/(48.77 + b * netRain)
 
-    pr0 = np.array(244.72-(43.43 * (np.log(wmr-20)))
+    pr0 = np.array(244.72-(43.43 * (np.log(wmr-20))))
 
     pr0[pr0 < 0] = 0
 
