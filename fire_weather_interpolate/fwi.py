@@ -1313,17 +1313,28 @@ def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yest
 
 
 def BUI(dmc, dc, maxmin, show, shapefile, mask, endMask):  # BUI can be calculated on the fly
-    ''' Calculate BUI
+    ''' Calculate BUI.
+
     Parameters
-        dmc (np_array): the dmc array for the date of interest
-        dc (np_array): the dc array for the date of interest
-        maxmin (list): bounds of the study area 
-        show (bool): whether or not to display the map 
-        shapefile (str): path to the study area shapefile 
-        mask (np_array): mask for the start up date 
-        endMask (np_array): mask for the shut down date 
-    Returns 
-        bui1 (np_array): array containing BUI values for the study area 
+    ----------
+    dmc : ndarray
+        the dmc array for the date of interest
+    dc : ndarray
+        the dc array for the date of interest
+    maxmin : list
+        bounds of the study area 
+    show : bool
+        whether or not to display the map 
+    shapefile : string
+        path to the study area shapefile 
+    mask : ndarray
+        mask for the start up date 
+    endMask : ndarray
+        mask for the shut down date 
+    Returns
+    ----------
+    ndarray
+        - array containing BUI values for the study area 
     '''
     shape = dmc.shape
     bui1 = np.zeros(shape)
@@ -1377,17 +1388,28 @@ def BUI(dmc, dc, maxmin, show, shapefile, mask, endMask):  # BUI can be calculat
 
 
 def ISI(ffmc, wind_grid, maxmin, show, shapefile, mask, endMask):
-    ''' Calculate ISI
+    ''' Calculate ISI.
+
     Parameters
-        ffmc (np_array): ffmc array for the date of interest
-        wind_grid (np_array): wind speed interpolated array for the date of interest
-        maxmin (list): bounds of the shapefile
-        show (bool): whether or not to display the map 
-        shapefile (str): path to the study area shapefile
-        mask (np_array): mask for the start up date
-        endMask (np_array): mask for the shutdown date
-    Returns 
-        isi (np_array): the calculated array for ISI for the study area 
+    ----------
+    ffmc : ndarray
+        ffmc array for the date of interest
+    wind_grid : ndarray
+        wind speed interpolated array for the date of interest
+    maxmin : list
+        bounds of the shapefile
+    show : bool
+        whether or not to display the map 
+    shapefile : string
+        path to the study area shapefile
+    mask : ndarray
+        mask for the start up date
+    endMask : ndarray
+        mask for the shutdown date
+    Returns
+    ----------
+    ndarray
+        the calculated array for ISI for the study area 
     '''
 
     fm = 147.2 * (101 - ffmc)/(59.5 + ffmc)
@@ -1430,17 +1452,28 @@ def ISI(ffmc, wind_grid, maxmin, show, shapefile, mask, endMask):
 
 
 def FWI(isi, bui, maxmin, show, shapefile, mask, endMask):
-    ''' Calculate FWI
+    ''' Calculate FWI. 
     Parameters
-        isi (np_array): calculated isi surface for the date of interest 
-        bui (np_array): calculated bui surface for the date of interest 
-        maxmin (list): bounds of the study area
-        show (bool): whether or not to show the map 
-        shapefile (str): path to the shapefile 
-        mask (np_array): start up mask 
-        endMask (np_array): shut down mask 
-    Returns 
-        fwi (np_array): calculated FWI surface for the study area 
+    ----------
+    isi : ndarray
+        calculated isi surface for the date of interest 
+    bui : ndarray
+        calculated bui surface for the date of interest 
+    maxmin : list
+        bounds of the study area
+    show : bool
+        whether or not to show the map 
+    shapefile : string
+        path to the shapefile 
+    mask : ndarray
+        start up mask 
+    endMask : ndarray
+        shut down mask
+        
+    Returns
+    ----------
+    ndarray
+        - calculated FWI surface for the study area 
     '''
 
     shape = isi.shape
@@ -1489,16 +1522,23 @@ def FWI(isi, bui, maxmin, show, shapefile, mask, endMask):
 
 
 def plot_july(fwi_list, maxmin, year, var, shapefile, shapefile2):
-    ''' Visualize all values for July. **DO NOT HAVE TO CHANGE INDEX IF LEAP YEAR** WHY? B/C WE ARE COUNTING FRM MAR1
+    ''' Visualize all values for July.
+    Note: do not have to change index if it is a leap year because we are counting from March 1.
+
     Parameters
-        fwi_list (list): list of fwi metric arrays for a certain measure (i.e. dmc)
-        maxmin (list): bounds of study area
-        year (str): year of interest
-        var (str): variable name of interest (i.e. "Duff Moisture Code")
-        shapefile (str): path to study area shapefile
-        shapefile2 (str): path to masking shapefile 
-    Returns
-        plots a figure with fwi metric map for each day in month of July 
+    ----------
+    fwi_list : list
+        list of fwi metric arrays for a certain measure (i.e. dmc)
+    maxmin : list
+        bounds of study area
+    year : string
+        year of interest
+    var : string
+        variable name of interest (i.e. "Duff Moisture Code")
+    shapefile : string
+        path to study area shapefile
+    shapefile2 : string
+        path to masking shapefile
     '''
 
     fig = plt.figure()
@@ -1559,16 +1599,23 @@ def plot_july(fwi_list, maxmin, year, var, shapefile, shapefile2):
 
 
 def plot_june(fwi_list, maxmin, year, var, shapefile, shapefile2):
-    ''' Visualize all values for June. **DO NOT HAVE TO CHANGE INDEX IF LEAP YEAR** WHY? B/C WE ARE COUNTING FRM MAR1
+    ''' Visualize all values for June. 
+    Note: do not have to change index if it is a leap year because we are counting from March 1.
+
     Parameters
-        fwi_list (list): list of fwi metric arrays for a certain measure (i.e. dmc)
-        maxmin (list): bounds of study area
-        year (str): year of interest
-        var (str): variable name of interest (i.e. "Duff Moisture Code")
-        shapefile (str): path to study area shapefile
-        shapefile2 (str): path to masking shapefile 
-    Returns
-        plots a figure with fwi metric map for each day in month of June 
+    ----------
+    fwi_list : list
+        list of fwi metric arrays for a certain measure (i.e. dmc)
+    maxmin : list
+        bounds of study area
+    year : string
+        year of interest
+    var : string
+        variable name of interest (i.e. "Duff Moisture Code")
+    shapefile : string
+        path to study area shapefile
+    shapefile2 : string
+        path to masking shapefile
     '''
 
     fig = plt.figure()
@@ -1634,16 +1681,23 @@ def plot_june(fwi_list, maxmin, year, var, shapefile, shapefile2):
 
 
 def plot_all(fwi_list, maxmin, year, var, shapefile, shapefile2):
-    ''' Visualize all values for all in list. **DO NOT HAVE TO CHANGE INDEX IF LEAP YEAR** WHY? B/C WE ARE COUNTING FRM MAR1
+    ''' Visualize all values for entire season  
+    Note: do not have to change index if it is a leap year because we are counting from March 1.
+
     Parameters
-        fwi_list (list): list of fwi metric arrays for a certain measure (i.e. dmc)
-        maxmin (list): bounds of study area
-        year (str): year of interest
-        var (str): variable name of interest (i.e. "Duff Moisture Code")
-        shapefile (str): path to study area shapefile
-        shapefile2 (str): path to masking shapefile 
-    Returns
-        plots a figure with fwi metric map for each day 
+    ----------
+    fwi_list : list
+        list of fwi metric arrays for a certain measure (i.e. dmc)
+    maxmin : list
+        bounds of study area
+    year : string
+        year of interest
+    var : string
+        variable name of interest (i.e. "Duff Moisture Code")
+    shapefile : string
+        path to study area shapefile
+    shapefile2 : string
+        path to masking shapefile
     '''
 
     fig = plt.figure()
@@ -1705,18 +1759,29 @@ def plot_all(fwi_list, maxmin, year, var, shapefile, shapefile2):
 
 def extract_fire_season_frm_NFDB(file_path, year1, year2, ecozone_path, out_path, search_date_end, search_date_start):
     '''Get the first and last lightning-caused ignitions from the database in ecozone
+
     Parameters
-        file_path (str): path to ignition lookup file
-        year1 (int): start year
-        year2 (int): end year
-        ecozone_path (str): path to the ecozone shapefile
-        out_path (str): where to save the results file
-        search_date_end (str): 'oct' or 'sep', when to start looking for the last date
-        search_date_start (str): 'feb' or 'mar', when to start looking for the last date,
-        january start dates considered unrealistic...
+    ----------
+    file_path : string
+        path to ignition lookup file
+    year1 : int
+        start year
+    year2 :int
+        end year
+    ecozone_path : string
+        path to the ecozone shapefile
+    out_path : string
+        where to save the results file
+    search_date_end : string
+        'oct' or 'sep', when to start looking for the last date
+    search_date_start : string
+        'feb' or 'mar', when to start looking for the last date, January start dates considered unrealistic...
     Returns
-        first_date (str): first lightning caused ignition in ecozone
-        last_date (str): last lightning caused ignition in ecozone
+    ----------
+    string
+        - first lightning caused ignition in ecozone
+    string 
+        - last lightning caused ignition in ecozone
     '''
     first_fire = []
     last_fire = []
@@ -1945,215 +2010,6 @@ def extract_fire_season_frm_NFDB(file_path, year1, year2, ecozone_path, out_path
     print(year_list)
     if len(year_list) != len(first_fire) or len(year_list) != len(last_fire):
         print('Error! A year is missing a value!')
-    rows = zip(year_list, first_fire, last_fire)
-    # Print to a results file
-    with open(out_path, "w") as f:
-        writer = csv.writer(f, lineterminator='\n')
-        for row in rows:
-            writer.writerow(row)
-
-
-def extract_fire_season_frm_fire_archive_report(file_path, year1, year2, ecozone_path, out_path, search_date_end, search_date_start):
-    '''Get the first and last lightning-caused ignitions from the extra dataset 
-    Parameters
-        file_path (str): path to ignition lookup file
-        year1 (int): start year
-        year2 (int): end year
-        ecozone_path (str): path to the ecozone shapefile
-        out_path (str): where to save the results file
-        search_date_end (str): 'oct' or 'sep', when to start looking for the last date
-        search_date_start (str): 'feb' or 'mar', when to start looking for the last date,
-        january start dates considered unrealistic...
-    Returns
-        first_date (str): first lightning caused ignition in ecozone
-        last_date (str): last lightning caused ignition in ecozone
-        writes output to csv file 
-    '''
-    first_fire = []
-    last_fire = []
-    year_list = []
-    for year in range(year1, year2+1):
-        print('Processing..........'+str(year))
-        fire_locs = []
-        lookup_dict = {}
-        data = pd.read_csv(file_path)
-        df2 = data.loc[data['FIRE_YEAR'] == year]
-        # df2 = df.loc[df['GENERAL_CAUSE'] == 'LTG'] #All fires
-        fire_locs = list(zip(df2['LATITUDE'], df2['LONGITUDE']))
-        initiate_dict = list(zip(
-            df2['UNIQUE_ID'], df2['LATITUDE'], df2['LONGITUDE'], df2['C_START_DATE_DayofYear']))
-        lookup_dict = {i[0]: [i[1], i[2], i[3]] for i in initiate_dict}
-
-        proj_dict = {}
-        # Project the latitude and longitudes
-        for k, v in lookup_dict.items():
-            lat = v[0]
-            lon = v[1]
-            x, y = pyproj.Proj('esri:102001')(lon, lat)
-            proj_dict[k] = [x, y, v[2]]
-
-        # check if leap
-        is_leap = isleap(int(year))
-        if is_leap:
-            num_days_to_feb = 31
-            num_days_to_march = 31+28
-            num_days_to_sep = 31+28+31+30+31+30+31+31
-            num_days_to_oct = 31+28+31+30+31+30+31+31+30
-        else:
-            num_days_to_feb = 31
-            num_days_to_march = 31+29
-            num_days_to_sep = 31+29+31+30+31+30+31+31
-            num_days_to_oct = 31+29+31+30+31+30+31+31+30
-
-        # Get fires inside the ecozone
-        eco_zone = gpd.read_file(ecozone_path)
-        ecoDF = gpd.GeoDataFrame(eco_zone)
-        ecoDF_union = ecoDF.geometry.unary_union
-
-        updating_list_first = []
-        updating_list_last = []
-        num_fires_in_zone = 0
-        for k, v in proj_dict.items():
-
-            latitude = float(v[1])
-            longitude = float(v[0])
-
-            fire_loc = Point((latitude, longitude))
-            pointDF = pd.DataFrame([fire_loc])
-            gdf = gpd.GeoDataFrame(pointDF, geometry=[fire_loc])
-            if (eco_zone.geometry.contains(gdf.geometry)).any():
-                num_fires_in_zone += 1
-                if search_date_start == 'mar':
-                    if v[2] >= num_days_to_march:  # 1 is Jan 1, we exclude
-                        if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
-                            updating_list_first[0] = v[2]
-                        elif len(updating_list_first) == 0:
-                            updating_list_first.append(v[2])
-                        else:
-                            print('...')
-                elif search_date_start == 'feb':
-                    if v[2] >= num_days_to_feb:  # 1 is Jan 1, we exclude
-                        if len(updating_list_first) > 0 and updating_list_first[0] > v[2]:
-                            updating_list_first[0] = v[2]
-                        elif len(updating_list_first) == 0:
-                            updating_list_first.append(v[2])
-                        else:
-                            print('...')
-
-                else:
-                    print('That is not a valid report date!')
-
-                # End date
-                if search_date_end == 'sep':
-                    if v[2] >= num_days_to_sep:  # 1 is Jan 1, we exclude
-                        if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
-                            updating_list_last[0] = v[2]
-                        elif len(updating_list_last) == 0:
-                            updating_list_last.append(v[2])
-                        else:
-                            print('...')
-                elif search_date_end == 'oct':
-                    if v[2] >= num_days_to_oct:  # 1 is Jan 1, we exclude
-                        if len(updating_list_last) > 0 and updating_list_last[0] < v[2]:
-                            updating_list_last[0] = v[2]
-                        elif len(updating_list_last) == 0:
-                            updating_list_last.append(v[2])
-                        else:
-                            print('...')
-                else:
-                    print('That is not a valid report date!')
-
-            # if len(updating_list_first) > 0:
-                #print('First fire: '+str(updating_list_first[0]))
-            # if len(updating_list_last) > 0:
-                #print('Last fire: '+str(updating_list_last[0]))
-        year_list.append(year)
-        try:
-            first_fire.append(updating_list_first[0])
-        except:
-            first_fire.append(-9999)
-        try:
-            last_fire.append(updating_list_last[0])
-        except:
-            last_fire.append(-9999)
-
-        if num_fires_in_zone <= 5:  # Not enough fires
-            first_fire[-1] = -9999
-            last_fire[-1] = -9999
-        print(num_fires_in_zone)
-        print(first_fire[-1])
-        print(last_fire[-1])
-
-    rows = zip(year_list, first_fire, last_fire)
-    # Print to a results file
-    with open(out_path, "w") as f:
-        writer = csv.writer(f, lineterminator='\n')
-        for row in rows:
-            writer.writerow(row)
-
-
-def select_and_output_earliest_year(file_path1, file_path2, year1, year2, out_path):
-    '''Get the first and last lightning-caused ignitions from the two sources using the csv files
-    (we are basically combining them) 
-    Parameters
-        file_path1 (str): path to the output csv file from national fire database
-        file_path2 (str): path to the output csv file from the extra dataset
-        year1 (int): start year
-        year2 (int): end year
-        out_path (str): where to save the results file 
-    Returns
-        first_date (str): first lightning caused ignition in ecozone
-        last_date (str): last lightning caused ignition in ecozone
-        writes output to csv file
-    '''
-    # Get the pandas dataframes
-    first_fire = []
-    last_fire = []
-    year_list = []
-    for year in range(year1, year2+1):
-        year_list.append(year)
-        print('Processing..........'+str(year))
-        fire_locs = []
-        lookup_dict = {}
-        data = pd.read_csv(file_path1)
-        df = data.loc[data['YEAR'] == year]
-        initiate_dict = list(zip(df['YEAR'], df['START'], df['END']))
-        lookup_dict = {i[0]: [i[1], i[2]] for i in initiate_dict}
-        data2 = pd.read_csv(file_path2)
-        df2 = data2.loc[data2['YEAR'] == year]
-        initiate_dict2 = list(zip(df2['YEAR'], df2['START'], df2['END']))
-        lookup_dict2 = {i[0]: [i[1], i[2]] for i in initiate_dict2}
-
-        # which column value is smaller for the start date?
-        # which column is larger for the end date?
-
-        if lookup_dict2[year][0] == -9999 and lookup_dict[year][0] == -9999:  # if both are NaN
-            first_fire.append(-9999)
-        else:
-            if (lookup_dict2[year][0] <= lookup_dict[year][0]) and lookup_dict2[year][0] != -9999:
-                first_fire.append(lookup_dict2[year][0])  # the earlier one
-
-            elif lookup_dict[year][0] == -9999:
-                first_fire.append(lookup_dict2[year][0])
-            elif lookup_dict2[year][0] == -9999:
-                first_fire.append(lookup_dict[year][0])
-            else:
-                first_fire.append(lookup_dict[year][0])
-
-        if lookup_dict2[year][1] == -9999 and lookup_dict[year][1] == -9999:
-            last_fire.append(-9999)
-        else:
-            if (lookup_dict2[year][1] >= lookup_dict[year][1]) and lookup_dict[year][1] != -9999:
-                last_fire.append(lookup_dict2[year][1])
-
-            elif lookup_dict[year][1] == -9999:
-                last_fire.append(lookup_dict2[year][1])
-            elif lookup_dict2[year][1] == -9999:
-                last_fire.append(lookup_dict[year][1])
-            else:
-                last_fire.append(lookup_dict[year][1])
-
-    # write the merged file to a new file
     rows = zip(year_list, first_fire, last_fire)
     # Print to a results file
     with open(out_path, "w") as f:
