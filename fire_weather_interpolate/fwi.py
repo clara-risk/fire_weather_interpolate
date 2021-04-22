@@ -3,10 +3,12 @@
 """
 Summary
 -------
-Code for calculating the FWI metrics.
+
+Code for calculating the FWI metrics and calculating fire season duration.
 
 References
 ----------
+
 Wang, X., Wotton, B. M., Cantin, A. S., Parisien, M. A., Anderson, K., Moore,
 B., & Flannigan, M. D. (2017). cffdrs: an R package for the Canadian Forest
 Fire Danger Rating System. Ecological Processes, 6(1). https://doi.org/10.1186/s13717-017-0070-z
@@ -15,7 +17,10 @@ Wotton, B. M. (2009). Interpreting and using outputs from the Canadian Forest
 Fire Danger Rating System in research applications. Environmental and Ecological
 Statistics, 16(2), 107–131. https://doi.org/10.1007/s10651-007-0084-2
 
-Code is translated from R package:
+Wotton, B. M., & Flannigan, M. D. (1993). Length of the fire season in a
+changing climate. Forestry Chronicle, 69(2), 187–192. https://doi.org/10.5558/tfc69187-2
+
+Code is partially translated from R package:
 https://github.com/cran/cffdrs/tree/master/R
 
 """
@@ -45,136 +50,24 @@ import gpr as gpr
 import tps as tps
 import rf as rf
 
-# functions
-# Using the feather fires, which are copied faster to another computer, but the code is slower than
-# if we use the csv files
-
-
-def start_date_calendar(file_path_daily, year):
-    '''Returns a dictionary of where each station meets the start up criteria, plus a reference dictionary for the lat lon of the stations
-    Parameters
-        file_path (str): path to the feather files containing the hourly data from Environment & 
-        Climate Change Canada 
-        year (str): year we want to find the fire season start up date for 
-    Returns 
-        date_dict (dict): dictionary containing the start up date for each station (days since Mar 1)
-        latlon_dictionary (dict): the latitude and longitude of those stations 
-    '''
-
-    # Input: path to hourly data, string of the year, i.e. '1998'
-    maxTempList_dict = {}  # Locations where we will store the data
-    maxTemp_dictionary = {}
-    date_dict = {}
-    latlon_dictionary = {}
-
-    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-    for station_name in os.listdir(file_path_hourly):
-        # We will need an empty dictionary to store the data due to data ordering issues
-        Temp_subdict = {}
-        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
-        # Loop through the csv in the station folder
-        for csv in os.listdir(file_path_hourly+station_name+'/'):
-            # Only open if it is the csv for the year of interest (this is contained in the csv name)
-            if year in csv:
-                # Open the file - for CAN data we use latin 1 due to à, é etc.
-                file = file_path_hourly+station_name+'/'+csv
-                df = feather.read_dataframe(file)
-
-                count = 0
-
-                for index, row in df.iterrows():
-                    if count == 0:
-
-                        try:
-
-                            # unicode characters at beginning, not sure why
-                            latlon_dictionary[station_name] = (
-                                row['Latitude (y)'], row['ï»¿"Longitude (x)"'])
-
-                        except KeyError:
-                            # The start unicode problem changes based on the computer... lon should always be in place 0 anyways
-                            latlon_dictionary[station_name] = (
-                                row['Latitude (y)'], row[0])
-                    if str(row['Year']) == year:
-
-                        if str(row['Month']) == '3' or str(row['Month']) == '4' or str(row['Month']) == '5' or \
-                           str(row['Month']) == '6' or str(row['Month']) == '7':
-
-                            if str(row['Time']) == '13:00':
-
-                                if pd.notnull(row['Temp (Â°C)']):
-
-                                    Temp_subdict[str(
-                                        row['Date/Time'])] = float(row['Temp (Â°C)'])
-                                    # Get the 13h00 temperature, send to temp list
-                                    temp_list.append(float(row['Temp (Â°C)']))
-                                else:
-                                    Temp_subdict[str(row['Date/Time'])] = 'NA'
-                                    temp_list.append('NA')
-                    count += 1
-
-        maxTemp_dictionary[station_name] = Temp_subdict
-        # Store the information for each station in the permanent dictionary
-        maxTempList_dict[station_name] = temp_list
-
-        vals = maxTempList_dict[station_name]
-
-        # if 'NA' not in vals and len(vals) == 153: #only consider the stations with unbroken records, num_days between March-July is 153
-
-        varray = np.array(vals)
-        where_g12 = np.array(varray >= 12)  # Where is the temperature >=12?
-
-        # Put the booleans in groups, ex. [True, True], [False, False, False]
-        groups = [list(j) for i, j in groupby(where_g12)]
-
-        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
-        length = [x for x in groups if len(x) >= 3 and x[0] == True]
-
-        if len(length) > 0:
-            index = groups.index(length[0])  # Get the index of the group
-            group_len = [len(x) for x in groups]  # Get length of each group
-            length_sofar = 0  # We need to get the number of days up to where the criteria is met
-            # loop through each group until you get to the index and add the length of that group
-            for i in range(0, index):
-                length_sofar += group_len[i]
-
-            # We need to filter out the stations with No Data before that point
-            # So slice to the index
-            vals_behind = varray[0:length_sofar]
-            if 'NA' not in vals_behind:
-
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[
-                    length_sofar+3]  # Go two days ahead for the third day
-
-                d0 = date(int(year), 3, 1)  # March 1, Year
-                # Convert to days since march 1 so we can interpolate
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10]))
-                delta = d1 - d0
-                day = int(delta.days)  # Convert to integer
-                # Store the integer in the dictionary
-                date_dict[station_name] = day
-
-        else:
-            print('Station %s did not start up by September 1 or had NA values upstream of the start date.' % station_name)
-            # Do not include the station - no start up by August 1 is pretty unrealistic I think... (?)
-            pass
-
-            #print('The start date for %s for %s is %s'%(station_name,year,Sdate))
-
-    # Return the dates for each station
-
-    return date_dict, latlon_dictionary
-
 
 def start_date_calendar_csv(file_path_daily, year):
-    '''Returns a dictionary of where each station meets the start up criteria, plus a reference dictionary for the lat lon of the stations
+    '''Returns a dictionary of where each station meets the start up criteria,
+    plus a reference dictionary for the lat lon of the stations
+    
     Parameters
-        file_path_daily (str): path to the csv files containing the hourly data from Environment & 
-        Climate Change Canada 
-        year (str): year we want to find the fire season start up date for 
-    Returns 
-        date_dict (dict): dictionary containing the start up date for each station (days since Mar 1)
-        latlon_dictionary (dict): the latitude and longitude of those stations 
+    ----------
+    file_path_daily : string
+        path to the csv files containing the daily data from Environment & Climate Change Canada 
+    year : string
+        year to find the fire season start up date for 
+              
+    Returns
+    ----------
+    dictionary 
+        - dictionary containing the start up date for each station (days since Mar 1)
+    dictionary
+        - the latitude and longitude of those stations 
     '''
 
     # Input: path to hourly data, string of the year, i.e. '1998'
@@ -353,522 +246,25 @@ def start_date_calendar_csv(file_path_daily, year):
     # print(date_dict)
     return date_dict, latlon_dictionary
 
-
-def start_date_add_hourly(file_path_hourly, year):
-    ''' There are not enough daily stations for accurate calculation of the fire season duration in years after about 1996(?) so we need to add in some of the hourly ones. 
-    This is computationally more intensive so should only be used if necessary (ie not for years that already have enough daily stations). 
-    Parameters
-        file_path_hourly (str): path to the hourly feather files
-        year (str): str of the year of interest
-    Returns
-        date_dict (dict): start up date dictionary 
-        latlon_dictionary (dict): dictionary of the station locations
-    '''
-    maxTempList_dict = {}  # Locations where we will store the data
-    maxTemp_dictionary = {}
-    date_dictH = {}
-    latlon_dictionary = {}
-
-    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-    for station_name in os.listdir(file_path_hourly):
-
-        # We will need an empty dictionary to store the data due to data ordering issues
-        Temp_subdict = {}
-        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
-        # Loop through the csv in the station folder
-        for csv in os.listdir(file_path_hourly+station_name+'/'):
-            if csv[-16:-12] == year and (csv[-19:-17] == '03' or csv[-19:-17] == '04' or csv[-19:-17] == '05'
-               or csv[-19:-17] == '06' or csv[-19:-17] == '07' or csv[-19:-17] == '08'):  # Only open if it is the csv for the year of interest (this is contained in the csv name)
-                # Open the file - for CAN data we use latin 1 due to à, é etc.
-                file = file_path_hourly+station_name+'/'+csv
-                df = feather.read_dataframe(file)
-                unique_dates = set([x[0:10] for x in df['Date/Time'].unique()])
-                count = 0
-                # We need dictionary insertion order maintained
-                for dat in sorted(unique_dates):
-                    if dat in Temp_subdict.keys():
-                        #print('Date is already in the sub-dictionary')
-                        break
-                    temp_24 = {}
-
-                    for index, row in df.iterrows():
-                        if count == 0:
-
-                            try:
-
-                                # unicode characters at beginning, not sure why
-                                latlon_dictionary[station_name] = (
-                                    row['Latitude (y)'], row['ï»¿"Longitude (x)"'])
-
-                            except KeyError:
-                                # The start unicode problem changes based on the computer... lon should always be in place 0 anyways
-                                latlon_dictionary[station_name] = (
-                                    row['Latitude (y)'], row[0])
-
-                        if str(row['Year']) == year:
-
-                            if str(row['Month']) == '3' or str(row['Month']) == '4' or str(row['Month']) == '5' or \
-                               str(row['Month']) == '6' or str(row['Month']) == '7' or str(row['Month']) == '8':
-                                # if str(row['Time']) == '13:00':
-                                if str(row['Date/Time'])[0:10] == dat:
-                                    if pd.notnull(row['Temp (Â°C)']):
-                                        #print(float(row['Temp (Â°C)']))
-                                        temp_24[str(row['Date/Time'])
-                                                ] = float(row['Temp (Â°C)'])
-                                        #temp_list.append(float(row['Temp (Â°C)']))
-                                    else:
-                                        pass
-                        else:
-                            break
-
-                    if len(temp_24.values()) == 24:  # Make sure unbroken record
-
-                        # Send max temp to dictionary
-                        Temp_subdict[dat] = max(temp_24.values())
-                        # Get the 13h00 temperature, send to temp list
-                        temp_list.append(max(temp_24.values()))
-                    else:
-                        Temp_subdict[dat] = 'NA'
-                        temp_list.append('NA')
-                    count += 1
-
-        maxTemp_dictionary[station_name] = Temp_subdict
-        # Store the information for each station in the permanent dictionary
-        maxTempList_dict[station_name] = temp_list
-
-        vals = maxTempList_dict[station_name]
-
-        # if 'NA' not in vals and len(vals) == 184: #only consider the stations with unbroken records, num_days between March-July is 153
-
-        varray = np.array(vals)
-        where_g12 = np.array(varray >= 12)  # Where is the temperature >=12?
-
-        # Put the booleans in groups, ex. [True, True], [False, False, False]
-        groups = [list(j) for i, j in groupby(where_g12)]
-
-        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days >= 12
-        length = [x for x in groups if len(x) >= 3 and x[0] == True]
-
-        if len(length) > 0:
-            index = groups.index(length[0])  # Get the index of the group
-            group_len = [len(x) for x in groups]  # Get length of each group
-            length_sofar = 0  # We need to get the number of days up to where the criteria is met
-            # loop through each group until you get to the index and add the length of that group
-            for i in range(0, index):
-                length_sofar += group_len[i]
-
-            # We need to filter out the stations with No Data before that point
-            # So slice to the index
-            vals_behind = varray[0:length_sofar]
-            if 'NA' not in vals_behind:
-
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[
-                    length_sofar+3]  # Go two days ahead for the third day
-
-                d0 = date(int(year), 3, 1)  # March 1, Year
-                # Convert to days since march 1 so we can interpolate
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10]))
-                delta = d1 - d0
-                day = int(delta.days)  # Convert to integer
-                # avoid some hidden files
-                if station_name in os.listdir(file_path_hourly):
-                    # Store the integer in the dictionary
-                    date_dictH[station_name] = day
-                    print(station_name)
-                    print(day)
-
-        else:
-            print('Station %s did not start up by September 1.' % station_name)
-            # Do not include the station - no start up by Sep 1 is pretty unrealistic I think... (?)
-            pass
-
-    if len(date_dictH.keys()) == 0:
-        return None, None  # Save overhead associated with creating an empty dictionary
-    else:
-        return date_dictH, latlon_dictionary
-
-
-def end_date_calendar(file_path_daily, year):
-    '''Returns a dictionary of where each station meets the start up criteria, 
-    plus a reference dictionary for the lat lon of the stations
-    Parameters
-        file_path (str): path to the feather files containing the hourly data from Environment & 
-        Climate Change Canada 
-        year (str): year we want to find the fire season end date for 
-    Returns 
-        date_dict (dict): dictionary containing the end date for each station (days since Oct 1)
-        latlon_dictionary (dict): the latitude and longitude of those stations 
-    '''
-    # Input: path to hourly data, string of the year, i.e. '1998'
-    maxTempList_dict = {}  # Locations where we will store the data
-    maxTemp_dictionary = {}
-    date_dict = {}
-    latlon_dictionary = {}
-    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-    for station_name in os.listdir(file_path_hourly):
-        # We will need an empty dictionary to store the data due to data ordering issues
-        Temp_subdict = {}
-        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
-        # Loop through the csv in the station folder
-        for csv in os.listdir(file_path_hourly+station_name+'/'):
-            # Only open if it is the csv for the year of interest (this is contained in the csv name)
-            if year in csv:
-                # Open the file - for CAN data we use latin 1 due to à, é etc.
-                file = file_path_hourly+station_name+'/'+csv
-                df = feather.read_dataframe(file)
-
-                count = 0
-
-                for index, row in df.iterrows():
-                    if count == 0:
-
-                        try:
-
-                            # unicode characters at beginning, not sure why
-                            latlon_dictionary[station_name] = (
-                                row['Latitude (y)'], row['ï»¿"Longitude (x)"'])
-                        except KeyError:
-                            # to allow the code to be moved computers
-                            latlon_dictionary[station_name] = (
-                                row['Latitude (y)'], row[0])
-                    if str(row['Year']) == year:
-
-                        if str(row['Month']) == '10' or str(row['Month']) == '11' or str(row['Month']) == '12':
-
-                            if str(row['Time']) == '13:00':
-
-                                if pd.notnull(row['Temp (Â°C)']):
-                                    Temp_subdict[row['Date/Time']
-                                                 ] = float(row['Temp (Â°C)'])
-                                    # Get the 13h00 temperature, send to temp list
-                                    temp_list.append(float(row['Temp (Â°C)']))
-                                else:
-                                    Temp_subdict[row['Date/Time']] = 'NA'
-                                    temp_list.append('NA')
-                    count += 1
-
-        maxTemp_dictionary[station_name] = Temp_subdict
-        # Store the information for each station in the permanent dictionary
-        maxTempList_dict[station_name] = temp_list
-        vals = maxTempList_dict[station_name]
-
-        # if 'NA' not in vals and len(vals) == 92: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
-
-        varray = np.array(vals)
-        where_g12 = np.array(varray < 5)  # Where is the temperature < 5?
-
-        # Put the booleans in groups, ex. [True, True], [False, False, False]
-        groups = [list(j) for i, j in groupby(where_g12)]
-
-        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
-        length = [x for x in groups if len(x) >= 3 and x[0] == True]
-
-        index = groups.index(length[0])  # Get the index of the group
-        group_len = [len(x) for x in groups]  # Get length of each group
-        length_sofar = 0  # We need to get the number of days up to where the criteria is met
-        # loop through each group until you get to the index and add the length of that group
-        for i in range(0, index):
-            length_sofar += group_len[i]
-
-        # We need to filter out the stations with No Data before that point
-        # So slice to the index
-        vals_behind = varray[0:length_sofar]
-        if -9999 not in vals_behind:
-            try:
-
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[
-                    length_sofar+3]  # Go two days ahead for the third day
-
-                d0 = date(int(year), 9, 1)  # Sep 1, Year
-                # Convert to days since Oct 1 so we can interpolate
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10]))
-                delta = d1 - d0
-                day = int(delta.days)  # Convert to integer
-                # Store the integer in the dictionary
-                date_dict[station_name] = day
-            except:
-                print('Error!')
-                print(sorted(maxTemp_dictionary[station_name[:-4]].keys()))
-
-            #print('The end date for %s for %s is %s'%(station_name,year,Sdate))
-
-    # Return the dates for each station
-    return date_dict, latlon_dictionary
-
-
-def end_date_add_hourly(file_path_hourly, year):
-    '''Returns a dictionary of where each station meets the end criteria, 
-    plus a reference dictionary for the lat lon of the stations
-    Parameters
-        file_path (str): path to the feather files containing the hourly data from Environment & 
-        Climate Change Canada 
-        year (str): year we want to find the fire season end date for 
-    Returns 
-        date_dict (dict): dictionary containing the end date for each station (days since Oct 1)
-        latlon_dictionary (dict): the latitude and longitude of those stations 
-    '''
-    maxTempList_dict = {}  # Locations where we will store the data
-    maxTemp_dictionary = {}
-    date_dict = {}
-    latlon_dictionary = {}
-
-    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-    for station_name in os.listdir(file_path_hourly):
-        # print(station_name)
-        # We will need an empty dictionary to store the data due to data ordering issues
-        Temp_subdict = {}
-        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
-        # Loop through the csv in the station folder
-        for csv in os.listdir(file_path_hourly+station_name+'/'):
-            if csv[-16:-12] == year and (csv[-19:-17] == '09' or csv[-19:-17] == '10' or csv[-19:-17] == '11'
-               or csv[-19:-17] == '12'):  # Only open if it is the csv for the year of interest (this is contained in the csv name)
-                # Open the file - for CAN data we use latin 1 due to à, é etc.
-                file = file_path_hourly+station_name+'/'+csv
-                df = feather.read_dataframe(file)
-                unique_dates = set([x[0:10] for x in df['Date/Time'].unique()])
-                count = 0
-                # We need dictionary insertion order maintained
-                for dat in sorted(unique_dates):
-                    if dat in Temp_subdict.keys():
-                        #print('Date is already in the sub-dictionary')
-                        break
-                    temp_24 = {}
-
-                    for index, row in df.iterrows():
-                        if count == 0:
-
-                            try:
-
-                                # unicode characters at beginning, not sure why
-                                latlon_dictionary[station_name] = (
-                                    row['Latitude (y)'], row['ï»¿"Longitude (x)"'])
-
-                            except KeyError:
-                                # The start unicode problem changes based on the computer... lon should always be in place 0 anyways
-                                latlon_dictionary[station_name] = (
-                                    row['Latitude (y)'], row[0])
-
-                        if str(row['Year']) == year:
-
-                            if str(row['Month']) == '9' or str(row['Month']) == '10' or str(row['Month']) == '11' or \
-                               str(row['Month']) == '12':
-                                # if str(row['Time']) == '13:00':
-                                if str(row['Date/Time'])[0:10] == dat:
-                                    if pd.notnull(row['Temp (Â°C)']):
-                                        #print(float(row['Temp (Â°C)']))
-                                        temp_24[str(row['Date/Time'])
-                                                ] = float(row['Temp (Â°C)'])
-                                        #temp_list.append(float(row['Temp (Â°C)']))
-                                    else:
-                                        pass
-                        else:
-                            break
-
-                    if len(temp_24.values()) == 24:  # Make sure unbroken record
-
-                        # Send max temp to dictionary
-                        Temp_subdict[dat] = max(temp_24.values())
-                        # Get the 13h00 temperature, send to temp list
-                        temp_list.append(max(temp_24.values()))
-                    else:
-                        Temp_subdict[dat] = 'NA'
-                        temp_list.append('NA')
-                    count += 1
-
-        maxTemp_dictionary[station_name] = Temp_subdict
-        # Store the information for each station in the permanent dictionary
-        maxTempList_dict[station_name] = temp_list
-
-        vals = maxTempList_dict[station_name]
-
-        # if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
-
-        varray = np.array(vals)
-        where_g12 = np.array(varray < 5)  # Where is the temperature < 5?
-
-        # Put the booleans in groups, ex. [True, True], [False, False, False]
-        groups = [list(j) for i, j in groupby(where_g12)]
-
-        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
-        length = [x for x in groups if len(x) >= 3 and x[0] == True]
-
-        if len(length) > 0:
-            index = groups.index(length[0])  # Get the index of the group
-
-            group_len = [len(x) for x in groups]  # Get length of each group
-            length_sofar = 0  # We need to get the number of days up to where the criteria is met
-            # loop through each group until you get to the index and add the length of that group
-            for i in range(0, index):
-                length_sofar += group_len[i]
-
-            # We need to filter out the stations with No Data before that point
-            # So slice to the index
-            vals_behind = varray[0:length_sofar]
-            if 'NA' not in vals_behind:
-
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[
-                    length_sofar+3]  # Go three days ahead for the third day
-
-                d0 = date(int(year), 9, 1)  # Oct 1, Year
-                # Convert to days since Oct 1 so we can interpolate
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10]))
-                delta = d1 - d0
-                day = int(delta.days)  # Convert to integer
-                # Store the integer in the dictionary
-                date_dict[station_name] = day
-
-        else:
-            print('Station %s did not end by December 31.' % station_name[:-4])
-            pass  # Do not include the station
-
-    if len(date_dict.keys()) == 0:
-        return None, None  # Save overhead associated with creating an empty dictionary
-    else:
-        return date_dict, latlon_dictionary
-
-
-def end_date_add_hourly_csv(file_path_hourly, year):
-    '''Returns a dictionary of where each station meets the end criteria, 
-    plus a reference dictionary for the lat lon of the stations
-    Parameters
-        file_path (str): path to the feather files containing the hourly data from Environment & 
-        Climate Change Canada 
-        year (str): year we want to find the fire season end date for 
-    Returns 
-        date_dict (dict): dictionary containing the end date for each station (days since Oct 1)
-        latlon_dictionary (dict): the latitude and longitude of those stations 
-    '''
-    maxTempList_dict = {}  # Locations where we will store the data
-    maxTemp_dictionary = {}
-    date_dict = {}
-    latlon_dictionary = {}
-
-    # The dictionary will be keyed by the hourly (temperature) station names, which means all the names must be unique
-    for station_name in os.listdir(file_path_hourly):
-        # print(station_name)
-        # We will need an empty dictionary to store the data due to data ordering issues
-        Temp_subdict = {}
-        temp_list = []  # Initialize an empty list to temporarily store data we will later send to a permanent dictionary
-        # Loop through the csv in the station folder
-        for csv in os.listdir(file_path_hourly+station_name+'/'):
-            if csv[-12:-8] == year and (csv[-15:-13] == '09' or csv[-15:-13] == '10' or csv[-15:-13] == '11'
-               or csv[-15:-13] == '12'):  # Only open if it is the csv for the year of interest (this is contained in the csv name)
-                # Open the file - for CAN data we use latin 1 due to à, é etc.
-                file = file_path_hourly+station_name+'/'+csv
-                df = pd.read_csv(file)
-                unique_dates = set([x[0:10] for x in df['Date/Time'].unique()])
-                count = 0
-                # We need dictionary insertion order maintained
-                for dat in sorted(unique_dates):
-                    if dat in Temp_subdict.keys():
-                        #print('Date is already in the sub-dictionary')
-                        break
-                    temp_24 = {}
-
-                    for index, row in df.iterrows():
-                        if count == 0:
-
-                            try:
-
-                                # unicode characters at beginning, not sure why
-                                latlon_dictionary[station_name] = (
-                                    row['Latitude (y)'], row['ï»¿"Longitude (x)"'])
-
-                            except KeyError:
-                                # The start unicode problem changes based on the computer... lon should always be in place 0 anyways
-                                latlon_dictionary[station_name] = (
-                                    row['Latitude (y)'], row[0])
-
-                        if str(row['Year']) == year:
-
-                            if str(row['Month']) == '9' or str(row['Month']) == '10' or str(row['Month']) == '11' or \
-                               str(row['Month']) == '12':
-                                # if str(row['Time']) == '13:00':
-                                if str(row['Date/Time'])[0:10] == dat:
-                                    if pd.notnull(row['Temp (°C)']):
-                                        #print(float(row['Temp (Â°C)']))
-                                        temp_24[str(row['Date/Time'])
-                                                ] = float(row['Temp (°C)'])
-                                        #temp_list.append(float(row['Temp (Â°C)']))
-                                    else:
-                                        pass
-                        else:
-                            break
-
-                    if len(temp_24.values()) == 24:  # Make sure unbroken record
-
-                        # Send max temp to dictionary
-                        Temp_subdict[dat] = max(temp_24.values())
-                        # Get the 13h00 temperature, send to temp list
-                        temp_list.append(max(temp_24.values()))
-                    else:
-                        Temp_subdict[dat] = 'NA'
-                        temp_list.append('NA')
-                    count += 1
-
-        maxTemp_dictionary[station_name] = Temp_subdict
-        # Store the information for each station in the permanent dictionary
-        maxTempList_dict[station_name] = temp_list
-
-        vals = maxTempList_dict[station_name]
-
-        # if 'NA' not in vals and len(vals) == 122: #only consider the stations with unbroken records, num_days between Oct1-Dec31 = 92
-
-        varray = np.array(vals)
-        where_g12 = np.array(varray < 5)  # Where is the temperature < 5?
-
-        # Put the booleans in groups, ex. [True, True], [False, False, False]
-        groups = [list(j) for i, j in groupby(where_g12)]
-
-        # Obtain a list of where the groups are three or longer which corresponds to at least 3 days < 5
-        length = [x for x in groups if len(x) >= 3 and x[0] == True]
-
-        if len(length) > 0:
-            index = groups.index(length[0])  # Get the index of the group
-            group_len = [len(x) for x in groups]  # Get length of each group
-            length_sofar = 0  # We need to get the number of days up to where the criteria is met
-            # loop through each group until you get to the index and add the length of that group
-            for i in range(0, index):
-                length_sofar += group_len[i]
-
-            # We need to filter out the stations with No Data before that point
-            # So slice to the index
-            vals_behind = varray[0:length_sofar]
-            if 'NA' not in vals_behind:
-
-                Sdate = list(sorted(maxTemp_dictionary[station_name].keys()))[
-                    length_sofar+3]  # Go two days ahead for the third day
-
-                d0 = date(int(year), 9, 1)  # Oct 1, Year
-                # Convert to days since Oct 1 so we can interpolate
-                d1 = date(int(Sdate[0:4]), int(Sdate[5:7]), int(Sdate[8:10]))
-                delta = d1 - d0
-                day = int(delta.days)  # Convert to integer
-                # Store the integer in the dictionary
-                date_dict[station_name] = day
-
-        else:
-            print('Station %s did not end by December 31.' % station_name[:-4])
-            pass  # Do not include the station
-
-    if len(date_dict.keys()) == 0:
-        print('No stations')
-        return None, None  # Save overhead associated with creating an empty dictionary
-    else:
-        return date_dict, latlon_dictionary
-
-
 def end_date_calendar_csv(file_path_daily, year, search_month):
     '''Returns a dictionary of where each station meets the end criteria see 
     Wotton & Flannigan 1993, plus a reference dictionary for the lat lon of the stations
+    
     Parameters
-        file_path (str): path to the csv files containing the hourly data from Environment & 
-        Climate Change Canada 
-        year (str): year we want to find the fire season end date for
-        search_month (str): the month (day 1) you want to start searching for the end date, enter 'sep' or 'oct'
-    Returns 
-        date_dict (dict): dictionary containing the end date for each station (days since Oct 1)
-        latlon_dictionary (dict): the latitude and longitude of those stations 
+    ----------
+    file_path_daily : string
+        path to the csv files containing the daily data from Environment & Climate Change Canada 
+    year : string
+        year to find the fire season start up date for
+    search_month : string 
+        the month (day 1) you want to start searching for the end date, enter 'sep' or 'oct'
+        
+    Returns
+    ----------
+    dictionary 
+        - dictionary containing the start up date for each station (days since Mar 1)
+    dictionary
+        - the latitude and longitude of those stations 
     '''
     # Input: path to hourly data, string of the year, i.e. '1998'
     maxTempList_dict = {}  # Locations where we will store the data
@@ -1086,35 +482,53 @@ def end_date_calendar_csv(file_path_daily, year, search_month):
 
 def calc_season_change(earlier_array, later_array):
     '''Calculate the change between seasons so we can evaluate how much the season has changed over time.
+
     Parameters
-        earlier_array (np_array): array of fire season duration values for the earlier year, ex 1919
-        later_array (np_array): array of fire season duration values for the later year, ex 2019
+    ----------
+    earlier_array : ndarray
+        array of fire season duration values for the earlier year, ex 1922
+    later_array : ndarray
+        array of fire season duration values for the later year, ex 2019
+        
     Returns
-        change_array (np_array): array containing the difference for each pixel
+    ----------
+    ndarray 
+        - array containing the difference for each pixel
     '''
     change_array = earlier_array-later_array
     return change_array
 
 
-def calc_duration_in_ecozone(file_path_daily, file_path_hourly, file_path_elev, idx_list, shapefile, list_of_ecozone_names, year1,
-                             year2, method, expand_area, add_hourly_stns):
+def calc_duration_in_ecozone(file_path_daily, file_path_elev, idx_list, shapefile, list_of_ecozone_names, year1,
+                             year2, method, expand_area):
     '''Calculation the yearly duration between years 1-2 and output to dictionary for graphing
+
     Parameters
-        file_path_daily (str): path to the daily files 
-        file_path_hourly (str): path to the files containing the hourly data from Environment & 
-        Climate Change Canada
-        file_path_elev (str): path to the elevation lookup file
-        idx_list (list): the index of the elevation data column in the lookup file
-        shapefile (str): path to the shapefile of the study area
-        list_of_ecozone_names (list of str): list of ecozone names you want to calculate duration for, ex ['taiga','hudson'],
+    ----------
+    file_path_daily : string
+        path to the daily files 
+    file_path_elev : string
+        path to the elevation lookup file
+    idx_list : list
+        the index of the elevation data column in the lookup file
+    shapefile : string
+        path to the shapefile of the study area
+    list_of_ecozone_names : list
+        list of ecozone names you want to calculate duration for, ex ['taiga','hudson'],
         must correspond to the names of the shapefiles in the folder ecozone_shp in the working directory 
-        year1 (int,str): start year
-        year2 (int,str): end year
-        method (str): spatial model, one of: IDW2,IDW3,IDW4,TPSS,RF
-        expand_area (bool): whether or not to expand area by 200km
-        add_hourly_stns (bool): whether or not to add in hourly stations after 1994
+    year1 : int
+        start year
+    year2 : int
+        end year 
+    method : string
+        spatial model, one of: IDW2,IDW3,IDW4,TPSS,RF
+    expand_area : bool
+        whether or not to expand area by 200km
+        
     Returns
-        duration_dict (dict): dictionary keyed by year then ecozone that contains a list of durations from year1-year2 (year2 inclusive)
+    ----------
+    dictionary
+        - dictionary keyed by year then ecozone that contains a list of durations from year1-year2 (year2 inclusive)
     '''
     duration_dict = {}
     for year in range(int(year1), int(year2)+1):
@@ -1123,20 +537,6 @@ def calc_duration_in_ecozone(file_path_daily, file_path_hourly, file_path_elev, 
             file_path_daily, str(year))
         end_dict, latlon_station2 = end_date_calendar_csv(
             file_path_daily, str(year))
-        if add_hourly_stns:
-            if year >= 1994:
-                hourly_dict, latlon_stationH = start_date_add_hourly(
-                    file_path_hourly, str(year))
-                hourly_end, latlon_stationE = end_date_add_hourly(
-                    file_path_hourly, str(year))
-                if hourly_dict is not None:
-                    days_dict = GD.combine_stations(days_dict, hourly_dict)
-                    latlon_station = GD.combine_stations(
-                        latlon_station, latlon_stationH)
-                if hourly_end is not None:
-                    end_dict = GD.combine_stations(end_dict, hourly_end)
-                    latlon_station2 = GD.combine_stations(
-                        latlon_station2, latlon_stationE)
 
         if method == 'IDW2':
 
@@ -1207,13 +607,21 @@ def calc_duration_in_ecozone(file_path_daily, file_path_hourly, file_path_elev, 
 
 def get_date_index(year, input_date, month):
     '''Get the number of days for the date of interest from the first of the month of interest
-    Example, convert to days since March 1 
+    Example, convert to days since March 1
+    
     Parameters
-        year (str): year of interest 
-        input_date (str): input date of interest
-        month (str): the month from when you want to calculate the date (ex, Mar 1)
-    Returns 
-        day (int): days since 1st of the month of interest 
+    ----------
+    year : string
+        year of interest 
+    input_date : string
+        input date of interest
+    month : int
+        the month from when you want to calculate the date (ex, 04 for March)
+        
+    Returns
+    ----------
+    int 
+        - days since 1st of the month of interest 
     '''
     d0 = date(int(year), month, 1)
     input_date = str(input_date)
@@ -1227,12 +635,18 @@ def get_date_index(year, input_date, month):
 
 def make_start_date_mask(day_index, day_interpolated_surface):
     '''Turn the interpolated surface of start dates into a numpy array
+
     Parameters
-        day_index (int): index of the day of interest since Mar 1
-        day_interpolated_surface (np_array): the interpolated surface of the start dates across the 
-        study area 
-    Returns 
-        new (np_array): a mask array of the start date, either activated (1) or inactivated (np.nan)
+    ----------
+    day_index : int
+        index of the day of interest since Mar 1
+    day_interpolated_surface : ndarray
+        the interpolated surface of the start dates across the study area
+        
+    Returns
+    ----------
+    ndarray
+        - a mask array of the start date, either activated (1) or inactivated (np.nan)
     '''
     shape = day_interpolated_surface.shape
     new = np.ones(shape)
@@ -1245,12 +659,18 @@ def make_start_date_mask(day_index, day_interpolated_surface):
 
 def make_end_date_mask(day_index, day_interpolated_surface):
     '''Turn the interpolated surface of end dates into a numpy array
+
     Parameters
-        day_index (int): index of the day of interest since Oct 1
-        day_interpolated_surface (np_array): the interpolated surface of the end dates across the 
-        study area 
-    Returns 
-        new (np_array): a mask array of the end date, either activated (1) or inactivated (np.nan)
+    ----------
+    day_index : int
+        index of the day of interest since Oct 1 (or potentially Sep 1) 
+    day_interpolated_surface : ndarray
+        the interpolated surface of the start dates across the study area
+        
+    Returns
+    ----------
+    ndarray
+        - a mask array of the end date, either activated (1) or inactivated (np.nan)
     '''
     shape = day_interpolated_surface.shape
     new = np.ones(shape)
@@ -1264,27 +684,41 @@ def make_end_date_mask(day_index, day_interpolated_surface):
 def get_overwinter_pcp(overwinter_dates, file_path_daily, start_surface, end_surface, maxmin, shapefile,
                        show, date_dictionary, latlon_dictionary, file_path_elev, idx_list, json):
     '''Get the total amount of overwinter pcp for the purpose of knowing where to use the 
-    overwinter DC procedure 
+    overwinter DC procedure
+    
     Parameters
-        overwinter_dates (list): list of dates that are in the winter (i.e. station shut down to 
-        start up), you can just input generally Oct 1-June 1 and stations that are still active 
-        will be masked out 
-        file_path_daily (str): file path to the daily feather files containing the precipitation data
-        start_surface (np_array): array containing the interpolated start-up date for each cell 
-        end_surface (np_array): array containing the interpolated end date for each cell, from the 
-        year before 
-        maxmin (list): bounds of the study area 
-        shapefile (str): path to the study area shapefile 
-        date_dictionary (dict, loaded from .json): lookup file that has what day/month pairs each 
-        station contains data for 
-        latlon_dictionary (dict, loaded from .json): lat lons of the daily stations
-        file_path_elev (str): file path to the elevation lookup file 
-        idx_list (list): the index of the elevation data column in the lookup file 
-        json (bool): if True, convert the array to a flat list so it can be written as a .json file
-        to the hard drive
-    Returns 
-        pcp_overwinter (np_array): array of interpolated overwinter precipitation for the study area 
-        overwinter_reqd (np_array): array indicating where to do the overwinter DC procedure 
+    ----------
+    overwinter_dates : list
+        list of dates that are in the winter (i.e. station shut down to start up), you can just input generally
+        Oct 1-June 1 and stations that are still active will be masked out
+    file_path_daily : string
+        file path to the daily feather files containing the precipitation data
+    start_surface : ndarray
+        array containing the interpolated start-up date for each cell 
+    end_surface : ndarray
+        array containing the interpolated end date for each cell, from the year before 
+    maxmin : list
+        bounds of the study area 
+    shapefile : string
+        path to the study area shapefile
+    show : bool
+        whether to print a map 
+    date_dictionary : dictionary
+        lookup file that has what day/month pairs each station contains data for (loaded from .json file) 
+    latlon_dictionary : dictionary
+        lat lons of the daily stations (loaded from .json file) 
+    file_path_elev : string
+        file path to the elevation lookup file 
+    idx_list : list
+        the index of the elevation data column in the lookup file 
+    json : bool
+        if True, convert the array to a flat list so it can be written as a .json file to the hard drive
+    Returns
+    ----------
+    ndarray 
+        - array of interpolated overwinter precipitation for the study area
+    ndarray
+        - array indicating where the overwinter DC procedure is needed
     '''
     pcp_list = []
 
