@@ -400,29 +400,29 @@ def cross_validate_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_ar
 def shuffle_split_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, rep):
     '''Shuffle-split cross-validation with 50/50 training test split
 
-   Parameters
-   ----------
-   
-        loc_dict : dictionary
-             the latitude and longitudes of the daily/hourly stations
-        Cvar_dict : dictionary
-             dictionary of weather variable values for each station
-        shapefile : string
-             path to the study area shapefile
-         file_path_elev : string
-              path to the elevation lookup file
-         elev_array : ndarray
-              array for elevation, create using IDEW interpolation (this is a trick to speed up code)
-         idx_list : int
-              position of the elevation column in the lookup file
-        rep : int
-             number of replications
+    Parameters
+    ----------
+
+    loc_dict : dictionary
+        the latitude and longitudes of the daily/hourly stations
+    Cvar_dict : dictionary
+        dictionary of weather variable values for each station
+    shapefile : string
+        path to the study area shapefile
+    file_path_elev : string
+        path to the elevation lookup file
+    elev_array : ndarray
+        array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+    idx_list : int
+        position of the elevation column in the lookup file
+    rep : int
+        number of replications
              
-   Returns
-   ----------
-        float
-             - MAE estimate for entire surface (average of replications)
-   '''
+    Returns
+    ----------
+    float
+        - MAE estimate for entire surface (average of replications)
+    '''
     count = 1
     error_dictionary = {}
     while count <= rep:
