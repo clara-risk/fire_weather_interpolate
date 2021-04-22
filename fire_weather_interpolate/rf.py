@@ -3,8 +3,7 @@
 """
 Summary
 -------
-Spatial interpolation functions for random forest interpolation
-using the scikit-learn package.
+Spatial interpolation functions for random forest interpolation using the scikit-learn package.
 
 """
 
@@ -29,6 +28,7 @@ warnings.filterwarnings("ignore")
 
 def random_forest_interpolator(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, file_path_elev, idx_list, expand_area):
     '''Random forest interpolation
+
     Parameters
     ----------
          latlon_dict : dictionary
@@ -49,6 +49,7 @@ def random_forest_interpolator(latlon_dict, Cvar_dict, input_date, var_name, sha
               position of the elevation column in the lookup file
          expand_area : bool
               function will expand the study area so that more stations are taken into account (200 km)
+              
     Returns
     ----------
          ndarray
@@ -213,8 +214,10 @@ def random_forest_interpolator(latlon_dict, Cvar_dict, input_date, var_name, sha
 
 def cross_validate_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, pass_to_plot):
     '''Leave-one-out cross-validation procedure for RF
+
     Parameters
     ----------
+    
          latlon_dict : dictionary
               the latitude and longitudes of the stations
          Cvar_dict : dictionary
@@ -229,6 +232,7 @@ def cross_validate_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_ar
               position of the elevation column in the lookup file
          pass_to_plot : bool
               whether you will be plotting the error and need a version without absolute value error (i.e. fire season days)
+              
     Returns
     ----------
          dictionary
@@ -395,8 +399,10 @@ def cross_validate_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_ar
 
 def shuffle_split_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, rep):
     '''Shuffle-split cross-validation with 50/50 training test split
+
    Parameters
    ----------
+   
         loc_dict : dictionary
              the latitude and longitudes of the daily/hourly stations
         Cvar_dict : dictionary
@@ -411,6 +417,7 @@ def shuffle_split_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_arr
               position of the elevation column in the lookup file
         rep : int
              number of replications
+             
    Returns
    ----------
         float
@@ -606,6 +613,7 @@ def shuffle_split_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_arr
 def spatial_kfold_rf(idw_example_grid, loc_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list,\
                      block_num, blocking_type, return_error):
     '''Spatially blocked k-fold cross-validation procedure for RF
+
     Parameters
     ----------
          idw_example_grid  : ndarray
@@ -630,6 +638,7 @@ def spatial_kfold_rf(idw_example_grid, loc_dict, Cvar_dict, shapefile, file_path
               whether to use clusters or blocks
          return_error : bool
               whether or not to return the error dictionary
+              
     Returns
     ----------
          float
@@ -818,8 +827,9 @@ def spatial_kfold_rf(idw_example_grid, loc_dict, Cvar_dict, shapefile, file_path
 def select_block_size_rf(nruns, group_type, loc_dict, Cvar_dict, idw_example_grid, shapefile,\
                          file_path_elev, idx_list, cluster_num1, cluster_num2, cluster_num3,
                          expand_area, boreal_shapefile):
-    '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
+    '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation,
     in order to select the block/cluster size
+
     Parameters
     ----------
          nruns : int
@@ -845,6 +855,7 @@ def select_block_size_rf(nruns, group_type, loc_dict, Cvar_dict, idw_example_gri
               expand area by 200km
          boreal_shapefile : string
               path to shapefile with the boreal zone
+              
     Returns
     ----------
          int
@@ -941,6 +952,7 @@ def select_block_size_rf(nruns, group_type, loc_dict, Cvar_dict, idw_example_gri
 def spatial_groups_rf(idw_example_grid, loc_dict, Cvar_dict, shapefile, blocknum, nfolds,\
                       replacement, dictionary_Groups, file_path_elev, idx_list, expand_area):
     '''Stratified shuffle-split cross-validation procedure
+
     Parameters
     ----------
          idw_example_grid  : ndarray
@@ -963,6 +975,7 @@ def spatial_groups_rf(idw_example_grid, loc_dict, Cvar_dict, shapefile, blocknum
               dictionary of what groups (clusters) the stations belong to
          expand_area : bool
               function will expand the study area so that more stations are taken into account (200 km)
+              
     Returns
     ----------
          dictionary
