@@ -3,14 +3,16 @@
 """
 Summary
 -------
-Interpolation functions for thin plate splines using the radial basis function
-from SciPy.
+Interpolation functions for thin plate splines using the radial basis function from SciPy.
 
 References
 ----------
 Flannigan, M. D., & Wotton, B. M. (1989). A study of interpolation methods for forest fire danger rating in Canada.
 Canadian Journal of Forest Research, 19(8), 1059–1066. https://doi.org/10.1139/x89-161
 
+For phi calculation (smoothing parameter): 
+
+SciPy Community. (2014). SciPy Reference Guide Release 0.14.0 (pp. 34). 
 """
 
 # import
@@ -37,7 +39,8 @@ warnings.filterwarnings("ignore")
 # functions
 def TPS(latlon_dict, Cvar_dict, input_date, var_name, shapefile, shapefile_masking, show, phi, expand_area, calc_phi):
     '''Thin plate splines interpolation implemented using the interpolate radial basis function from 
-    SciPy 
+    SciPy
+    
     Parameters
     ----------
         latlon_dict : dictionary
@@ -57,7 +60,8 @@ def TPS(latlon_dict, Cvar_dict, input_date, var_name, shapefile, shapefile_maski
         expand_area : bool
              function will expand the study area so that more stations are taken into account (200 km)
         calc_phi : bool
-             whether the function will automatically calculate phi (use if expand_area == True); if calc_phi == True, the function will ignore the input value for phi 
+             whether the function will automatically calculate phi (use if expand_area == True); if calc_phi == True, the function will ignore the input value for phi
+             
     Returns
     ----------
         ndarray
@@ -226,7 +230,8 @@ def TPS(latlon_dict, Cvar_dict, input_date, var_name, shapefile, shapefile_maski
 
 
 def cross_validate_tps(latlon_dict, Cvar_dict, shapefile, phi,pass_to_plot):
-    '''Leave-one-out cross-validation for thin plate splines 
+    '''Leave-one-out cross-validation for thin plate splines
+
     Parameters
     ----------
          latlon_dict : dictionary
@@ -239,6 +244,7 @@ def cross_validate_tps(latlon_dict, Cvar_dict, shapefile, phi,pass_to_plot):
              smoothing parameter for the thin plate spline, if 0 no smoothing
          pass_to_plot : bool
               whether you will be plotting the error and need a version without absolute value error (i.e. fire season days)
+              
     Returns
     ----------
          dictionary
@@ -366,7 +372,8 @@ def cross_validate_tps(latlon_dict, Cvar_dict, shapefile, phi,pass_to_plot):
 
 
 def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi=True):
-    '''Shuffle-split cross-validation for thin plate splines 
+    '''Shuffle-split cross-validation for thin plate splines
+
     Parameters
     ----------
         loc_dict : dictionary
@@ -380,7 +387,8 @@ def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi
         phi : float
              smoothing parameter for the thin plate spline, if 0 no smoothing, default is None (it is calculated)
         calc_phi : bool
-            whether to calculate phi in the function, if True, phi can = None 
+            whether to calculate phi in the function, if True, phi can = None
+            
    Returns
    ----------
         float
@@ -545,7 +553,8 @@ def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi
 
 def spatial_kfold_tps(idw_example_grid, loc_dict, Cvar_dict, shapefile, phi, file_path_elev,
                       idx_list, block_num, blocking_type, return_error, calc_phi):
-    '''Spatially blocked k-folds cross-validation procedure for thin plate splines 
+    '''Spatially blocked k-folds cross-validation procedure for thin plate splines
+
     Parameters
     ----------
          idw_example_grid  : ndarray
@@ -569,7 +578,8 @@ def spatial_kfold_tps(idw_example_grid, loc_dict, Cvar_dict, shapefile, phi, fil
          return_error : bool
               whether or not to return the error dictionary
          calc_phi : bool
-             whether to calculate phi in the function, if True, phi can = None 
+             whether to calculate phi in the function, if True, phi can = None
+             
     Returns
     ----------
          float
@@ -723,6 +733,7 @@ def select_block_size_tps(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
                           expand_area, boreal_shapefile, calc_phi):
     '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
     in order to select the block/cluster size
+    
     Parameters
     ----------
          nruns : int
@@ -751,7 +762,8 @@ def select_block_size_tps(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
          boreal_shapefile : string
               path to shapefile with the boreal zone
          calc_phi : bool
-             whether to calculate phi in the function, if True, phi can = None 
+             whether to calculate phi in the function, if True, phi can = None
+             
     Returns
     ----------
          int
@@ -848,6 +860,7 @@ def select_block_size_tps(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
 def spatial_groups_tps(idw_example_grid, loc_dict, Cvar_dict, shapefile, phi, blocknum,
                        nfolds, replacement, show, dictionary_Groups, expand_area, calc_phi):
     '''Stratified shuffle-split cross-validation procedure
+
     Parameters
     ----------
          idw_example_grid  : ndarray
@@ -871,7 +884,8 @@ def spatial_groups_tps(idw_example_grid, loc_dict, Cvar_dict, shapefile, phi, bl
          expand_area : bool
               function will expand the study area so that more stations are taken into account (200 km)
          calc_phi : bool
-             whether to calculate phi in the function, if True, phi can = None 
+             whether to calculate phi in the function, if True, phi can = None
+             
     Returns
     ----------
          dictionary
