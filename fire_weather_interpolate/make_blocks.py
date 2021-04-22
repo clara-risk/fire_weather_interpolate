@@ -16,13 +16,20 @@ import os,sys
 import math,statistics
 
 def make_block(idw_grid,blocknum):
-     '''Divide the study area into blocks 
-     Parameters
-         idw_grid (numpy array): the example idw grid to base the size of the group array off of 
-         blocknum (int): number of blocks to create, either 4,9,16,25
-     Returns 
-         blocks (numpy array): an array with the block value contained in each pixel 
-     '''
+    '''Divide the study area into blocks
+
+   Parameters
+   ----------
+   idw_grid : ndarray
+       the example idw grid to base the size of the group array off of
+   blocknum : int
+       number of blocks to create, either 4, 9, 16, 25
+       
+   Returns
+   ----------
+   ndarray
+       - an array with the block value contained in each pixel 
+    '''
      if blocknum == 4:
           shape = idw_grid.shape
           blocks = np.array_split(idw_grid,2) #We need to make like a quilt of values of the blocks and then search for stations that overlay a block
@@ -146,14 +153,23 @@ def make_block(idw_grid,blocknum):
 
 
 def sorting_stations(blocks,shapefile,loc_dict,Cvar_dict):
-     '''Find the stations in each block and create a reference dictionary for this information 
-     Parameters
-         blocks (numpy array): output of the make_block function 
-         shapefile (str): path to shapefile of study area 
-         loc_dict (dict): dictionary with weather station locations
-         Cvar_dict (dict): the dictionary keyed by station with the weather data inside 
-     Returns 
-         groups (dict): dictionary of the block for each station 
+     '''Find the stations in each block and create a reference dictionary for this information
+
+    Parameters
+    ----------
+    blocks : ndarray
+        output of the make_block function
+    shapefile : string
+        path to shapefile of study area
+    loc_dict : dictionary
+        dictionary with weather station locations
+    Cvar_dict : dictionary
+        the dictionary keyed by station containing the weather data 
+
+    Returns
+    ----------
+    dictionary
+         - dictionary of the block number for each station 
      '''
      x_origin_list = []
      y_origin_list = [] 
