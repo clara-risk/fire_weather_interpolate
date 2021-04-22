@@ -8,7 +8,8 @@ Code for interpolating weather data using inverse distance weighting interpolati
 References
 ----------
 Code for IDW modified from https://stackoverflow.com/questions/3104781/inverse-distance-weighted-idw-interpolation-with-python?rq=1 (answer by Joe Kington)
-[1] Kington, J. "Inverse Distance Weighted (IDW) Interpolation with Python" https://stackoverflow.com/questions/3104781/inverse-distance-weighted-idw-interpolation-with-python?rq=1. Jun 2010.
+
+Kington, J. "Inverse Distance Weighted (IDW) Interpolation with Python" https://stackoverflow.com/questions/3104781/inverse-distance-weighted-idw-interpolation-with-python?rq=1. Jun 2010.
 Last accessed: 2020-12-26.
 """
 
@@ -41,6 +42,7 @@ warnings.filterwarnings("ignore")
 def IDW(latlon_dict, Cvar_dict, input_date,
         var_name, shapefile, show, d, expand_area):
     '''Inverse distance weighting interpolation
+
    Parameters
    ----------
         latlon_dict : dictionary
@@ -59,6 +61,7 @@ def IDW(latlon_dict, Cvar_dict, input_date,
              the weighting for IDW interpolation
         expand_area : bool
              function will expand the study area so that more stations are taken into account (200 km)
+             
    Returns
    ----------
         ndarray
@@ -191,6 +194,7 @@ def IDW(latlon_dict, Cvar_dict, input_date,
 def cross_validate_IDW(latlon_dict, Cvar_dict, shapefile,
                        d, pass_to_plot, expand_area):
     '''Leave-one-out cross-validation procedure for IDW
+
     Parameters
     ----------
          latlon_dict : dictionary
@@ -205,6 +209,7 @@ def cross_validate_IDW(latlon_dict, Cvar_dict, shapefile,
               whether you will be plotting the error and need a version without absolute value error (i.e. fire season days)
          expand_area : bool
               function will expand the study area so that more stations are taken into account (200 km)
+              
     Returns
     ----------
          dictionary
@@ -357,6 +362,7 @@ def cross_validate_IDW(latlon_dict, Cvar_dict, shapefile,
 def select_block_size_IDW(nruns, group_type, loc_dict, Cvar_dict, idw_example_grid, shapefile, file_path_elev, idx_list, d,
                           cluster_num1, cluster_num2, cluster_num3, expand_area, boreal_shapefile):
     '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, in order to select the block/cluster size
+
     Parameters
     ----------
          nruns : int
@@ -384,6 +390,7 @@ def select_block_size_IDW(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
               expand area by 200km
          boreal_shapefile : string
               path to shapefile with the boreal zone
+              
     Returns
     ----------
          int
@@ -488,6 +495,7 @@ def select_block_size_IDW(nruns, group_type, loc_dict, Cvar_dict, idw_example_gr
 def spatial_groups_IDW(idw_example_grid, loc_dict, Cvar_dict, shapefile, d, blocknum, nfolds, replacement,
                        show, dictionary_Groups, expand_area):
     '''Stratified shuffle-split cross-validation procedure
+
     Parameters
     ----------
          idw_example_grid  : ndarray
@@ -510,6 +518,7 @@ def spatial_groups_IDW(idw_example_grid, loc_dict, Cvar_dict, shapefile, d, bloc
               dictionary of what groups (clusters) the stations belong to
          expand_area : bool
               function will expand the study area so that more stations are taken into account (200 km)
+              
     Returns
     ----------
          dictionary
@@ -696,6 +705,7 @@ def spatial_groups_IDW(idw_example_grid, loc_dict, Cvar_dict, shapefile, d, bloc
 def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict, shapefile, d,
                       file_path_elev, idx_list, block_num, blocking_type, return_error):
     '''Spatially blocked k-fold cross-validation procedure for IDW
+
     Parameters
     ----------
          idw_example_grid  : ndarray
@@ -718,6 +728,7 @@ def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict, shapefile, d,
               whether to use clusters or blocks
          return_error : bool
               whether or not to return the error dictionary
+              
     Returns
     ----------
          float
@@ -860,6 +871,7 @@ def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict, shapefile, d,
 
 def shuffle_split(loc_dict, Cvar_dict, shapefile, d, rep, show):
     '''Shuffle-split cross-validation with 50/50 training test split
+
    Parameters
    ----------
         loc_dict : dictionary
@@ -874,6 +886,7 @@ def shuffle_split(loc_dict, Cvar_dict, shapefile, d, rep, show):
              number of replications
         show : bool
              if you want to show a map of the clusters
+             
    Returns
    ----------
         float
