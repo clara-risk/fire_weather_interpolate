@@ -376,23 +376,23 @@ def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi
 
     Parameters
     ----------
-        loc_dict : dictionary
-             the latitude and longitudes of the daily/hourly stations
-        Cvar_dict : dictionary
-             dictionary of weather variable values for each station
-        shapefile : string
-             path to the study area shapefile
-        rep : int
-             number of replications
-        phi : float
-             smoothing parameter for the thin plate spline, if 0 no smoothing, default is None (it is calculated)
-        calc_phi : bool
-            whether to calculate phi in the function, if True, phi can = None
+    loc_dict : dictionary
+        the latitude and longitudes of the daily/hourly stations
+    Cvar_dict : dictionary
+        dictionary of weather variable values for each station
+    shapefile : string
+        path to the study area shapefile
+    rep : int
+        number of replications
+    phi : float
+        smoothing parameter for the thin plate spline, if 0 no smoothing, default is None (it is calculated)
+    calc_phi : bool
+        whether to calculate phi in the function, if True, phi can = None
             
    Returns
    ----------
-        float
-             - MAE estimate for entire surface (average of replications)
+   float
+       - MAE estimate for entire surface (average of replications)
    '''
     count = 1
     error_dictionary = {}
