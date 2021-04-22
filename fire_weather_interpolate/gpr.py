@@ -3,9 +3,14 @@
 """
 Summary
 -------
-Spatial interpolation functions for gaussian process regression interpolation
-using the scikit-learn package. 
+Spatial interpolation functions for gaussian process regression interpolation using the scikit-learn package.
 
+References
+----------
+
+scikit-learn developers. (2019). 1.7.1. Gaussian Process Regression (GPR). Retrieved September 26, 2020, from https://scikit-learn.org/stable/modules/gaussian_process.html
+scikit-learn developers. (2019a). sklearn.gaussian_process.GaussianProcessRegressor. Retrieved 	September 26, 2020, from https://scikit-learn.org/stable/modules/generated/sklearn.gaussian_process.GaussianProcessRegressor.html#sklearn.gaussian_process.GaussianProcessRegressor
+Rasmussen, C. E., & Williams, C. K. I. (2006). Gaussian processes for machine learning. 2006. In The MIT Press, Cambridge, MA, USA (Vol. 38, Issue 2). 
 """
     
 #import
@@ -34,30 +39,48 @@ import statistics
 
 def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
                      file_path_elev,idx_list,expand_area,kernel_object,restarts,report_params,optimizer,param_initiate=None,cov_type='RBF'):
-    '''Base interpolator function for gaussian process regression 
-    Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station
-        input_date (str): date to create the interpolation map for 
-        shapefile (str): path to the study area shapefile
-        show (bool): whether to show the map
-        file_path_elev (str): file path to the elevation lookup file 
-        idx_list (list): the index of the elevation data column in the lookup file 
-        expand_area (bool): function will expand the study area so that more stations are taken into account (200 km)
-        cov (str): covariance function type, support for Rational Quadratic (but only isotropic), Matern
+    '''Base interpolator function for gaussian process regression
 
-        whether the spatial autocorrelation is the same in all directions it will depend on the inputs for parameters,
-        you need to input the parameters of the function (distribution) as a vector not a scalar... we are 3d so the vector MUST be len=3
-        because this corresponds to the [x,y,z] if we are using an anisotropic distribution 
-        
-        param_initiate (list, list of lists) = controls extent of the spatial autocorrelation modelled by the process
+    Parameters
+    ----------
+    latlon_dict : dictionary
+        the latitude and longitudes of the stations
+    Cvar_dict : dictionary
+        dictionary of weather variable values for each station
+    input_date : string
+        the date you want to interpolate for
+    shapefile : string
+        path to the study area shapefile, including its name
+    show : bool
+        whether you want to plot a map    
+    file_path_elev : string
+        file path to the elevation lookup file 
+    idx_list : list
+        the index of the elevation data column in the lookup file 
+    expand_area : bool
+        function will expand the study area so that more stations are taken into account (200 km)   
+    kernel_object : list
+        kernel object describing input kernel you want to use, if optimizing a set of parameters, can input empty list
+    restarts : int
+        number of times to restart to avoid local optima
+    report_params : bool
+        if True, outputs optimized values for kernel hyperparameters
+    optimizer : bool
+        if False, fix parameters of covariance function
+    param_initiate : list
+        input parameters needed to start optimization, controls extent of the spatial autocorrelation modelled by the process
+        whether the spatial autocorrelation is the same in all directions will depend on the inputs for parameters,
+        you need to input the parameters of the function (distribution) as a vector not a scalar
+        since we are working in 3d (latitude, longitude, elevation) the vector must be len=3 because this corresponds to the [x,y,z]
+        if we are using an anisotropic distribution
         ...for isotropic 1d, [1] (or if 2 parameters, [[1],[1]]), for anisotropic, will be [1,1,1] or [[1,1],[1,1],[1,1]]
-        restarts (int) = # times to restart to avoid local optima
-        report_params (bool) = if True, just outputs optimized values for kernel hyperparameters
-        optimizer (bool) = if False, fix parameters of covariance function
-    Returns 
-        gpr_grid (np_array): an array of the interpolated values
+    cov_type : str
+        type of covariance function to use if have not specified a kernel object
+
+    Returns
+    ----------
+    ndarray
+        - an array of the interpolated values
     '''
     lat = []
     lon = []
