@@ -273,21 +273,31 @@ def GPR_interpolator(latlon_dict,Cvar_dict,input_date,var_name,shapefile,show,\
     else: 
         return gpr_grid, maxmin
 
-def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,param_initiate,cov_function):
+def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,cov_function):
     '''Leave-one-out cross-validation procedure for GPR
+
     Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        file_path_elev (str): file path to the elevation lookup file 
-        elev_array (np_array): the elevation array for the study area 
-        idx_list (list): the index of the elevation data column in the lookup file 
-        param_initiate (list): controls extent of the spatial autocorrelation modelled by the process -
-        we need this so we can supervise it. 
-    Returns 
-        absolute_error_dictionary (dict): a dictionary of the absolute error at each station when it
-        was left out 
+    ----------
+    
+    latlon_dict : dictionary
+        the latitude and longitudes of the stations
+    Cvar_dict : dictionary
+        dictionary of weather variable values for each station
+    shapefile : string
+        path to the study area shapefile, including its name
+    file_path_elev : string
+        path to the elevation lookup file
+    elev_array : ndarray
+        array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+    idx_list : int
+        position of the elevation column in the lookup file
+    cov_function : list
+        list containing a string that describes the input covariance function, similar to: ['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']
+      
+    Returns
+    ----------
+    dictionary
+        - a dictionary of the absolute error at each station when it was left out
     '''
     x_origin_list = []
     y_origin_list = [] 
@@ -308,11 +318,6 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
             Plon = float(Plon)
             projected_lat_lon[station_name] = [Plat,Plon]
 
-
-    #Run the full model one time, get fitted params, and use those to speed up, also I think that's statistically correct.
-    #params = GPR_interpolator(latlon_dict,Cvar_dict,'','',shapefile,True,file_path_elev,idx_list,False,'Matern',[[100000,100000,100000],0.5],0, True,False)
-
-    
     for station_name_hold_back in station_name_list:
 
         lat = []
@@ -462,17 +467,29 @@ def cross_validate_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array
 def shuffle_split_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,idx_list,cov_function,rep):
     '''Shuffle split cross-validation procedure for GPR
     Parameters
-        latlon_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        file_path_elev (str): file path to the elevation lookup file 
-        elev_array (np_array): the elevation array for the study area 
-        idx_list (list): the index of the elevation data column in the lookup file
-        cov_function (list): description of covariance function inside list
-        rep (int): number of repititions for shuffle-split 
-    Returns 
-        overall_error (float): average MAE value of all the reps 
+    ----------
+    
+    latlon_dict : dictionary
+        the latitude and longitudes of the stations
+    Cvar_dict : dictionary
+        dictionary of weather variable values for each station
+    shapefile : string
+        path to the study area shapefile, including its name
+    file_path_elev : string
+        path to the elevation lookup file
+    elev_array : ndarray
+        array for elevation, create using IDEW interpolation (this is a trick to speed up code)
+    idx_list : int
+        position of the elevation column in the lookup file
+    cov_function : list
+        list containing a string that describes the input covariance function, similar to: ['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']
+    rep : int
+        number of replications
+        
+    Returns
+    ----------
+    float
+        - MAE estimate for entire surface (average of replications)
     '''
     count = 1
     error_dictionary = {}
@@ -671,22 +688,38 @@ def shuffle_split_gpr(latlon_dict,Cvar_dict,shapefile,file_path_elev,elev_array,
         
 
 def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,elev_array,\
-                      idx_list,cov_function,clusterNum,blocking_type):
-    '''Spatially blocked k-folds cross-validation procedure for rf
+                      idx_list,cov_function,block_num,blocking_type):
+    '''Spatially blocked k-folds cross-validation procedure for gpr 
+
     Parameters
-        loc_dict (dict): the latitude and longitudes of the hourly or daily stations, loaded from the 
-        .json file
-        Cvar_dict (dict): dictionary of weather variable values for each station 
-        shapefile (str): path to the study area shapefile 
-        file_path_elev (str): file path to the elevation lookup file 
-        elev_array (np_array): the elevation array for the study area 
-        idx_list (list): the index of the elevation data column in the lookup file
-        alpha_input(float): controls extent of the spatial autocorrelation modelled by the process (smaller = more)
-        cov_function (list): description of covariance function inside list
-        clusterNum (int): number of clusters to form
-        blocking_type (str): whether to block by cluster or block, either 'cluster' or 'block'
-    Returns 
-        overall_error (float): average MAE value of all the reps 
+    ----------
+    idw_example_grid  : ndarray
+        used for reference of study area grid size
+    loc_dict : dictionary
+        the latitude and longitudes of the daily/hourly stations
+    Cvar_dict : dictionary
+        dictionary of weather variable values for each station
+    shapefile : string
+        path to the study area shapefile
+    file_path_elev : string
+        path to the elevation lookup file
+    elev_array : ndarray
+        array for elevation, create using IDEW interpolation (this is a trick to speed up code)         
+    idx_list : int
+        position of the elevation column in the lookup file
+    cov_function : list
+        list containing a string that describes the input covariance function, similar to: ['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']
+    block_num : int
+        number of blocks/clusters
+    blocking_type : string
+        whether to use clusters or blocks
+        
+    Returns
+    ----------
+    float
+        - MAE estimate for entire surface
+    int
+        - Return the block number just so we can later write it into the file to keep track
     '''
     groups_complete = [] #If not using replacement, keep a record of what we have done 
     error_dictionary = {} 
@@ -699,9 +732,9 @@ def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_el
 
     #Selecting blocknum
     if blocking_type == 'cluster':
-        cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,clusterNum,file_path_elev,idx_list,False,False,False)
+        cluster = c3d.spatial_cluster(loc_dict,Cvar_dict,shapefile,block_num,file_path_elev,idx_list,False,False,False)
     elif blocking_type == 'block':
-        np_array_blocks = mbk.make_block(idw_example_grid,clusterNum) #Get the numpy array that delineates the blocks
+        np_array_blocks = mbk.make_block(idw_example_grid,block_num) #Get the numpy array that delineates the blocks
         cluster = mbk.sorting_stations(np_array_blocks,shapefile,loc_dict,Cvar_dict) #Now get the dictionary
     else:
         print('That is not a valid blocking method')
@@ -856,30 +889,48 @@ def spatial_kfold_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_el
         
     MAE= sum(absolute_error_dictionary.values())/len(absolute_error_dictionary.values()) #average of all the withheld stations
      
-    return clusterNum,MAE
+    return block_num, MAE
 
 def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,shapefile,\
                           file_path_elev,idx_list,cluster_num1,cluster_num2,cluster_num3,\
                           expand_area,boreal_shapefile,cov_function):
      '''Evaluate the standard deviation of MAE values based on consective runs of the cross-valiation, 
      in order to select the block/cluster size
-     Parameters
-         nruns (int): number of repetitions 
-         group_type (str): whether using 'clusters' or 'blocks'
-         loc_dict (dict): the latitude and longitudes of the daily/hourly stations, 
-         loaded from the .json file
-         Cvar_dict (dict): dictionary of weather variable values for each station 
-         idw_example_grid (numpy array): used for reference of study area grid size
-         shapefile (str): path to the study area shapefile 
-         file_path_elev (str): path to the elevation lookup file
-         idx_list (int): position of the elevation column in the lookup file
-         cluster_num: three cluster numbers to test, for blocking this must be one of three:25, 16, 9 
-         For blocking you can enter 'None' and it will automatically test 25, 16, 9
-         boreal_shapefile (str): path to shapefile with the boreal zone
-         cov_function (list): description of covariance function inside list
-     Returns 
-         lowest_stdev,ave_MAE (int,float): block/cluster number w/ lowest stdev, associated
-         ave_MAE of all the runs 
+     
+    Parameters
+    ----------
+    nruns : int
+        number of repetitions
+    group_type : string
+        whether using 'clusters' or 'blocks'
+    loc_dict : dictionary
+        the latitude and longitudes of the daily/hourly stations
+    Cvar_dict : dictionary
+        dictionary of weather variable values for each station
+    idw_example_grid  : ndarray
+        used for reference of study area grid size
+    shapefile : string
+        path to the study area shapefile
+    file_path_elev : string
+        path to the elevation lookup file
+    idx_list : int
+        position of the elevation column in the lookup file
+    cluster_num1-3 : int
+        three cluster numbers to test, for blocking this must be one of three:25, 16, 9
+        you can enter 'None' and it will automatically test 25, 16, 9
+    expand_area : bool
+        expand area by 200km
+    boreal_shapefile : string
+        path to shapefile with the boreal zone
+    cov_function : list
+        list containing a string that describes the input covariance function, similar to: ['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']
+     
+    Returns
+    ----------
+    int
+        - block/cluster number with lowest stdev
+    float
+        - average MAE of all the runs for that cluster/block number
      '''
      
      #Get group dictionaries
@@ -969,22 +1020,35 @@ def select_block_size_gpr(nruns,group_type,loc_dict,Cvar_dict,idw_example_grid,s
     
 def spatial_groups_gpr(idw_example_grid,loc_dict,Cvar_dict,shapefile,file_path_elev,idx_list,blocknum,\
                        nfolds,replacement,dictionary_Groups,cov_function,expand_area):
-     '''Spatially blocked bagging cross-validation procedure for IDW 
-     Parameters
-         idw_example_grid (numpy array): the example idw grid to base the size of the group array off of 
-         loc_dict (dict): the latitude and longitudes of the hourly stations, loaded from the 
-         .json file
-         Cvar_dict (dict): dictionary of weather variable values for each station 
-         shapefile (str): path to the study area shapefile
-         file_path_elev (str): path to the elevation lookup file
-         idx_list (int): position of the elevation column in the lookup file
-         d (int): the weighting function for IDW interpolation
-         nfolds (int): # number of folds. For 10-fold we use 10, etc.
-         cov_function (list): description of covariance function inside list
-         expand_area (bool): expand the study area by 200km 
-     Returns 
-         error_dictionary (dict): a dictionary of the absolute error at each fold when it
-         was left out 
+     '''Stratified shuffle-split cross-validation procedure for gpr
+
+    Parameters
+    ----------
+    idw_example_grid  : ndarray
+        used for reference of study area grid size
+    loc_dict : dictionary
+        the latitude and longitudes of the daily/hourly stations
+    Cvar_dict : dictionary
+        dictionary of weather variable values for each station
+    shapefile : string
+        path to the study area shapefile
+    blocknum : int
+        number of blocks/clusters
+    nfolds : int
+        number of folds to create (essentially repetitions)
+    replacement : bool
+        whether or not to use replacement between folds, should usually be true
+    dictionary_Groups : dictionary
+        dictionary of what groups (clusters) the stations belong to
+    cov_function : list
+        list containing a string that describes the input covariance function, similar to: ['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']
+    expand_area : bool
+        function will expand the study area so that more stations are taken into account (200 km)
+
+    Returns
+    ----------
+    dictionary
+        - a dictionary of the absolute error at each fold when it was left out
      '''
      station_list_used = [] #If not using replacement, keep a record of what we have done 
      count = 1
