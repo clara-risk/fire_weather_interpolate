@@ -27,7 +27,7 @@ setup(
                       'geopandas','shapely','json','feather','descartes',\
                       'seaborn','statsmodels'],
     version='0.1.1',
-    license='CC0',
+    license='MIT',
     description='Spatial interpolation tools for calculation FWI metrics in Québec Ontario',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
