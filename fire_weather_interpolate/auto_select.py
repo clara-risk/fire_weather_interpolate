@@ -4,8 +4,7 @@
 Summary
 -------
 Auto-selection protocol for spatial interpolation methods using shuffle-split cross-validation. 
-References
-----------
+
 """
 import idw as idw
 import idew as idew
