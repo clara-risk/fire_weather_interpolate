@@ -20,14 +20,14 @@ CLASSIFIERS = [
 setup(
     name='fire_weather_interpolate',
     url='https://github.com/clara-risk/fire_weather_interpolate',
-    author='Clara Risk',
+    author='Clara Risk, Patrick James',
     author_email='clara.risk@mail.utoronto.ca',
     packages=['fire_weather_interpolate'],
     install_requires=['numpy', 'pandas', 'matplotlib','sklearn','scipy',\
                       'geopandas','shapely','json','feather','descartes',\
                       'seaborn','statsmodels'],
     version='0.1.1',
-    license='MIT',
+    license='CC0',
     description='Spatial interpolation tools for calculation FWI metrics in Québec Ontario',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
