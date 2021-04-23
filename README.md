@@ -1,4 +1,4 @@
-<a href="https://zenodo.org/badge/latestdoi/279318014"><img src="https://zenodo.org/badge/279318014.svg" alt="DOI"></a>
+[![DOI](https://zenodo.org/badge/279318014.svg)](https://zenodo.org/badge/latestdoi/279318014)
 
 Fire Weather Interpolate 
 
