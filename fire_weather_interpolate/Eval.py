@@ -7,7 +7,12 @@ Functions to evaluate the outputs of the FWI metrics functions, such as ridge re
 
 References
 ----------
-https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeCV.html
+
+scikit-learn developers. (2020). sklearn.linear_model.RidgeCV. https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.RidgeCV.html.
+
+jpainam , kshedden, josef-pkt, vnijs, & anuragwatane. (2019, June 10). How to compute pseudo R^2 for GLM estimators, Issue #5861, statsmodels/statsmodels. GitHub. https://github.com/statsmodels/statsmodels/issues/5861. 
+
+One-Off Coder. (2021, April 19). 2. Psuedo r-squared for logistic regression. 2. Psuedo r-squared for logistic regression - Data Science Topics 0.0.1 documentation. https://datascience.oneoffcoder.com/psuedo-r-squared-logistic-regression.html. 
 """
 
 # import
