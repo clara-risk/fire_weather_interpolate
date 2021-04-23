@@ -1,3 +1,5 @@
+<a href="https://zenodo.org/badge/latestdoi/279318014"><img src="https://zenodo.org/badge/279318014.svg" alt="DOI"></a>
+
 Fire Weather Interpolate 
 
 A series of Python functions for interpolating the Canadian Forest Fire Weather Index (FWI) variables, evaluating interpolation methods using various cross-validation methods, and calculating fire season duration. For detailed information about the functions, please see: https://clara-risk.github.io/fire_weather_interpolate/fire_weather_interpolate.html#module-Eval
