@@ -290,11 +290,7 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
 
      dc_list = [np.array(x) for x in dc_list] #convert to np array for plotting 
 
-     fwi.plot_july(dc_list,maxmin,year,'DC',shapefile,shapefile2)
      fwi.plot_june(dc_list,maxmin,year,'DC',shapefile,shapefile2)
-
-     fwi.plot_july(fwi_list,maxmin,year,'FWI',shapefile,shapefile2)
-     fwi.plot_june(fwi_list,maxmin,year,'FWI',shapefile,shapefile2)
     
      return dc_list
 
@@ -405,7 +401,8 @@ if __name__ == "__main__":
     for year in range(2006,2007):
 
         execute_sequential_calc(file_path_hourly,file_path_daily,file_path_se_dates,hourly_dictionary, daily_dictionary, date_dictionary,\
-                            str(year),{'temp':['TPS','GPR'],'rh':['IDW2','RF'],'wind':['IDW2','RF'],'pcp':['IDW4','GPR']},10,file_path_elev,idx_list,save,shapefile,boreal_shapefile,phi_input=None,calc_phi=True,\
+                            str(year),{'temp':['TPS','GPR'],'rh':['IDW2','RF'],'wind':['IDW2','RF'],'pcp':['IDW4','GPR']},10,file_path_elev,\
+                                idx_list,save,shapefile,boreal_shapefile,phi_input=None,calc_phi=True,\
                    kernels={'temp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']\
                             ,'rh':['307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)'],\
                             'pcp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)'],\
