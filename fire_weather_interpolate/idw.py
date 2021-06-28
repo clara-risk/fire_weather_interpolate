@@ -41,7 +41,7 @@ warnings.filterwarnings("ignore")
 
 
 def IDW(latlon_dict, Cvar_dict, input_date,
-        var_name, shapefile, show, d, expand_area):
+        var_name, shapefile, show, d, expand_area, res=10000):
     '''Inverse distance weighting interpolation
 
    Parameters
@@ -110,8 +110,8 @@ def IDW(latlon_dict, Cvar_dict, input_date,
     x = np.array(lon)
     z = np.array(Cvar)
 
-    pixelHeight = 10000
-    pixelWidth = 10000
+    pixelHeight = res
+    pixelWidth = res
 
     num_col = int((xmax - xmin) / pixelHeight)
     num_row = int((ymax - ymin) / pixelWidth)
@@ -129,11 +129,11 @@ def IDW(latlon_dict, Cvar_dict, input_date,
         yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
         xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
 
-    Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row + 1)
-    Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col + 1)
+    Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row + 1).astype(np.float32)
+    Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col + 1).astype(np.float32)
 
-    Xi, Yi = np.meshgrid(Xi, Yi)
-    Xi, Yi = Xi.flatten(), Yi.flatten()
+    Xi, Yi = np.meshgrid(Xi, Yi, copy=False)
+    Xi, Yi = Xi.flatten(), Yi.flatten() #from flatten -> ravel, view instead of copy
     maxmin = [
         np.min(yProj_extent),
         np.max(yProj_extent),
@@ -193,7 +193,7 @@ def IDW(latlon_dict, Cvar_dict, input_date,
 
 
 def cross_validate_IDW(latlon_dict, Cvar_dict, shapefile,
-                       d, pass_to_plot, expand_area):
+                       d, pass_to_plot, expand_area, res=10000):
     '''Leave-one-out cross-validation procedure for IDW
 
     Parameters
@@ -285,8 +285,8 @@ def cross_validate_IDW(latlon_dict, Cvar_dict, shapefile,
         x = np.array(lon)
         z = np.array(Cvar)
 
-        pixelHeight = 10000
-        pixelWidth = 10000
+        pixelHeight = res
+        pixelWidth = res
 
         num_col = int((xmax - xmin) / pixelHeight) + 1
         num_row = int((ymax - ymin) / pixelWidth) + 1
@@ -870,7 +870,7 @@ def spatial_kfold_idw(idw_example_grid, loc_dict, Cvar_dict, shapefile, d,
         return block_num, MAE
 
 
-def shuffle_split(loc_dict, Cvar_dict, shapefile, d, rep, show):
+def shuffle_split(loc_dict, Cvar_dict, shapefile, d, rep, show, res=10000):
     '''Shuffle-split cross-validation with 50/50 training test split
 
    Parameters
@@ -964,11 +964,11 @@ def shuffle_split(loc_dict, Cvar_dict, shapefile, d, rep, show):
         xmin = bounds['minx']
         ymax = bounds['maxy']
         ymin = bounds['miny']
-        pixelHeight = 10000
-        pixelWidth = 10000
+        pixelHeight = res
+        pixelWidth = res
 
-        num_col = int((xmax - xmin) / pixelHeight)
-        num_row = int((ymax - ymin) / pixelWidth)
+        num_col = int((xmax - xmin) / pixelHeight)+1
+        num_row = int((ymax - ymin) / pixelWidth)+1
 
         # We need to project to a projected system before making distance matrix
         # We dont know but assume
@@ -981,7 +981,7 @@ def shuffle_split(loc_dict, Cvar_dict, shapefile, d, rep, show):
         Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row)
         Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col)
 
-        Xi, Yi = np.meshgrid(Xi, Yi)
+        Xi, Yi = np.meshgrid(Xi, Yi, copy=False)
         Xi, Yi = Xi.flatten(), Yi.flatten()
         maxmin = [np.min(yProj_extent), np.max(yProj_extent),
                   np.max(xProj_extent), np.min(xProj_extent)]
@@ -1034,12 +1034,16 @@ def shuffle_split(loc_dict, Cvar_dict, shapefile, d, rep, show):
             x_origin_list.append(x_orig)
             y_origin_list.append(y_orig)
 
-            interpolated_val = idw_grid[y_orig][x_orig]
+            try: 
 
-            # Previous, this line had a large error.
-            original_val = Cvar_dict[statLoc]
-            absolute_error = abs(interpolated_val - original_val)
-            absolute_error_dictionary[statLoc] = absolute_error
+                interpolated_val = idw_grid[y_orig][x_orig]
+
+                # Previous, this line had a large error.
+                original_val = Cvar_dict[statLoc]
+                absolute_error = abs(interpolated_val - original_val)
+                absolute_error_dictionary[statLoc] = absolute_error
+            except IndexError:
+                pass
 
         error_dictionary[count] = sum(absolute_error_dictionary.values(
         ))/len(absolute_error_dictionary.values())  # average of all the withheld stations
