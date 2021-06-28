@@ -37,7 +37,8 @@ warnings.filterwarnings("ignore")
 
 
 # functions
-def TPS(latlon_dict, Cvar_dict, input_date, var_name, shapefile, shapefile_masking, show, phi, expand_area, calc_phi):
+def TPS(latlon_dict, Cvar_dict, input_date, var_name, shapefile, shapefile_masking, \
+        show, phi, expand_area, calc_phi, res = 10000):
     '''Thin plate splines interpolation implemented using the interpolate radial basis function from 
     SciPy
     
@@ -128,8 +129,8 @@ def TPS(latlon_dict, Cvar_dict, input_date, var_name, shapefile, shapefile_maski
         na_map = gpd.read_file(shapefile)
         bounds = na_map.bounds
 
-        pixelHeight = 10000
-        pixelWidth = 10000
+        pixelHeight = res
+        pixelWidth = res
 
         coord_pair = projected_lat_lon[station_name]
 
@@ -371,7 +372,7 @@ def cross_validate_tps(latlon_dict, Cvar_dict, shapefile, phi,pass_to_plot):
         return absolute_error_dictionary
 
 
-def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi=True):
+def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi=True, res=10000):
     '''Shuffle-split cross-validation for thin plate splines
 
     Parameters
@@ -456,8 +457,8 @@ def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi
         na_map = gpd.read_file(shapefile)
         bounds = na_map.bounds
 
-        pixelHeight = 10000
-        pixelWidth = 10000
+        pixelHeight = res
+        pixelWidth = res
         for station_name in sorted(Cvar_dict.keys()):
             if station_name in latlon_dict.keys():
                 if station_name not in test_stations:
@@ -494,11 +495,11 @@ def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi
         xmin = bounds['minx']
         ymax = bounds['maxy']
         ymin = bounds['miny']
-        pixelHeight = 10000
-        pixelWidth = 10000
+        pixelHeight = res
+        pixelWidth = res
 
-        num_col = int((xmax - xmin) / pixelHeight)
-        num_row = int((ymax - ymin) / pixelWidth)
+        num_col = int((xmax - xmin) / pixelHeight)+1
+        num_row = int((ymax - ymin) / pixelWidth)+1
 
         # We need to project to a projected system before making distance matrix
         # We dont know but assume
@@ -516,7 +517,10 @@ def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi
         empty_grid = np.empty((num_row, num_col,))*np.nan
 
         for x, y, z in zip(x_origin_list, y_origin_list, z_origin_list):
-            empty_grid[y][x] = z
+            try: 
+                empty_grid[y][x] = z
+            except IndexError: #it's outside the bounds
+                pass
 
         vals = ~np.isnan(empty_grid)
 
@@ -537,11 +541,15 @@ def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi
             x_origin_list.append(x_orig)
             y_origin_list.append(y_orig)
 
-            interpolated_val = spline[y_orig][x_orig]
+            try: 
 
-            original_val = Cvar_dict[statLoc]
-            absolute_error = abs(interpolated_val-original_val)
-            absolute_error_dictionary[statLoc] = absolute_error
+                interpolated_val = spline[y_orig][x_orig]
+
+                original_val = Cvar_dict[statLoc]
+                absolute_error = abs(interpolated_val-original_val)
+                absolute_error_dictionary[statLoc] = absolute_error
+            except IndexError:
+                pass
         error_dictionary[count] = sum(absolute_error_dictionary.values(
         ))/len(absolute_error_dictionary.values())  # average of all the withheld stations
         count += 1
