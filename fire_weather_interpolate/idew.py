@@ -34,7 +34,7 @@ warnings.filterwarnings("ignore")
 
 # functions
 def IDEW(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, file_path_elev,
-         idx_list, d):
+         idx_list, d, expand_area,res=10000):
     '''Inverse distance elevation weighting
 
     Parameters
@@ -88,16 +88,41 @@ def IDEW(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, file_pat
 
     na_map = gpd.read_file(shapefile)
     bounds = na_map.bounds  # Get the bounding box of the shapefile
-    xmax = bounds['maxx']
-    xmin = bounds['minx']
-    ymax = bounds['maxy']
-    ymin = bounds['miny']
-    pixelHeight = 10000  # We want a 10 by 10 pixel, or as close as we can get
-    pixelWidth = 10000
+    if expand_area:
+        xmax = bounds['maxx'] + 200000
+        xmin = bounds['minx'] - 200000
+        ymax = bounds['maxy'] + 200000
+        ymin = bounds['miny'] - 200000
+    else:
+        xmax = bounds['maxx']
+        xmin = bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']
 
-    # Calculate the number of rows cols to fill the bounding box at that resolution
-    num_col = int((xmax - xmin) / pixelHeight)
-    num_row = int((ymax - ymin) / pixelWidth)
+    for station_name in Cvar_dict.keys():
+
+        if station_name in latlon_dict.keys():
+
+            loc = latlon_dict[station_name]
+            latitude = loc[0]
+            longitude = loc[1]
+            proj_coord = pyproj.Proj('esri:102001')(
+                longitude, latitude)  # Filter out stations outside of grid
+            if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
+                    ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                cvar_val = Cvar_dict[station_name]
+                lat.append(float(latitude))
+                lon.append(float(longitude))
+                Cvar.append(cvar_val)
+    y = np.array(lat)
+    x = np.array(lon)
+    z = np.array(Cvar)
+
+    pixelHeight = res
+    pixelWidth = res
+
+    num_col = int((xmax - xmin) / pixelHeight)+1
+    num_row = int((ymax - ymin) / pixelWidth)+1
 
     # We need to project to a projected system before making distance matrix
     # We dont know but assume NAD83
@@ -106,8 +131,15 @@ def IDEW(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, file_pat
         x, y)  # Convert to Canada Albers Equal Area
 
     # Add the bounding box coords to the dataset so we can extrapolate the interpolation to cover whole area
-    yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
-    xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
+    if expand_area:
+
+        yProj_extent = np.append(
+            yProj, [bounds['maxy'] + 200000, bounds['miny'] - 200000])
+        xProj_extent = np.append(
+            xProj, [bounds['maxx'] + 200000, bounds['minx'] - 200000])
+    else:
+        yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
+        xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
 
     # Get the value for lat lon in each cell we just made
     Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row)
@@ -423,7 +455,7 @@ def cross_validate_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_
 
 
 def shuffle_split_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list,
-                       d, rep):
+                       d, rep, res=10000):
     '''Shuffle-split cross-validation with 50/50 training test split
 
    Parameters
@@ -524,8 +556,8 @@ def shuffle_split_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_a
         xmin = bounds['minx']
         ymax = bounds['maxy']
         ymin = bounds['miny']
-        pixelHeight = 10000
-        pixelWidth = 10000
+        pixelHeight = res
+        pixelWidth = res
 
         num_col = int((xmax - xmin) / pixelHeight)
         num_row = int((ymax - ymin) / pixelWidth)
