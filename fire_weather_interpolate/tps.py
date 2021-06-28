@@ -389,11 +389,11 @@ def shuffle_split_tps(latlon_dict, Cvar_dict, shapefile, rep, phi=None, calc_phi
     calc_phi : bool
         whether to calculate phi in the function, if True, phi can = None
             
-   Returns
-   ----------
-   float
+    Returns
+    ----------
+    float
        - MAE estimate for entire surface (average of replications)
-   '''
+    '''
     count = 1
     error_dictionary = {}
 
