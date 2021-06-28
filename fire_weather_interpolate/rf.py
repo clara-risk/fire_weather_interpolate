@@ -26,7 +26,8 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def random_forest_interpolator(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, file_path_elev, idx_list, expand_area):
+def random_forest_interpolator(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, \
+                               file_path_elev, idx_list, expand_area, res = 10000):
     '''Random forest interpolation
 
     Parameters
@@ -92,8 +93,8 @@ def random_forest_interpolator(latlon_dict, Cvar_dict, input_date, var_name, sha
     x = np.array(lon)
     z = np.array(Cvar)
 
-    pixelHeight = 10000
-    pixelWidth = 10000
+    pixelHeight = res
+    pixelWidth = res
 
     num_col = int((xmax - xmin) / pixelHeight)
     num_row = int((ymax - ymin) / pixelWidth)
@@ -397,7 +398,7 @@ def cross_validate_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_ar
     else:
         return absolute_error_dictionary
 
-def shuffle_split_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, rep):
+def shuffle_split_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, rep, res = 10000):
     '''Shuffle-split cross-validation with 50/50 training test split
 
     Parameters
@@ -497,11 +498,11 @@ def shuffle_split_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_arr
         xmin = bounds['minx']
         ymax = bounds['maxy']
         ymin = bounds['miny']
-        pixelHeight = 10000
-        pixelWidth = 10000
+        pixelHeight = res
+        pixelWidth = res
 
-        num_col = int((xmax - xmin) / pixelHeight)
-        num_row = int((ymax - ymin) / pixelWidth)
+        num_col = int((xmax - xmin) / pixelHeight)+1
+        num_row = int((ymax - ymin) / pixelWidth)+1
 
         # We need to project to a projected system before making distance matrix
         source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
@@ -596,11 +597,16 @@ def shuffle_split_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_arr
             x_origin_list.append(x_orig)
             y_origin_list.append(y_orig)
 
-            interpolated_val = rf_grid[y_orig][x_orig]
+            try: 
 
-            original_val = Cvar_dict[statLoc]
-            absolute_error = abs(interpolated_val-original_val)
-            absolute_error_dictionary[statLoc] = absolute_error
+                interpolated_val = rf_grid[y_orig][x_orig]
+
+                original_val = Cvar_dict[statLoc]
+                absolute_error = abs(interpolated_val-original_val)
+                absolute_error_dictionary[statLoc] = absolute_error
+            except IndexError:
+                pass
+            
         error_dictionary[count] = sum(absolute_error_dictionary.values(
         ))/len(absolute_error_dictionary.values())  # average of all the withheld stations
         count += 1
@@ -1050,9 +1056,8 @@ def spatial_groups_rf(idw_example_grid, loc_dict, Cvar_dict, shapefile, blocknum
 
         pixelHeight = 10000
         pixelWidth = 10000
-
-        num_col = int((xmax - xmin) / pixelHeight)
-        num_row = int((ymax - ymin) / pixelWidth)
+        num_col = int((xmax - xmin) / pixelHeight)+1
+        num_row = int((ymax - ymin) / pixelWidth)+1
 
         # We need to project to a projected system before making distance matrix
         source_proj = pyproj.Proj(proj='latlong', datum='NAD83')

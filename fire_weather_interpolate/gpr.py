@@ -37,7 +37,8 @@ warnings.filterwarnings("ignore")
 
 
 def GPR_interpolator(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show,
-                     file_path_elev, idx_list, expand_area, kernel_object, restarts, report_params, optimizer, param_initiate=None, cov_type='RBF'):
+                     file_path_elev, idx_list, expand_area, kernel_object, restarts, \
+                     report_params, optimizer, param_initiate=None, cov_type='RBF',res=10000):
     '''Base interpolator function for gaussian process regression
 
     Parameters
@@ -118,8 +119,8 @@ def GPR_interpolator(latlon_dict, Cvar_dict, input_date, var_name, shapefile, sh
     x = np.array(lon)
     z = np.array(Cvar)
 
-    pixelHeight = 10000
-    pixelWidth = 10000
+    pixelHeight = res
+    pixelWidth = res
 
     num_col = int((xmax - xmin) / pixelHeight)
     num_row = int((ymax - ymin) / pixelWidth)
@@ -480,7 +481,8 @@ def cross_validate_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_a
     return absolute_error_dictionary
 
 
-def shuffle_split_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, cov_function, rep):
+def shuffle_split_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, \
+                      idx_list, cov_function, rep, res=10000):
     '''Shuffle split cross-validation procedure for GPR
 
     Parameters
@@ -581,11 +583,11 @@ def shuffle_split_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_ar
         xmin = bounds['minx']
         ymax = bounds['maxy']
         ymin = bounds['miny']
-        pixelHeight = 10000
-        pixelWidth = 10000
+        pixelHeight = res
+        pixelWidth = res
 
-        num_col = int((xmax - xmin) / pixelHeight)
-        num_row = int((ymax - ymin) / pixelWidth)
+        num_col = int((xmax - xmin) / pixelHeight)+1
+        num_row = int((ymax - ymin) / pixelWidth)+1
 
         # We need to project to a projected system before making distance matrix
         source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
@@ -694,11 +696,15 @@ def shuffle_split_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_ar
             x_origin_list.append(x_orig)
             y_origin_list.append(y_orig)
 
-            interpolated_val = gpr_grid[y_orig][x_orig]
+            try: 
 
-            original_val = Cvar_dict[statLoc]
-            absolute_error = abs(interpolated_val-original_val)
-            absolute_error_dictionary[statLoc] = absolute_error
+                interpolated_val = gpr_grid[y_orig][x_orig]
+
+                original_val = Cvar_dict[statLoc]
+                absolute_error = abs(interpolated_val-original_val)
+                absolute_error_dictionary[statLoc] = absolute_error
+            except IndexError:
+                pass
         error_dictionary[count] = sum(absolute_error_dictionary.values(
         ))/len(absolute_error_dictionary.values())  # average of all the withheld stations
         count += 1
