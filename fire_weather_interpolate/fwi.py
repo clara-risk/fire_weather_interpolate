@@ -1246,30 +1246,33 @@ def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yest
     shape = rain_grid.shape
     z = np.zeros(shape)
     
-    if wmo<ed and wmo<ew: 
-        z=0.424*(1-np.power(((100-rh_grid)/100),1.7))+0.0694*np.sqrt(wind_grid)*(1-np.power(((100-rh_grid)/100),8))
+    #if wmo<ed and wmo<ew: 
+    z=0.424*(1-np.power(((100-rh_grid)/100),1.7))+0.0694*np.sqrt(wind_grid)*(1-np.power(((100-rh_grid)/100),8))
 
-        x=z*0.581*np.exp(0.0365*temp_grid)
+    x=z*0.581*np.exp(0.0365*temp_grid)
 
-        wm = np.zeros(shape)
+    wm = np.zeros(shape)
 
-        wm= ew-(ew-wmo)*(np.power(10,-x))
+    indexer = (wmo<ed) & (wmo<ew)
 
-
-    if wmo>=ew and wmo<=ed:
-
-        wm = wmo
+    wm[indexer] = ew[indexer]-(ew[indexer]-wmo[indexer])*(np.power(10,-x[indexer]))
 
 
-    if wmo>ed:
+    #if wmo>=ew and wmo<=ed:
+    indexer_2 = (wmo>=ew) & (wmo<=ed)
+
+    wm[indexer_2] = wmo[indexer_2]
 
 
-        z = 0.424*(1-np.power(((rh_grid)/100),1.7))+0.0694\
+    #if wmo>ed:
+
+
+    z = 0.424*(1-np.power(((rh_grid)/100),1.7))+0.0694\
                        *np.sqrt(wind_grid)*(1-np.power(((rh_grid)/100),8))
 
-        x=z*0.581*np.exp(0.0365 * temp_grid)
+    x=z*0.581*np.exp(0.0365 * temp_grid)
 
-        wm = ed + (wmo - ed)*(np.power(10,-x))
+    wm[wmo>ed] = ed[wmo>ed] + (wmo[wmo>ed] - ed[wmo>ed])*(np.power(10,-x[wmo>ed]))
 
 
     ffmc1 = np.array((59.5*(250-wm))/(147.2+wm))
