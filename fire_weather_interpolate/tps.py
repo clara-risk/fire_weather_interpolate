@@ -358,13 +358,15 @@ def cross_validate_tps(latlon_dict, Cvar_dict, shapefile, phi,pass_to_plot):
         x_origin_list.append(x_orig)
         y_origin_list.append(y_orig)
 
-        interpolated_val = spline[y_orig][x_orig]
+        try: 
 
-        original_val = Cvar_dict[station_name_hold_back]  # Original value
-        # print(original_val)
-        # print(interpolated_val)
-        absolute_error = abs(interpolated_val-original_val)
-        absolute_error_dictionary[station_name_hold_back] = absolute_error
+            interpolated_val = spline[y_orig][x_orig]
+
+            original_val = Cvar_dict[statLoc]
+            absolute_error = abs(interpolated_val-original_val)
+            absolute_error_dictionary[statLoc] = absolute_error
+        except IndexError:
+            pass
 
     if pass_to_plot:
         return absolute_error_dictionary, no_absolute_value_dict
