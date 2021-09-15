@@ -1214,7 +1214,7 @@ def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yest
     '''
     yesterday_index = index-1
 
-    if yesterday_index == -1:
+    if yesterday_index == -10: #test
         rain_shape = rain_grid.shape
         ffmc_initialize = np.zeros(rain_shape)+85
         ffmc_yesterday1 = ffmc_initialize*mask  # mask out areas that haven't started
@@ -1225,7 +1225,9 @@ def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yest
             np.isnan(ffmc_yesterday1) & ~np.isnan(mask))] = 85
 
     wmo = 147.2*(101-ffmc_yesterday)/(59.5+ffmc_yesterday)
-
+    wmo_orig = 147.2*(101-ffmc_yesterday)/(59.5+ffmc_yesterday)
+    prec = rain_grid
+    
     rain_grid[rain_grid > 0.5] = rain_grid[rain_grid > 0.5] - 0.5
 
     wmo[wmo>150]= wmo[wmo>150]+42.5*rain_grid[wmo>150]*np.exp(-100/(251-wmo[wmo>150]))+0.0015*\
@@ -1235,6 +1237,7 @@ def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yest
                     (1-np.exp(-6.93/rain_grid[wmo<=150]))
 
     wmo[wmo > 250] = 250
+    wmo[prec <= 0.5] = wmo_orig[prec < 0.5] 
 
     ed=0.942*np.power(rh_grid,0.679)+(11*np.exp((rh_grid-100)/10))+0.18*(21.1-temp_grid)\
         *(1-np.exp(rh_grid*-0.115))
