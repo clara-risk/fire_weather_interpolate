@@ -1224,8 +1224,8 @@ def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yest
         ffmc_yesterday1[np.where(
             np.isnan(ffmc_yesterday1) & ~np.isnan(mask))] = 85
 
-    wmo = 147.2*(101-ffmc_yesterday)/(59.5+ffmc_yesterday)
-    wmo_orig = 147.2*(101-ffmc_yesterday)/(59.5+ffmc_yesterday)
+    wmo = 147.2*(101-ffmc_yesterday1)/(59.5+ffmc_yesterday1)
+    wmo_orig = 147.2*(101-ffmc_yesterday1)/(59.5+ffmc_yesterday1)
     prec = rain_grid
     
     rain_grid[rain_grid > 0.5] = rain_grid[rain_grid > 0.5] - 0.5
@@ -1317,7 +1317,6 @@ def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yest
         plt.show()
 
     return ffmc1
-
 
 def BUI(dmc, dc, maxmin, show, shapefile, mask, endMask):  # BUI can be calculated on the fly
     ''' Calculate BUI.
