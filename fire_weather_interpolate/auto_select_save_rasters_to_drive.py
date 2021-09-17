@@ -26,7 +26,7 @@ import os, sys, json
 import time
 from datetime import datetime, timedelta, date
 import gc
-
+from osgeo import ogr, gdal,osr
 
 def run_comparison(var_name,input_date,interpolation_types,rep,loc_dictionary,cvar_dictionary,file_path_elev,elev_array,idx_list,phi_input=None,calc_phi=True,\
                    kernels={'temp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)']\
@@ -336,13 +336,14 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
      
      #Get the dates in the fire season, overall, the surfaces will take care of masking
      sdate = pd.to_datetime(year+'-03-01').date() #Get the start date to start (if its too early everything will be masked out so can put any day before april)
-     edate = pd.to_datetime(year+'-12-31').date() #End date, for right now it's Dec 31
+     edate = pd.to_datetime(year+'-09-29').date() #End date, for right now it's Dec 31
      #dates = list(pd.date_range(sdate,edate-timedelta(days=1),freq='d')) #Get the dates for all the potential days in the season
      dates = list(pd.date_range(sdate,edate,freq='d'))
-     dates_existing = os.listdir(save_path+str(year)+'/DC/')
+     dates_existing = [x[0:10] for x in os.listdir(save_path+str(year)+'/DC/')]
+     
      dates_updated = [] 
      for dat1 in dates:
-          if dat1 not in dates_existing:
+          if str(dat1)[0:10] not in dates_existing:
                dates_updated.append(dat1)
              
      
@@ -353,7 +354,7 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
      bui_list = []
      fwi_list = [] 
      count = 0 
-     for input_date in dates_existing:
+     for input_date in dates_updated[1:]: #Skip first date, since this is March 1, which is the initiation date
          print(input_date)
          gc.collect()
          #Get the dictionary
@@ -371,14 +372,13 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
 
     
          best_interp_temp,choice_surf_temp,maxmin = run_comparison('temp',input_date,interpolation_types,rep,loc_dictionary_hourly,temp,file_path_elev,elev_array,idx_list)
-
          best_interp_rh,choice_surf_rh,maxmin = run_comparison('rh',input_date,interpolation_types,rep,loc_dictionary_hourly,rh,file_path_elev,elev_array,idx_list)
          best_interp_wind,choice_surf_wind,maxmin  = run_comparison('wind',input_date,interpolation_types,rep,loc_dictionary_hourly,wind,file_path_elev,elev_array,idx_list)
          best_interp_pcp,choice_surf_pcp,maxmin  = run_comparison('pcp',input_date,interpolation_types,rep,loc_dictionary_daily,pcp,file_path_elev,elev_array,idx_list)
 
          end = time.time()
          time_elapsed = end-start
-         print('Finished getting best methods & surfaces, it took %s seconds'%(time_elapsed))
+         print('Finished getting best methods & surfaces, it took %s minutes'%(time_elapsed/60))
 
          #Get date index information
          year = str(input_date)[0:4]
@@ -425,41 +425,49 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
             
          else:
              # Read in yesterdays dates from raster
-             yesterday = dat - timedelta(1)
-             src_dc = gdal.Open(save_path+str(year)+'/DC/'+str(yesterday[0:10])+'.tif').GetRasterBand(1)               
-             dc_initialize = np.array(src_dc)
+             format_dat = datetime.strptime(dat, '%Y-%m-%d %H:%M:%S')
+             yesterday = format_dat - timedelta(1)
+             print(yesterday)
+             src_dc = gdal.Open(save_path+str(year)+'/DC/'+str(yesterday)[0:10]+'.tif')
+             cols = src_dc.RasterXSize
+             rows = src_dc.RasterYSize
+             dc_initialize = src_dc.ReadAsArray(0, 0, cols, rows)
              dc_yesterday1 = dc_initialize*mask1
              dc_list.append(dc_yesterday1) #placeholder
+             print('DC collected') 
 
-             src_dmc = gdal.Open(save_path+str(year)+'/DMC/'+str(yesterday[0:10])+'.tif').GetRasterBand(1)               
-             dmc_initialize = np.array(src_dmc)
+             src_dmc = gdal.Open(save_path+str(year)+'/DMC/'+str(yesterday)[0:10]+'.tif')              
+             dmc_initialize = src_dmc.ReadAsArray(0, 0, cols, rows)
              dmc_yesterday1 = dmc_initialize*mask1
              dmc_list.append(dmc_yesterday1) #placeholder
+             print('DMC collected') 
 
-             src_ffmc = gdal.Open(save_path+str(year)+'/FFMC/'+str(yesterday[0:10])+'.tif').GetRasterBand(1)               
-             ffmc_initialize = np.array(src_ffmc)
+             src_ffmc = gdal.Open(save_path+str(year)+'/FFMC/'+str(yesterday)[0:10]+'.tif')           
+             ffmc_initialize = src_ffmc.ReadAsArray(0, 0, cols, rows)
              ffmc_yesterday1 = ffmc_initialize*mask1
              ffmc_list.append(ffmc_yesterday1) #placeholder
-
-             src_isi = gdal.Open(save_path+str(year)+'/ISI/'+str(yesterday[0:10])+'.tif').GetRasterBand(1)               
-             isi_initialize = np.array(src_isi)
+             print('FFMC collected')
+             
+             src_isi = gdal.Open(save_path+str(year)+'/ISI/'+str(yesterday)[0:10]+'.tif')               
+             isi_initialize = src_isi.ReadAsArray(0, 0, cols, rows)
              isi_list.append(isi_initialize)
              
-             src_bui = gdal.Open(save_path+str(year)+'/BUI/'+str(yesterday[0:10])+'.tif').GetRasterBand(1)               
-             bui_initialize = np.array(src_bui)
+             src_bui = gdal.Open(save_path+str(year)+'/BUI/'+str(yesterday)[0:10]+'.tif')              
+             bui_initialize = src_bui.ReadAsArray(0, 0, cols, rows)
              bui_list.append(bui_initialize)
              
-             src_fwi = gdal.Open(save_path+str(year)+'/FWI/'+str(yesterday[0:10])+'.tif').GetRasterBand(1)               
-             fwi_initialize = np.array(src_fwi)
+             src_fwi = gdal.Open(save_path+str(year)+'/FWI/'+str(yesterday)[0:10]+'.tif')           
+             fwi_initialize = src_fwi.ReadAsArray(0, 0, cols, rows)
              fwi_list.append(fwi_initialize)
              
-         if count > 0:
-             read_data(dc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/DC/')
-             read_data(dmc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/DMC/')
-             read_data(ffmc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/FFMC/')
-             read_data(isi_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/ISI/')
-             read_data(bui_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/BUI/')
-             read_data(fwi_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/FWI/')
+         #if count > 0:
+         print('Writing to drive.....') 
+         read_data(dc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/DC/')
+         read_data(dmc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/DMC/')
+         read_data(ffmc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/FFMC/')
+         read_data(isi_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/ISI/')
+         read_data(bui_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/BUI/')
+         read_data(fwi_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/FWI/')
              
          end = time.time()
          time_elapsed = end-start
@@ -596,6 +604,10 @@ if __name__ == "__main__":
                             ,'rh':['307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)'],\
                             'pcp':['316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)'],\
                             'wind':['316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)']})
+
+
+             
+        
 
 
              
