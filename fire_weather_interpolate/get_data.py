@@ -414,6 +414,21 @@ def get_wind_speed(input_date,file_path):
         - a dictionary of wind speed values for all the active & non-null stations on the input date 
     '''
     
+def get_wind_speed(input_date,file_path): 
+    '''Create a dictionary for wind speed data on the input date
+
+    Parameters
+    ----------
+    input_date : string
+        input date for the date of interest, in the format: YYYY-MM-DD HH:MM
+    file_path : string
+        path to the feather files containing the hourly data from Environment & Climate Change Canada 
+    Returns
+    ----------
+    dictionary
+        - a dictionary of wind speed values for all the active & non-null stations on the input date 
+    '''
+    
     ws_dictionary = {}
 
     search_date = datetime.strptime(input_date, '%Y-%m-%d %H:%M') # Get the datetime object for input date
@@ -429,10 +444,14 @@ def get_wind_speed(input_date,file_path):
                         if pd.notnull(df.loc[df['Date/Time'] == input_date, 'Wind Spd (km/h)'].item()):
 
                             #Put the value into the dictionary. 
-                            ws_dictionary[station_name] = df.loc[df['Date/Time'] == input_date, 'Wind Spd (km/h)'].item()
                             
                             if float(df.loc[df['Date/Time'] == input_date, 'Wind Spd (km/h)'].item()) >= 315: 
                                 print('The wind speed for %s corresponds to the most severe class of Tornado for the Enhanced Fujita Scale - Canada'%(station_name))
+
+                            elif float(df.loc[df['Date/Time'] == input_date, 'Wind Spd (km/h)'].item()) < 0: 
+                                print('The wind speed for %s is less than 0'%(station_name))
+                            else:
+                                ws_dictionary[station_name] = df.loc[df['Date/Time'] == input_date, 'Wind Spd (km/h)'].item()
 
                         else: 
                             pass
@@ -440,6 +459,7 @@ def get_wind_speed(input_date,file_path):
                         pass 
 
     return ws_dictionary
+
 
 def get_noon_temp(input_date,file_path):
     '''Create a dictionary for noon temp data on the input date
