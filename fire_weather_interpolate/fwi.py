@@ -1559,6 +1559,7 @@ def ISI(ffmc, wind_grid, maxmin, show, shapefile, mask, endMask):
     ndarray
         the calculated array for ISI for the study area 
     '''
+    wind_grid[wind_grid < 0] = 0 #Fix wind negative values
 
     fm = 147.2 * (101 - ffmc)/(59.5 + ffmc)
 
