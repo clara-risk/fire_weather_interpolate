@@ -1178,6 +1178,143 @@ def DMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yester
 
     return dmc
 
+def DMC_alt(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yesterday, index, show, shapefile,
+        mask, endMask):
+    '''Calculate the DMC with the updates included in the cffdrs package
+
+    Parameters
+    ----------
+    input_date : string
+        input date of interest
+    rain_grid : ndarray
+        interpolated surface for rainfall on the date of interest
+    temp_grid : ndarray
+        interpolated surface for temperature on the date of interest
+    wind_grid : ndarray
+        interpolated surface for wind on the date of interest
+    maxmin : list
+        bounds of the study area 
+    dc_yesterday : ndarray
+        array of DC values for yesterday 
+    index : int
+        index of the date since Mar 1
+    show : bool
+        whether you want to show the map 
+    shapefile : string
+        path to the study area shapefile
+    mask : ndarray
+        mask for the start dates 
+    endMask : ndarray
+        mask for the end dates
+    Returns
+    ----------
+    ndarray
+        - array of dmc values on the date on interest for the study area
+    '''
+    yesterday_index = index-1
+
+    if yesterday_index == -10:
+        rain_shape = rain_grid.shape
+        dmc_initialize = np.zeros(rain_shape)+6
+        dmc_yesterday1 = dmc_initialize*mask
+    else:
+        dmc_yesterday1 = dmc_yesterday
+        dmc_yesterday1[np.where(np.isnan(dmc_yesterday1)
+                                & ~np.isnan(mask))] = 6
+
+    #dmc_yesterday = dmc_yesterday1.flatten()
+    rh_grid[rh_grid > 100] = 100 #Fix rh high values
+    #dmc_yesterday1 = dmc_yesterday
+    input_date = str(input_date)
+    month = int(input_date[6])
+    # Get day length factor
+
+    ell01 = [6.5, 7.5, 9, 12.8, 13.9, 13.9, 12.4, 10.9, 9.4, 8, 7, 6]
+
+    # Put constraint on low end of temp
+    temp_grid[temp_grid < -1.1] = -1.1
+
+    # Log drying rate
+    rk = 1.894*(temp_grid+1.1)*(100-rh_grid)*ell01[month-1]*1.0E-4
+
+    # Make empty dmc array
+    new_shape = dmc_yesterday1.shape
+    dmc = np.zeros(new_shape)
+
+    # starting rain
+
+    netRain = (0.92*rain_grid)-1.27
+
+    # old = wmi = 20 + (np.exp(5.6348-(dmc_yesterday1/43.43)))
+    wmi = 20 + (280/np.exp(0.023 * dmc_yesterday1))
+
+
+    # if else depending on yesterday dmc, eq.13
+    b = np.zeros(new_shape)
+
+    b[dmc_yesterday1 <= 33] = 100 / \
+        (0.5+0.3*dmc_yesterday1[dmc_yesterday1 <= 33])
+    b[(dmc_yesterday1 > 33) & (dmc_yesterday1 < 65)] = 14-1.3 * \
+        np.log(dmc_yesterday1[(dmc_yesterday1 > 33) &
+               (dmc_yesterday1 < 65)])  # np.log is ln
+    b[dmc_yesterday1 >= 65] = 6.5 * \
+        np.log(dmc_yesterday1[dmc_yesterday1 >= 65])-17.2
+
+
+    # eq 14, modified in R package
+    # old = wmr = wmi + 1000 * netRain/(48.77 + b * netRain)
+    wmr = wmi + 1000 * netRain/(48.77 + b * netRain)
+
+    #old = pr0 = np.array(244.72-(43.43 * (np.log(wmr-20))))
+    pr0 = np.array(43.43 * (5.6348 - np.log(wmr-20)))
+
+    pr0[pr0 < 0] = 0
+
+    rk_pr0 =pr0 #+ (100*rk)
+
+    rk_ydmc = dmc_yesterday1 #+ (100*rk) #we want to add rk because that's the drying rate
+                   
+    dmc[netRain > 1.5] = rk_pr0[netRain > 1.5]
+    dmc[netRain <= 1.5] = rk_ydmc[netRain <= 1.5]
+
+    dmc = dmc + rk
+
+    dmc[dmc < 0] = 0
+
+    dmc = dmc * mask * endMask  # mask out areas that haven't been activated
+
+    if show == True:
+        min_yProj_extent = maxmin[0]
+        max_yProj_extent = maxmin[1]
+        max_xProj_extent = maxmin[2]
+        min_xProj_extent = maxmin[3]
+
+        fig, ax = plt.subplots(figsize=(15, 15))
+        crs = {'init': 'esri:102001'}
+
+        na_map = gpd.read_file(shapefile)
+
+        circ = PolygonPatch(na_map['geometry'][0], visible=False)
+        ax.add_patch(circ)
+        plt.imshow(dmc, extent=(min_xProj_extent-1, max_xProj_extent+1, max_yProj_extent-1, min_yProj_extent+1), clip_path=circ,
+                   clip_on=True)
+
+        # plt.imshow(dmc,extent=(min_xProj_extent-1,max_xProj_extent+1,max_yProj_extent-1,min_yProj_extent+1))
+        na_map.plot(ax=ax, color='white', edgecolor='k',
+                    linewidth=2, zorder=10, alpha=0.1)
+
+        plt.gca().invert_yaxis()
+        cbar = plt.colorbar()
+        cbar.set_label('DMC')
+
+        title = 'DMC for %s' % (input_date)
+        fig.suptitle(title, fontsize=14)
+        plt.xlabel('Longitude')
+        plt.ylabel('Latitude')
+
+        plt.show()
+
+    return dmc
 
 def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yesterday, index, show, shapefile,
          mask, endMask):
