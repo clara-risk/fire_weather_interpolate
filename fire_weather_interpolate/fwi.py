@@ -1093,7 +1093,9 @@ def DMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, dmc_yester
         dmc_yesterday1[np.where(np.isnan(dmc_yesterday1)
                                 & ~np.isnan(mask))] = 6
 
-    #dmc_yesterday = dmc_yesterday1.flatten()
+
+    rh_grid[rh_grid > 100] = 100 #Fix rh high values
+
     input_date = str(input_date)
     month = int(input_date[6])
     # Get day length factor
