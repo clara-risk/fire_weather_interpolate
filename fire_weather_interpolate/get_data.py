@@ -538,12 +538,11 @@ def get_relative_humidity(input_date,file_path):
                     df = feather.read_dataframe(file)
                     try: 
                         if pd.notnull(df.loc[df['Date/Time'] == input_date, 'Rel Hum (%)'].item()):
-
-
-                            RH_dictionary[station_name] = df.loc[df['Date/Time'] == input_date, 'Rel Hum (%)'].item()
                             
                             if float(df.loc[df['Date/Time'] == input_date, 'Rel Hum (%)'].item()) > 100: 
                                 print('The relative humidity for %s is greater than 100%'%(station_name))
+                            else:
+                                RH_dictionary[station_name] = df.loc[df['Date/Time'] == input_date, 'Rel Hum (%)'].item()
 
                         else: 
                             pass
