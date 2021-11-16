@@ -166,9 +166,9 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
          gc.collect()
          #Get the dictionary
          start = time.time() 
-         temp = GD.get_noon_temp(str(input_date)[:-3],file_path_hourly)
-         rh = GD.get_relative_humidity(str(input_date)[:-3],file_path_hourly)
-         wind = GD.get_wind_speed(str(input_date)[:-3],file_path_hourly)
+         temp = GD.get_noon_temp(str(input_date)[0:10] + ' 13:00',file_path_hourly)
+         rh = GD.get_relative_humidity(str(input_date)[0:10] + ' 13:00',file_path_hourly)
+         wind = GD.get_wind_speed(str(input_date)[0:10] + ' 13:00',file_path_hourly)
          pcp = GD.get_pcp(str(input_date)[0:10],file_path_daily,date_dictionary)
 
          end = time.time()
@@ -359,9 +359,9 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
          gc.collect()
          #Get the dictionary
          start = time.time() 
-         temp = GD.get_noon_temp(str(input_date)[:-3],file_path_hourly)
-         rh = GD.get_relative_humidity(str(input_date)[:-3],file_path_hourly)
-         wind = GD.get_wind_speed(str(input_date)[:-3],file_path_hourly)
+         temp = GD.get_noon_temp(str(input_date)[0:10] + ' 13:00',file_path_hourly)
+         rh = GD.get_relative_humidity(str(input_date)[0:10] + ' 13:00',file_path_hourly)
+         wind = GD.get_wind_speed(str(input_date)[0:10] + ' 13:00',file_path_hourly)
          pcp = GD.get_pcp(str(input_date)[0:10],file_path_daily,date_dictionary)
 
          end = time.time()
