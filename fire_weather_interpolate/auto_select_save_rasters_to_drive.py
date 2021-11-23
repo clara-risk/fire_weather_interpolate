@@ -132,22 +132,27 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
          interpolation_best (str): returns the selected interpolation type name 
      '''
      #Fire season start and end dates
-     start = time.time() 
+     start = time.time()
+        #Initialize the input elev_array (which is stable)
      start_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily_csv,year) #Get two things: start date for each station and the lat lon of the station
      end_dict, latlon_station = fwi.end_date_calendar_csv(file_path_daily_csv,year,'oct') #start searching from Oct 1
+     #Initialize the input elev_array (which is stable)
+     placeholder_surf, maxmin, elev_array = idew.IDEW(loc_dictionary_hourly,end_dict,'placeholder','Variable',shapefile,False,\
+                                                          file_path_elev,idx_list,2,True,res=10000)        
         
-        
-     daysurface, maxmin= idw.IDW(latlon_station,start_dict,year,'# Days Since March 1',shapefile,False,3,False,res=10000) #Interpolate the start date, IDW3
-     endsurface, maxmin= idw.IDW(latlon_station,end_dict,year,'# Days Since Oct 1',shapefile,False,3,False,res=10000) #Interpolate the end date
-
+     #daysurface, maxmin= idw.IDW(latlon_station,start_dict,year,'# Days Since March 1',shapefile,False,3,False,res=10000) #Interpolate the start date, IDW3
+     #endsurface, maxmin= idw.IDW(latlon_station,end_dict,year,'# Days Since Oct 1',shapefile,False,3,False,res=10000) #Interpolate the end date
+     daysurface, maxmin = rf.random_forest_interpolator(latlon_station,start_dict,year,'# Days Since Oct 1',shapefile,False,file_path_elev,idx_list,False,res=10000)
+     endsurface, maxmin = rf.random_forest_interpolator(latlon_station,end_dict,year,'# Days Since Oct 1',shapefile,False,file_path_elev,idx_list,False,res=10000) #Interpolate the end date
+     
      end_dc_vals = np.zeros(endsurface.shape) #For now, no overwinter procedure
      end = time.time()
      time_elapsed = (end-start)/60
      print('Finished getting season start & end dates, it took %s minutes'%(time_elapsed/60))
 
         #Initialize the input elev_array (which is stable)
-     placeholder_surf, maxmin, elev_array = idew.IDEW(loc_dictionary_hourly,end_dict,'placeholder','Variable',shapefile,False,\
-                                                          file_path_elev,idx_list,2,True,res=10000)
+     #placeholder_surf, maxmin, elev_array = idew.IDEW(loc_dictionary_hourly,end_dict,'placeholder','Variable',shapefile,False,\
+                                                          #file_path_elev,idx_list,2,True,res=28000)
      
      #Get the dates in the fire season, overall, the surfaces will take care of masking
      sdate = pd.to_datetime(year+'-03-01').date() #Get the start date to start (if its too early everything will be masked out so can put any day before april)
@@ -156,19 +161,24 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
      dates = list(pd.date_range(sdate,edate,freq='d'))
      dc_list = []
      dmc_list = []
+     dmcalt_list = [] 
      ffmc_list = []
      isi_list = []
      bui_list = []
-     fwi_list = [] 
+     fwi_list = []
+     temp_list = []
+     rh_list = []
+     wind_list = []
+     pcp_list = [] 
      count = 0 
      for input_date in dates:
          print(input_date)
          gc.collect()
          #Get the dictionary
          start = time.time() 
-         temp = GD.get_noon_temp(str(input_date)[0:10] + ' 13:00',file_path_hourly)
-         rh = GD.get_relative_humidity(str(input_date)[0:10] + ' 13:00',file_path_hourly)
-         wind = GD.get_wind_speed(str(input_date)[0:10] + ' 13:00',file_path_hourly)
+         temp = GD.get_noon_temp(str(input_date)[0:10]+' 13:00',file_path_hourly)
+         rh = GD.get_relative_humidity(str(input_date)[0:10]+' 13:00',file_path_hourly)
+         wind = GD.get_wind_speed(str(input_date)[0:10]+' 13:00',file_path_hourly)
          pcp = GD.get_pcp(str(input_date)[0:10],file_path_daily,date_dictionary)
 
          end = time.time()
@@ -177,12 +187,29 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
 
          start = time.time() 
 
-    
+         
          best_interp_temp,choice_surf_temp,maxmin = run_comparison('temp',input_date,interpolation_types,rep,loc_dictionary_hourly,temp,file_path_elev,elev_array,idx_list)
+         #best_interp_temp,choice_surf_temp,maxmin = get_surf('temp',input_date,interpolation_types,rep,loc_dictionary_hourly,temp,file_path_elev,elev_array,idx_list)
+         temp_list.append(choice_surf_temp)
+         print(choice_surf_temp.shape)
 
          best_interp_rh,choice_surf_rh,maxmin = run_comparison('rh',input_date,interpolation_types,rep,loc_dictionary_hourly,rh,file_path_elev,elev_array,idx_list)
+
+         #best_interp_rh,choice_surf_rh,maxmin = get_surf('rh',input_date,interpolation_types,rep,loc_dictionary_hourly,rh,file_path_elev,elev_array,idx_list)
+         choice_surf_rh[choice_surf_rh > 100] = 100 
+         rh_list.append(choice_surf_rh)
+
          best_interp_wind,choice_surf_wind,maxmin  = run_comparison('wind',input_date,interpolation_types,rep,loc_dictionary_hourly,wind,file_path_elev,elev_array,idx_list)
+
+         #best_interp_wind,choice_surf_wind,maxmin  = get_surf('wind',input_date,interpolation_types,rep,loc_dictionary_hourly,wind,file_path_elev,elev_array,idx_list)
+         choice_surf_wind[choice_surf_wind < 0] = 0 
+         wind_list.append(choice_surf_wind)
+
          best_interp_pcp,choice_surf_pcp,maxmin  = run_comparison('pcp',input_date,interpolation_types,rep,loc_dictionary_daily,pcp,file_path_elev,elev_array,idx_list)
+
+         #best_interp_pcp,choice_surf_pcp,maxmin  = get_surf('pcp',input_date,interpolation_types,rep,loc_dictionary_daily,pcp,file_path_elev,elev_array,idx_list)
+         choice_surf_pcp[choice_surf_pcp < 0] = 0 #mask out negative values (convert negatives to 0)
+         pcp_list.append(choice_surf_pcp)
 
          end = time.time()
          time_elapsed = end-start
@@ -207,13 +234,17 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
             
          if count > 0:  
             dc_array = dc_list[count-1] #the last one added will be yesterday's val, but there's a lag bc none was added when count was0, so just use count-1
+            print(dc_array.shape)
             dmc_array = dmc_list[count-1]
+            dmcalt_array = dmcalt_list[count-1]
             ffmc_array = ffmc_list[count-1]
             index = count-1
             dc = fwi.DC(input_date,choice_surf_pcp,choice_surf_rh,choice_surf_temp,choice_surf_wind,maxmin,\
                     dc_array,index,False,shapefile,mask1,endMask,None,False)
             dmc = fwi.DMC(input_date,choice_surf_pcp,choice_surf_rh,choice_surf_temp,choice_surf_wind,maxmin,\
                     dmc_array,index,False,shapefile,mask1,endMask)
+            dmc_alt = fwi.DMC_alt(input_date,choice_surf_pcp,choice_surf_rh,choice_surf_temp,choice_surf_wind,maxmin,\
+                    dmcalt_array,index,False,shapefile,mask1,endMask)
             ffmc = fwi.FFMC(input_date,choice_surf_pcp,choice_surf_rh,choice_surf_temp,choice_surf_wind,maxmin,\
                     ffmc_array,index,False,shapefile,mask1,endMask)
 
@@ -226,6 +257,7 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
             
             dc_list.append(dc)
             dmc_list.append(dmc)
+            dmcalt_list.append(dmc_alt)
             ffmc_list.append(ffmc)
             isi_list.append(isi)
             bui_list.append(bui)
@@ -243,6 +275,11 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
              dmc_list.append(dmc_yesterday1) #placeholder
 
              rain_shape = choice_surf_pcp.shape
+             dmcalt_initialize = np.zeros(rain_shape)+6 #merge with the other overwinter array once it's calculated
+             dmcalt_yesterday1 = dmcalt_initialize*mask1
+             dmcalt_list.append(dmcalt_yesterday1) #placeholder
+
+             rain_shape = choice_surf_pcp.shape
              ffmc_initialize = np.zeros(rain_shape)+85 #merge with the other overwinter array once it's calculated
              ffmc_yesterday1 = ffmc_initialize*mask1
              ffmc_list.append(ffmc_yesterday1) #placeholder
@@ -251,12 +288,18 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
              bui_list.append(np.zeros(rain_shape))
              fwi_list.append(np.zeros(rain_shape))
          if count > 0:
-             read_data(dc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/DC/')
-             read_data(dmc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/DMC/')
-             read_data(ffmc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/FFMC/')
-             read_data(isi_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/ISI/')
-             read_data(bui_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/BUI/')
-             read_data(fwi_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/FWI/')
+             read_data(dc_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/DC/')
+             read_data(dmc_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/DMC/')
+             read_data(dmcalt_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/DMC_alt/') 
+             read_data(ffmc_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/FFMC/')
+             read_data(isi_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/ISI/')
+             read_data(bui_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/BUI/')
+             read_data(fwi_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/FWI/')
+             read_data(wind_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/wind/')
+             read_data(temp_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/temp/')
+             read_data(rh_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/rh/')
+             read_data(pcp_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/pcp/')
+             
              
          end = time.time()
          time_elapsed = end-start
@@ -265,42 +308,42 @@ def execute_sequential_calc(file_path_hourly,file_path_daily,file_path_daily_csv
          count += 1
 
      #prep to serialize
-     dc_list = [x.tolist() for x in dc_list]
-
-     dmc_list = [x.tolist() for x in dmc_list]
-
-     ffmc_list = [x.tolist() for x in ffmc_list]
-
-     isi_list = [x.tolist() for x in isi_list]
-
-     bui_list = [x.tolist() for x in bui_list]
-
-     fwi_list = [x.tolist() for x in fwi_list]
-
-     with open(save_path+year+'_DC_auto_select.json', 'w') as fp:
-        json.dump(dc_list, fp)
-
-     with open(save_path+year+'_DC_auto_select.json', 'r') as fp:
-        dc_list = json.load(fp)
-
-     with open(save_path+year+'_DMC_auto_select.json', 'w') as fp:
-        json.dump(dmc_list, fp)
-
-     with open(save_path+year+'_FFMC_auto_select.json', 'w') as fp:
-        json.dump(ffmc_list, fp)
-
-     with open(save_path+year+'_ISI_auto_select.json', 'w') as fp:
-        json.dump(isi_list, fp)
-
-     with open(save_path+year+'_BUI_auto_select.json', 'w') as fp:
-        json.dump(bui_list, fp)
-
-     with open(save_path+year+'_FWI_auto_select.json', 'w') as fp:
-        json.dump(fwi_list, fp)
-
-     dc_list = [np.array(x) for x in dc_list] #convert to np array for plotting 
-
-     fwi.plot_june(dc_list,maxmin,year,'DC',shapefile,shapefile2)
+##     dc_list = [x.tolist() for x in dc_list]
+##
+##     dmc_list = [x.tolist() for x in dmc_list]
+##
+##     ffmc_list = [x.tolist() for x in ffmc_list]
+##
+##     isi_list = [x.tolist() for x in isi_list]
+##
+##     bui_list = [x.tolist() for x in bui_list]
+##
+##     fwi_list = [x.tolist() for x in fwi_list]
+##
+##     with open(save_path+year+'_DC_auto_select.json', 'w') as fp:
+##        json.dump(dc_list, fp)
+##
+##     with open(save_path+year+'_DC_auto_select.json', 'r') as fp:
+##        dc_list = json.load(fp)
+##
+##     with open(save_path+year+'_DMC_auto_select.json', 'w') as fp:
+##        json.dump(dmc_list, fp)
+##
+##     with open(save_path+year+'_FFMC_auto_select.json', 'w') as fp:
+##        json.dump(ffmc_list, fp)
+##
+##     with open(save_path+year+'_ISI_auto_select.json', 'w') as fp:
+##        json.dump(isi_list, fp)
+##
+##     with open(save_path+year+'_BUI_auto_select.json', 'w') as fp:
+##        json.dump(bui_list, fp)
+##
+##     with open(save_path+year+'_FWI_auto_select.json', 'w') as fp:
+##        json.dump(fwi_list, fp)
+##
+##     dc_list = [np.array(x) for x in dc_list] #convert to np array for plotting 
+##
+##     fwi.plot_june(dc_list,maxmin,year,'DC',shapefile,shapefile2)
     
      return dc_list
 
