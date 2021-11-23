@@ -320,23 +320,28 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
      start = time.time() 
      start_dict, latlon_station = fwi.start_date_calendar_csv(file_path_daily_csv,year) #Get two things: start date for each station and the lat lon of the station
      end_dict, latlon_station = fwi.end_date_calendar_csv(file_path_daily_csv,year,'oct') #start searching from Oct 1
+     placeholder_surf, maxmin, elev_array = idew.IDEW(loc_dictionary_hourly,end_dict,'placeholder','Variable',shapefile,False,\
+                                                          file_path_elev,idx_list,2,True,res=10000)     
+     
+##     wind_export = pd.DataFrame(loc_dictionary_hourly.items(),columns = ['name','latlon'])
+##     print(wind_export['latlon'].astype(str).str[2:7])
+##     wind_export['lat'] = wind_export['latlon'].astype(str).str[2:7]
+##     wind_export['lon'] = wind_export['latlon'].astype(str).str[11:17]
+##     wind_export.to_csv('C:/Users/clara/Documents/fire_season/new/stations_loc.csv',index=False)
         
-        
-     daysurface, maxmin= idw.IDW(latlon_station,start_dict,year,'# Days Since March 1',shapefile,False,3,False,res=10000) #Interpolate the start date, IDW3
-     endsurface, maxmin= idw.IDW(latlon_station,end_dict,year,'# Days Since Oct 1',shapefile,False,3,False,res=10000) #Interpolate the end date
+     #daysurface, maxmin= idw.IDW(latlon_station,start_dict,year,'# Days Since March 1',shapefile,False,3,False,res=10000) #Interpolate the start date, IDW3
+     #endsurface, maxmin= idw.IDW(latlon_station,end_dict,year,'# Days Since Oct 1',shapefile,False,3,False,res=10000) #Interpolate the end date
+     daysurface, maxmin = rf.random_forest_interpolator(latlon_station,start_dict,year,'# Days Since Oct 1',shapefile,False,file_path_elev,idx_list,False,res=10000)
+     endsurface, maxmin = rf.random_forest_interpolator(latlon_station,end_dict,year,'# Days Since Oct 1',shapefile,False,file_path_elev,idx_list,False,res=10000) #Interpolate the end date
+     
 
      end_dc_vals = np.zeros(endsurface.shape) #For now, no overwinter procedure
      end = time.time()
      time_elapsed = (end-start)/60
      print('Finished getting season start & end dates, it took %s minutes'%(time_elapsed/60))
-
-        #Initialize the input elev_array (which is stable)
-     placeholder_surf, maxmin, elev_array = idew.IDEW(loc_dictionary_hourly,end_dict,'placeholder','Variable',shapefile,False,\
-                                                          file_path_elev,idx_list,2,True,res=10000)
-     
      #Get the dates in the fire season, overall, the surfaces will take care of masking
      sdate = pd.to_datetime(year+'-03-01').date() #Get the start date to start (if its too early everything will be masked out so can put any day before april)
-     edate = pd.to_datetime(year+'-09-29').date() #End date, for right now it's Dec 31
+     edate = pd.to_datetime(year+'-12-31').date() #End date, for right now it's Dec 31
      #dates = list(pd.date_range(sdate,edate-timedelta(days=1),freq='d')) #Get the dates for all the potential days in the season
      dates = list(pd.date_range(sdate,edate,freq='d'))
      dates_existing = [x[0:10] for x in os.listdir(save_path+str(year)+'/DC/')]
@@ -349,19 +354,26 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
      
      dc_list = []
      dmc_list = []
+     dmcalt_list = [] 
      ffmc_list = []
      isi_list = []
      bui_list = []
-     fwi_list = [] 
+     fwi_list = []
+     temp_list = []
+     rh_list = []
+     wind_list = []
+     pcp_list = [] 
      count = 0 
      for input_date in dates_updated[1:]: #Skip first date, since this is March 1, which is the initiation date
          print(input_date)
          gc.collect()
          #Get the dictionary
          start = time.time() 
-         temp = GD.get_noon_temp(str(input_date)[0:10] + ' 13:00',file_path_hourly)
-         rh = GD.get_relative_humidity(str(input_date)[0:10] + ' 13:00',file_path_hourly)
-         wind = GD.get_wind_speed(str(input_date)[0:10] + ' 13:00',file_path_hourly)
+         temp = GD.get_noon_temp(str(input_date)[0:10]+' 13:00',file_path_hourly)
+         rh = GD.get_relative_humidity(str(input_date)[0:10]+' 13:00',file_path_hourly)
+         wind = GD.get_wind_speed(str(input_date)[0:10]+' 13:00',file_path_hourly)
+         #wind_export = pd.DataFrame(wind.items())
+         #wind_export.to_csv('C:/Users/clara/Documents/fire_season/new/june15_stations.csv',index=False)
          pcp = GD.get_pcp(str(input_date)[0:10],file_path_daily,date_dictionary)
 
          end = time.time()
@@ -370,15 +382,33 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
 
          start = time.time() 
 
-    
+         
          best_interp_temp,choice_surf_temp,maxmin = run_comparison('temp',input_date,interpolation_types,rep,loc_dictionary_hourly,temp,file_path_elev,elev_array,idx_list)
+         #best_interp_temp,choice_surf_temp,maxmin = get_surf('temp',input_date,interpolation_types,rep,loc_dictionary_hourly,temp,file_path_elev,elev_array,idx_list)
+         temp_list.append(choice_surf_temp)
+         print(choice_surf_temp.shape)
+
          best_interp_rh,choice_surf_rh,maxmin = run_comparison('rh',input_date,interpolation_types,rep,loc_dictionary_hourly,rh,file_path_elev,elev_array,idx_list)
+
+         #best_interp_rh,choice_surf_rh,maxmin = get_surf('rh',input_date,interpolation_types,rep,loc_dictionary_hourly,rh,file_path_elev,elev_array,idx_list)
+         choice_surf_rh[choice_surf_rh > 100] = 100 
+         rh_list.append(choice_surf_rh)
+
          best_interp_wind,choice_surf_wind,maxmin  = run_comparison('wind',input_date,interpolation_types,rep,loc_dictionary_hourly,wind,file_path_elev,elev_array,idx_list)
+
+         #best_interp_wind,choice_surf_wind,maxmin  = get_surf('wind',input_date,interpolation_types,rep,loc_dictionary_hourly,wind,file_path_elev,elev_array,idx_list)
+         choice_surf_wind[choice_surf_wind < 0] = 0 
+         wind_list.append(choice_surf_wind)
+
          best_interp_pcp,choice_surf_pcp,maxmin  = run_comparison('pcp',input_date,interpolation_types,rep,loc_dictionary_daily,pcp,file_path_elev,elev_array,idx_list)
+
+         #best_interp_pcp,choice_surf_pcp,maxmin  = get_surf('pcp',input_date,interpolation_types,rep,loc_dictionary_daily,pcp,file_path_elev,elev_array,idx_list)
+         choice_surf_pcp[choice_surf_pcp < 0] = 0 #mask out negative values (convert negatives to 0)
+         pcp_list.append(choice_surf_pcp)
 
          end = time.time()
          time_elapsed = end-start
-         print('Finished getting best methods & surfaces, it took %s minutes'%(time_elapsed/60))
+         print('Finished getting best methods & surfaces, it took %s seconds'%(time_elapsed))
 
          #Get date index information
          year = str(input_date)[0:4]
@@ -406,6 +436,8 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
                     dc_array,index,False,shapefile,mask1,endMask,None,False)
             dmc = fwi.DMC(input_date,choice_surf_pcp,choice_surf_rh,choice_surf_temp,choice_surf_wind,maxmin,\
                     dmc_array,index,False,shapefile,mask1,endMask)
+            dmc_alt = fwi.DMC_alt(input_date,choice_surf_pcp,choice_surf_rh,choice_surf_temp,choice_surf_wind,maxmin,\
+                    dmcalt_array,index,False,shapefile,mask1,endMask)
             ffmc = fwi.FFMC(input_date,choice_surf_pcp,choice_surf_rh,choice_surf_temp,choice_surf_wind,maxmin,\
                     ffmc_array,index,False,shapefile,mask1,endMask)
 
@@ -418,6 +450,7 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
             
             dc_list.append(dc)
             dmc_list.append(dmc)
+            dmcalt_list.append(dmc_alt)
             ffmc_list.append(ffmc)
             isi_list.append(isi)
             bui_list.append(bui)
@@ -427,7 +460,6 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
              # Read in yesterdays dates from raster
              format_dat = datetime.strptime(dat, '%Y-%m-%d %H:%M:%S')
              yesterday = format_dat - timedelta(1)
-             print(yesterday)
              src_dc = gdal.Open(save_path+str(year)+'/DC/'+str(yesterday)[0:10]+'.tif')
              cols = src_dc.RasterXSize
              rows = src_dc.RasterYSize
@@ -440,7 +472,13 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
              dmc_initialize = src_dmc.ReadAsArray(0, 0, cols, rows)
              dmc_yesterday1 = dmc_initialize*mask1
              dmc_list.append(dmc_yesterday1) #placeholder
-             print('DMC collected') 
+             print('DMC collected')
+
+             src_dmc_a = gdal.Open(save_path+str(year)+'/DMC_alt/'+str(yesterday)[0:10]+'.tif')              
+             dmc_initialize_a = src_dmc_a.ReadAsArray(0, 0, cols, rows)
+             dmc_yesterday1_a = dmc_initialize_a*mask1
+             dmcalt_list.append(dmc_yesterday1_a) #placeholder
+             print('DMC_alt collected') 
 
              src_ffmc = gdal.Open(save_path+str(year)+'/FFMC/'+str(yesterday)[0:10]+'.tif')           
              ffmc_initialize = src_ffmc.ReadAsArray(0, 0, cols, rows)
@@ -459,15 +497,21 @@ def restart_calc(file_path_hourly,file_path_daily,file_path_daily_csv,loc_dictio
              src_fwi = gdal.Open(save_path+str(year)+'/FWI/'+str(yesterday)[0:10]+'.tif')           
              fwi_initialize = src_fwi.ReadAsArray(0, 0, cols, rows)
              fwi_list.append(fwi_initialize)
+
              
          #if count > 0:
          print('Writing to drive.....') 
-         read_data(dc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/DC/')
-         read_data(dmc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/DMC/')
-         read_data(ffmc_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/FFMC/')
-         read_data(isi_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/ISI/')
-         read_data(bui_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/BUI/')
-         read_data(fwi_list[-1],10000,shapefile,str(dat)[0:10],'C:/Users/clara/Documents/fire_season/new/'+year+'/FWI/')
+         read_data(dc_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/DC/')
+         read_data(dmc_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/DMC/')
+         read_data(dmcalt_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/DMC_alt/') 
+         read_data(ffmc_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/FFMC/')
+         read_data(isi_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/ISI/')
+         read_data(bui_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/BUI/')
+         read_data(fwi_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/FWI/')
+         read_data(wind_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/wind/')
+         read_data(temp_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/temp/')
+         read_data(rh_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/rh/')
+         read_data(pcp_list[-1],10000,shapefile,str(dat)[0:10],save_path+year+'/pcp/')
              
          end = time.time()
          time_elapsed = end-start
