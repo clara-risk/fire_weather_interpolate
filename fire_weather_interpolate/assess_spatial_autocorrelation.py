@@ -42,7 +42,7 @@ def plot_MI(paths):
 
 if __name__ == "__main__":
 
-    plot_MI(['20km_ws.txt','20km.txt','20km_rh.txt'])
+    #plot_MI(['100km_ws.txt','100km_temp.txt','100km_ws.txt','100km_pcp.txt'])
             
     dirname = 'C:/Users/clara/Documents/cross-validation/'
 
@@ -70,121 +70,123 @@ if __name__ == "__main__":
         hourly_dictionary = json.load(fp) #Get the latitude and longitude for the stations
  
     years = [] 
-    for x in range(1956,2020):
+    for x in range(2000,2020):
         years.append(str(x))
     overall_dates = []
     
     for year in years: 
        overall_dates.append((year)+'-07-01 13:00')
 
+    for x in [10,20,50,100,500]: 
+        mi_list = []
+        p_list =[]
+        date = []
+        num_pairs = []
+        ref_list = []
+        pos_autocorrelation = []
 
-    mi_list = []
-    p_list =[]
-    date = []
-    num_pairs = []
-    ref_list = []
-    pos_autocorrelation = []
-
-    for input_date in overall_dates:
-         print(input_date)
-         gc.collect()
-         #Get the dictionary
-         
-         temp = GD.get_noon_temp(str(input_date)[0:10]+' 13:00',file_path_hourly)
-         #print(temp) 
-         rh = GD.get_relative_humidity(str(input_date)[0:10]+' 13:00',file_path_hourly)
-         wind = GD.get_wind_speed(str(input_date)[0:10]+' 13:00',file_path_hourly)
-         pcp = GD.get_pcp(str(input_date)[0:10],file_path_daily,date_dictionary)
-
-         import pysal
-         #print(hourly_dictionary)
-
-         points_for_weights = []
-         temp_list = [] 
-        
-         for key,val in pcp.items():
-             #coord = hourly_dictionary[key]
-             if key in list(daily_dictionary.keys()):
-                 coord = daily_dictionary[key]
-                 lon = float(coord[1])
-                 lat = float(coord[0])
-                 Plat, Plon = pyproj.Proj('esri:102001')(lon, lat)
-                 points_for_weights.append((Plon,Plat,))
-                 temp_list.append(val)
-
-        
-         #print(points_for_weights)
+        for input_date in overall_dates:
+             print(input_date)
+             gc.collect()
+             #Get the dictionary
              
-        
-         lag1 = 0 * 1000
-         w1 = pysal.weights.DistanceBand.from_array(points_for_weights,lag1)
+             temp = GD.get_noon_temp(str(input_date)[0:10]+' 13:00',file_path_hourly)
+             #print(temp) 
+             rh = GD.get_relative_humidity(str(input_date)[0:10]+' 13:00',file_path_hourly)
+             wind = GD.get_wind_speed(str(input_date)[0:10]+' 13:00',file_path_hourly)
+             pcp = GD.get_pcp(str(input_date)[0:10],file_path_daily,date_dictionary)
 
-         lag2 = 20 * 1000
-         w2 = pysal.weights.DistanceBand.from_array(points_for_weights,lag2)
+             import pysal
+             #print(hourly_dictionary)
 
-        
-         filter_out = []
-         filter_in = []
-         filter_temp = [] 
-         for i in range(0,len(points_for_weights)):
-             if len(w1[i]) > 0:
-                filter_out.append(points_for_weights[i])
-                
+             points_for_weights = []
+             temp_list = [] 
+            
+             for key,val in pcp.items():
+                 #coord = hourly_dictionary[key]
+                 if key in list(daily_dictionary.keys()):
+                     coord = daily_dictionary[key]
+                     lon = float(coord[1])
+                     lat = float(coord[0])
+                     Plat, Plon = pyproj.Proj('esri:102001')(lon, lat)
+                     points_for_weights.append((Plon,Plat,))
+                     temp_list.append(val)
+
+            
+             #print(points_for_weights)
+                 
+    ##        
+    ##         lag1 = 100 * 1000
+    ##         w1 = pysal.weights.DistanceBand.from_array(points_for_weights,lag1)
+    ##
+    ##         lag2 = 500 * 1000
+    ##         w2 = pysal.weights.DistanceBand.from_array(points_for_weights,lag2)
+    ##
+    ##        
+    ##         filter_out = []
+    ##         filter_in = []
+    ##         filter_temp = [] 
+    ##         for i in range(0,len(points_for_weights)):
+    ##             if len(w1[i]) > 0:
+    ##                filter_out.append(points_for_weights[i])
+    ##                
+    ##             else:
+    ##                filter_in.append(points_for_weights[i])
+    ##                filter_temp.append(temp_list[i])
+
+            
+             lag = x * 1000         
+             w = pysal.weights.DistanceBand.from_array(points_for_weights,lag,binary=True)
+             #w = pysal.Kernel(points_for_weights,bandwidth = 15.0)
+             
+             #print('Points inside spatial lag:' +str(len(w[0])))
+             #print(str(len(w[1])))
+
+             #calculate n (total number of pairs)
+             
+             count = 0
+             for i in range(0,len(points_for_weights)):
+                 num_p = len(w[i])
+                 count += num_p
+
+            
+            
+             num_pairs.append(count)
+             print('Num pairs in class: '+str(count))
+             print('Morans I:') 
+
+             mi = pysal.Moran(temp_list, w, two_tailed=False)
+             print("%.3f"%mi.I)
+
+             print('p:')
+             print("%.5f"%mi.p_norm)
+
+             #Calculate ref value
+             ref = -1/(count-1)
+
+             ref_list.append(ref)
+             print('Ref: '+str(ref))
+
+             if float(mi.I) > ref and float(mi.I < 1):
+                 pos_autocorrelation.append('Yes')
+                 print('Yes')
              else:
-                filter_in.append(points_for_weights[i])
-                filter_temp.append(temp_list[i])
-                
-         w = pysal.weights.DistanceBand.from_array(filter_in,lag2)
-         #w = pysal.Kernel(points_for_weights,bandwidth = 15.0)
-         
-         #print('Points inside spatial lag:' +str(len(w[0])))
-         #print(str(len(w[1])))
+                 pos_autocorrelation.append('No')
+                 print('No') 
 
-         #calculate n (total number of pairs)
-         
-         count = 0
-         for i in range(0,len(filter_in)):
-             num_p = len(w[i])
-             count += num_p
+             mi_list.append(mi.I)
+             p_list.append(mi.p_norm)
+             date.append(input_date)
 
+        df = pd.DataFrame()
+        df['Date'] = date
+
+        df['Moran_I'] = mi_list
+        df['p'] = p_list
+        df['Ref'] = ref_list
+        df['Pos_Autocorrelation'] = pos_autocorrelation
+        df['Num_Pairs'] = num_pairs
         
-        
-         num_pairs.append(count)
-         print('Num pairs in class: '+str(count))
-         print('Morans I:') 
+        print(df)
 
-         mi = pysal.Moran(filter_temp, w, two_tailed=False)
-         print("%.3f"%mi.I)
-
-         print('p:')
-         print("%.5f"%mi.p_norm)
-
-         #Calculate ref value
-         ref = -1/(count-1)
-
-         ref_list.append(ref)
-         print('Ref: '+str(ref))
-
-         if float(mi.I) > ref and float(mi.I < 1):
-             pos_autocorrelation.append('Yes')
-             print('Yes')
-         else:
-             pos_autocorrelation.append('No')
-             print('No') 
-
-         mi_list.append(mi.I)
-         p_list.append(mi.p_norm)
-         date.append(input_date)
-
-    df = pd.DataFrame()
-    df['Date'] = date
-
-    df['Moran_I'] = mi_list
-    df['p'] = p_list
-    df['Ref'] = ref_list
-    df['Pos_Autocorrelation'] = pos_autocorrelation
-    df['Num_Pairs'] = num_pairs
-    
-    print(df)
-
-    df.to_csv('20km_pcp.txt',sep=',') 
+        df.to_csv(str(x)+'km_pcp.txt',sep=',') 
