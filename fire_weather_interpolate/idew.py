@@ -365,8 +365,8 @@ def cross_validate_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_
         pixelHeight = 10000
         pixelWidth = 10000
 
-        num_col = int((xmax - xmin) / pixelHeight)
-        num_row = int((ymax - ymin) / pixelWidth)
+        num_col = int((xmax - xmin) / pixelHeight)+1
+        num_row = int((ymax - ymin) / pixelWidth)+1
 
         # We need to project to a projected system before making distance matrix
         # We dont know but assume
@@ -1199,16 +1199,10 @@ def buffer_LOO_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_arra
 
     na_map = gpd.read_file(shapefile)
     bounds = na_map.bounds
-    if expand_area:
-        xmax = bounds['maxx'] + 200000
-        xmin = bounds['minx'] - 200000
-        ymax = bounds['maxy'] + 200000
-        ymin = bounds['miny'] - 200000
-    else:
-        xmax = bounds['maxx']
-        xmin = bounds['minx']
-        ymax = bounds['maxy']
-        ymin = bounds['miny']
+    xmax = bounds['maxx']
+    xmin = bounds['minx']
+    ymax = bounds['maxy']
+    ymin = bounds['miny']
 
     for station_name in Cvar_dict.keys():
 
@@ -1227,6 +1221,31 @@ def buffer_LOO_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_arra
                 projected_lat_lon[station_name] = [Plat, Plon]
                 # Only append if it falls inside the generated grid
                 station_name_list.append(station_name)
+
+    # Pre-make the elev_dict to speed up code
+
+    latO = []
+    lonO = []
+    for station_name in sorted(Cvar_dict.keys()):
+        if station_name in latlon_dict.keys():
+            loc = latlon_dict[station_name]
+            latitude = loc[0]
+            longitude = loc[1]
+            cvar_val = Cvar_dict[station_name]
+            latO.append(float(latitude))
+            lonO.append(float(longitude))
+        else:
+            pass
+
+    yO = np.array(latO)
+    xO = np.array(lonO)
+
+    # We need to project to a projected system before making distance matrix
+    # We dont know but assume
+    source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+    xProjO, yProjO = pyproj.Proj('esri:102001')(xO, yO)
+    elev_dict = GD.finding_data_frm_lookup(
+        zip(xProjO, yProjO), file_path_elev, idx_list)
 
     for station_name_hold_back in station_name_list:
         #print(station_name_hold_back)
@@ -1304,8 +1323,8 @@ def buffer_LOO_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_arra
         pixelHeight = 10000
         pixelWidth = 10000
 
-        num_col = int((xmax - xmin) / pixelHeight)
-        num_row = int((ymax - ymin) / pixelWidth)
+        num_col = int((xmax - xmin) / pixelHeight)+1
+        num_row = int((ymax - ymin) / pixelWidth)+1 
 
         # We need to project to a projected system before making distance matrix
         # We dont know but assume
