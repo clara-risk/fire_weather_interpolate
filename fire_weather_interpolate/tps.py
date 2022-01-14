@@ -1054,7 +1054,7 @@ def spatial_groups_tps(idw_example_grid, loc_dict, Cvar_dict, shapefile, phi, bl
     return overall_error
 
 def buffer_LOO_tps(latlon_dict, Cvar_dict, shapefile, phi,buffer_size):
-    '''Leave-one-out cross-validation for thin plate splines
+    '''Buffered LOO cross-validation for thin plate splines
 
     Parameters
     ----------
