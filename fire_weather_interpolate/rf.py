@@ -8,6 +8,7 @@ Spatial interpolation functions for random forest interpolation using the scikit
 """
 
 # import
+import fiona
 import statistics
 import Eval as Eval
 import make_blocks as mbk
@@ -17,6 +18,7 @@ from sklearn import metrics
 from sklearn.model_selection import ShuffleSplit
 from sklearn.ensemble import RandomForestRegressor
 import geopandas as gpd
+from shapely.geometry import Point
 import pandas as pd
 import numpy as np
 import pyproj
@@ -24,6 +26,7 @@ import matplotlib.pyplot as plt
 import warnings
 # Runtime warning suppress, this suppresses the /0 warning
 warnings.filterwarnings("ignore")
+
 
 
 def random_forest_interpolator(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show, \
