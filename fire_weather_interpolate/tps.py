@@ -16,6 +16,8 @@ SciPy Community. (2014). SciPy Reference Guide Release 0.14.0 (pp. 34).
 """
 
 # import
+# import
+import fiona
 import math
 import statistics
 import get_data as GD
@@ -26,10 +28,12 @@ import make_blocks as mbk
 from sklearn import metrics
 from sklearn.model_selection import ShuffleSplit
 import geopandas as gpd
+from shapely.geometry import Point
 import numpy as np
 import pyproj
 import matplotlib.pyplot as plt
 import scipy.interpolate as interpolate
+import pandas as pd
 
 import warnings
 # Runtime warning suppress, this suppresses the /0 warning
