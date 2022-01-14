@@ -16,16 +16,18 @@ A knowledge-based approach to the statistical mapping of climate. Climate Resear
 """
 
 # import
+import geopandas as gpd
+from shapely.geometry import Point
+import pyproj
 import Eval as Eval
 import cluster_3d as c3d
 import get_data as GD
 from sklearn import metrics
 from sklearn.model_selection import ShuffleSplit
-import geopandas as gpd
 import numpy as np
-import pyproj
 import matplotlib.pyplot as plt
 import statistics
+import pandas as pd
 
 import warnings
 # Runtime warning suppress, this suppresses the /0 warning
