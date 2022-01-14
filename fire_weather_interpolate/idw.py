@@ -20,7 +20,9 @@ import cluster_3d as c3d
 import get_data as GD
 import Eval as Eval
 import make_blocks as mbk
+import fiona 
 import geopandas as gpd
+from shapely.geometry import Point
 import numpy as np
 import pyproj
 import matplotlib.pyplot as plt
@@ -28,6 +30,7 @@ import os
 import sys
 import math
 import statistics
+import pandas as pd 
 
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.neighbors import kneighbors_graph
@@ -679,18 +682,23 @@ def spatial_groups_IDW(idw_example_grid, loc_dict, Cvar_dict, shapefile, d, bloc
             # Compare at a certain point
             for statLoc in station_list:
 
-                coord_pair = projected_lat_lon[statLoc]
+                try: 
 
-                x_orig = int((coord_pair[0] - float(xmin))/pixelHeight)  # lon
-                y_orig = int((coord_pair[1] - float(ymin)) / pixelWidth)  # lat
-                x_origin_list.append(x_orig)
-                y_origin_list.append(y_orig)
+                    coord_pair = projected_lat_lon[statLoc]
 
-                interpolated_val = idw_grid[y_orig][x_orig]
+                    x_orig = int((coord_pair[0] - float(xmin))/pixelHeight)  # lon
+                    y_orig = int((coord_pair[1] - float(ymin)) / pixelWidth)  # lat
+                    x_origin_list.append(x_orig)
+                    y_origin_list.append(y_orig)
 
-                original_val = Cvar_dict[statLoc]
-                absolute_error = abs(interpolated_val - original_val)
-                absolute_error_dictionary[statLoc] = absolute_error
+                    interpolated_val = idw_grid[y_orig][x_orig]
+
+                    original_val = Cvar_dict[statLoc]
+                    absolute_error = abs(interpolated_val - original_val)
+                    absolute_error_dictionary[statLoc] = absolute_error
+
+                except KeyError:
+                    pass
 
             error_dictionary[count] = sum(absolute_error_dictionary.values(
             ))/len(absolute_error_dictionary.values())  # average of all the withheld stations
@@ -1053,3 +1061,217 @@ def shuffle_split(loc_dict, Cvar_dict, shapefile, d, rep, show, res=10000):
         rep  # average of all the runs
 
     return overall_error
+
+
+def buffer_LOO(latlon_dict, Cvar_dict, shapefile,
+                       d, buffer_size, expand_area, res=10000):
+    '''Buffered LOO cross-validation procedure for IDW
+
+    Parameters
+    ----------
+         latlon_dict : dictionary
+              the latitude and longitudes of the stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
+              path to the study area shapefile, including its name
+         d : int
+              the weighting for IDW interpolation
+         buffer_size : int
+              user inputs buffer size in km 
+         expand_area : bool
+              function will expand the study area so that more stations are taken into account (200 km)
+         res : int
+              resolution of output raster         
+              
+    Returns
+    ----------
+         dictionary
+              - a dictionary of the absolute error at each station when it was left out
+         dictionary
+              - if pass_to_plot = True, returns a dictionary without the absolute value of the error, for example for plotting fire season error
+     '''
+    source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+    x_origin_list = []
+    y_origin_list = []
+
+    absolute_error_dictionary = {}  # for plotting
+    no_absolute_value_dict = {}
+    station_name_list = []
+    projected_lat_lon = {}
+
+    na_map = gpd.read_file(shapefile)
+    bounds = na_map.bounds
+    if expand_area:
+        xmax = bounds['maxx'] + 200000
+        xmin = bounds['minx'] - 200000
+        ymax = bounds['maxy'] + 200000
+        ymin = bounds['miny'] - 200000
+    else:
+        xmax = bounds['maxx']
+        xmin = bounds['minx']
+        ymax = bounds['maxy']
+        ymin = bounds['miny']
+
+    for station_name in Cvar_dict.keys():
+
+        if station_name in latlon_dict.keys():
+
+            loc = latlon_dict[station_name]
+            latitude = loc[0]
+            longitude = loc[1]
+            Plat, Plon = pyproj.Proj('esri:102001')(longitude, latitude)
+            proj_coord = pyproj.Proj('esri:102001')(
+                longitude, latitude)  # Filter out stations outside of grid
+            if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
+                    ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                Plat = float(Plat)
+                Plon = float(Plon)
+                projected_lat_lon[station_name] = [Plat, Plon]
+                # Only append if it falls inside the generated grid
+                station_name_list.append(station_name)
+
+    for station_name_hold_back in station_name_list:
+        #print(station_name_hold_back)
+        #get station location 
+        stat_loc = latlon_dict[station_name_hold_back]
+        stat_latitude = stat_loc[0]
+        stat_longitude = stat_loc[1]
+        source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+        lon1,lat1 = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
+        stat_point = Point(lon1,lat1)
+
+        #project all stations in the dataset
+        all_station_lon = []
+        all_station_lat = []
+        all_station_names = [] 
+        for station_name in sorted(Cvar_dict.keys()):
+            if station_name != station_name_hold_back:
+                stat_loc = latlon_dict[station_name]
+                stat_latitude = stat_loc[0]
+                stat_longitude = stat_loc[1]
+                source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+                Xlon,Xlat = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
+                all_station_lon.append(Xlon)
+                all_station_lat.append(Xlat)
+                all_station_names.append(station_name)
+
+        df_storage = pd.DataFrame()
+        df_storage['lat'] = all_station_lat
+        df_storage['lon'] = all_station_lon
+        df_storage['name'] = all_station_names
+
+        buffer_s = buffer_size * 1000 #conver to m 
+        
+        buff1 = stat_point.buffer(buffer_s)
+        gdf_buff = gpd.GeoDataFrame(geometry=[buff1])
+        all_stat_geometry = gpd.GeoDataFrame(df_storage[['name','lon','lat']],geometry=gpd.points_from_xy(df_storage['lon'],df_storage['lat']))
+
+        xval_stations = all_stat_geometry[~all_stat_geometry.geometry.within(buff1)] #delete the stations inside the buffer
+##        fig, ax = plt.subplots(figsize=(15, 15))
+##        plt.scatter(stat_point.x,stat_point.y,c='b',s=50)
+##        gdf_buff.plot(ax=ax,facecolor='None',edgecolor='k')
+##        
+##        plt.scatter(all_stat_geometry['lon'],all_stat_geometry['lat'],c='r',s=8)
+##        plt.scatter(xval_stations['lon'],xval_stations['lat'],c='k',s=25)
+##        plt.show() 
+        xval_stations_list = list(all_stat_geometry['name'])
+        
+        #Get all stations within x buffer of the station 
+
+        lat = []
+        lon = []
+        Cvar = []
+        for station_name in xval_stations_list:
+            if station_name in latlon_dict.keys():
+                if station_name != station_name_hold_back:
+                    loc = latlon_dict[station_name]
+                    latitude = loc[0]
+                    longitude = loc[1]
+                    proj_coord = pyproj.Proj('esri:102001')(
+                        longitude, latitude)  # Filter out stations outside of grid
+                    if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
+                            ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                        cvar_val = Cvar_dict[station_name]
+                        lat.append(float(latitude))
+                        lon.append(float(longitude))
+                        Cvar.append(cvar_val)
+                    else:
+
+                        pass
+
+        y = np.array(lat)
+        x = np.array(lon)
+        z = np.array(Cvar)
+
+        pixelHeight = res
+        pixelWidth = res
+
+        num_col = int((xmax - xmin) / pixelHeight) + 1
+        num_row = int((ymax - ymin) / pixelWidth) + 1
+
+        # We need to project to a projected system before making distance
+        # matrix
+        # We dont know but assume
+        source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+        xProj, yProj = pyproj.Proj('esri:102001')(x, y)
+        if expand_area:
+            yProj_extent = np.append(
+                yProj, [bounds['maxy'] + 200000, bounds['miny'] - 200000])
+            xProj_extent = np.append(
+                xProj, [bounds['maxx'] + 200000, bounds['minx'] - 200000])
+        else:
+            yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
+            xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
+
+        Yi = np.linspace(
+            np.min(yProj_extent),
+            np.max(yProj_extent),
+            num_row)
+        Xi = np.linspace(
+            np.min(xProj_extent),
+            np.max(xProj_extent),
+            num_col)
+
+        Xi, Yi = np.meshgrid(Xi, Yi)
+        Xi, Yi = Xi.flatten(), Yi.flatten()
+        maxmin = [
+            np.min(yProj_extent),
+            np.max(yProj_extent),
+            np.max(xProj_extent),
+            np.min(xProj_extent)]
+
+        vals = np.vstack((xProj, yProj)).T
+
+        interpol = np.vstack((Xi, Yi)).T
+        # Length of the triangle side from the cell to the point with data
+        dist_not = np.subtract.outer(vals[:, 0], interpol[:, 0])
+        # Length of the triangle side from the cell to the point with data
+        dist_one = np.subtract.outer(vals[:, 1], interpol[:, 1])
+        # euclidean distance, getting the hypotenuse
+        distance_matrix = np.hypot(dist_not, dist_one)
+
+        weights = 1 / (distance_matrix**d)
+
+        weights[np.where(np.isinf(weights))] = 1 / (1.0E-50)
+        weights /= weights.sum(axis=0)
+
+        Zi = np.dot(weights.T, z)
+        idw_grid = Zi.reshape(num_row, num_col)
+
+        # Delete at a certain point
+        coord_pair = projected_lat_lon[station_name_hold_back]
+
+        x_orig = int((coord_pair[0] - float(xmin)) / pixelHeight)  # lon
+        y_orig = int((coord_pair[1] - float(ymin)) / pixelWidth)  # lat
+        x_origin_list.append(x_orig)
+        y_origin_list.append(y_orig)
+
+        interpolated_val = idw_grid[y_orig][x_orig]
+
+        original_val = Cvar_dict[station_name_hold_back]
+        absolute_error = abs(interpolated_val - original_val)
+        absolute_error_dictionary[station_name_hold_back] = absolute_error
+        no_absolute_value_dict[station_name_hold_back] = interpolated_val - original_val
+ 
+    return absolute_error_dictionary    
