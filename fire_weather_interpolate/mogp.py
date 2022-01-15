@@ -739,6 +739,7 @@ def cross_validate_mogp(latlon_dict, daily_dict,  Cvar_dict, Cvar_dict2, \
             absolute_error = abs(interpolated_pcp - original_val)
             pcp_absolute_error_dictionary[station_name_hold_back] = absolute_error
 
-        
-        return temp_absolute_error_dictionary,rh_absolute_error_dictionary,wind_absolute_error_dictionary,\
-               pcp_absolute_error_dictionary
+    
+    return temp_absolute_error_dictionary,rh_absolute_error_dictionary,wind_absolute_error_dictionary,\
+           pcp_absolute_error_dictionary
+
