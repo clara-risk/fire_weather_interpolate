@@ -112,8 +112,7 @@ def MOGP_interpolator(latlon_dict,daily_dict, Cvar_dict, Cvar_dict2, Cvar_dict3,
                 latitude = loc[0]
                 longitude = loc[1]
             else:
-                print('Unknown station!')
-                sys.exit() 
+                pass 
             
             # Filter out stations outside of grid
             proj_coord = pyproj.Proj('esri:102001')(longitude, latitude)
@@ -242,6 +241,8 @@ def MOGP_interpolator(latlon_dict,daily_dict, Cvar_dict, Cvar_dict2, Cvar_dict3,
 
     trainer = pd.concat([df_trainX[['xProj', 'yProj', 'elev','var','var2','var3','var4']],\
                         df_testX[['xProj', 'yProj', 'elev','var','var2','var3','var4']]])
+
+    len_trainer_1 = len(df_trainX)
     
 
     y = np.array(trainer[['var','var2','var3','var4']])
@@ -279,10 +280,10 @@ def MOGP_interpolator(latlon_dict,daily_dict, Cvar_dict, Cvar_dict2, Cvar_dict3,
 
     vals = model.predict()
 
-    temp = vals[0][0]
-    rh = vals[0][1]
-    wind = vals[0][2]
-    pcp = vals[0][3]
+    temp = vals[0][0][len_trainer_1:]
+    rh = vals[0][1][len_trainer_1:]
+    wind = vals[0][2][len_trainer_1:]
+    pcp = vals[0][3][len_trainer_1:]
     
     #print(X_train)
 ##    np.set_printoptions(suppress=True)
@@ -311,16 +312,17 @@ def MOGP_interpolator(latlon_dict,daily_dict, Cvar_dict, Cvar_dict2, Cvar_dict3,
 
     #This part is what we do for the xval, after initial model training! 
     
-    training_triple = [new_train,new_train,new_train,new_train] #,X_train[:,0],X_train[:,0]] #[new_train] for single output
-    print(len(training_triple))
-    print(training_triple)
-    vals = model.predict(training_triple)
-
-    print(vals)
+##    training_triple = [new_train,new_train,new_train,new_train] #,X_train[:,0],X_train[:,0]] #[new_train] for single output
+##    print(len(training_triple))
+##    print(training_triple)
+##    vals = model.predict(training_triple)
+##
+##    print(vals)
+    
     
 
 def cross_validate_mogp(latlon_dict, daily_dict,  Cvar_dict, Cvar_dict2, \
-                        Cvar_dict3, Cvar_dict4, shapefile, res=10000):
+                        Cvar_dict3, Cvar_dict4, shapefile,file_path_elev, idx_list, res=10000):
     '''Leave-one-out cross-validation procedure for MOGP
 
     Parameters
@@ -392,157 +394,134 @@ def cross_validate_mogp(latlon_dict, daily_dict,  Cvar_dict, Cvar_dict2, \
             if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >=
                 float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and
                     proj_coord[0] >= float(xmin[0])):
-                if station_name in Cvar_dict.keys(): 
-                    cvar_val = Cvar_dict[station_name]
-                else:
-                    cvar_val = np.nan
-                if station_name in Cvar_dict2.keys(): 
-                    cvar2_val = Cvar_dict2[station_name]
-                else:
-                    cvar2_val = np.nan
-                if station_name in Cvar_dict3.keys():
-                    cvar3_val = Cvar_dict3[station_name]
-                else:
-                    cvar3_val = np.nan
-                if station_name in Cvar_dict4.keys():
-                    cvar4_val = Cvar_dict4[station_name]
-                else:
-                    cvar4_val = np.nan
-                    
-                lat.append(float(latitude))
-                lon.append(float(longitude))
-                Cvar.append(cvar_val)
-                Cvar2.append(cvar2_val)
-                Cvar3.append(cvar3_val)
-                Cvar4.append(cvar4_val)
                 Plat = float(Plat)
                 Plon = float(Plon)
                 projected_lat_lon[station_name] = [Plat, Plon]
-
-    y = np.array(lat)
-    x = np.array(lon)
-    z = np.array(Cvar)
-    z2 = np.array(Cvar2)
-    z3 = np.array(Cvar3)
-    z4 = np.array(Cvar4)
-
-    pixelHeight = res
-    pixelWidth = res
-
-    num_col = int((xmax - xmin) / pixelHeight)
-    num_row = int((ymax - ymin) / pixelWidth)
-
-    #print(num_col)
-
-    # We need to project to a projected system before making distance matrix
-    source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
-    xProj, yProj = pyproj.Proj('esri:102001')(x, y)
-
-    df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z,'var2':z2,'var3':z3,'var4':z4})
-
-    yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
-    xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
-
-    Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row+1)
-    Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col+1)
-
-    Xi, Yi = np.meshgrid(Xi, Yi)
-    Xi, Yi = Xi.flatten(), Yi.flatten()
-
-    maxmin = [np.min(yProj_extent), np.max(yProj_extent),
-              np.max(xProj_extent), np.min(xProj_extent)]
-
-    # Elevation
-    # Preparing the coordinates to send to the function that will get the elevation grid
-    concat = np.array((Xi.flatten(), Yi.flatten())).T
-    send_to_list = concat.tolist()
-    # The elevation function takes a tuple
-    send_to_tuple = [tuple(x) for x in send_to_list]
-
-    Xi1_grd = []
-    Yi1_grd = []
-    elev_grd = []
-    # Get the elevations from the lookup file
-    elev_grd_dict = GD.finding_data_frm_lookup(
-        send_to_tuple, file_path_elev, idx_list)
-
-    for keys in elev_grd_dict.keys():  # The keys are each lat lon pair
-        x = keys[0]
-        y = keys[1]
-        Xi1_grd.append(x)
-        Yi1_grd.append(y)
-        # Append the elevation data to the empty list
-        elev_grd.append(elev_grd_dict[keys])
-
-    elev_array = np.array(elev_grd)  # make an elevation array
-
-    elev_dict = GD.finding_data_frm_lookup(zip(
-        xProj, yProj), file_path_elev, idx_list)  # Get the elevations for the stations
-
-    xProj_input = []
-    yProj_input = []
-    e_input = []
-
-    for keys in zip(xProj, yProj):  # Repeat process for just the stations not the whole grid
-        x = keys[0]
-        y = keys[1]
-        xProj_input.append(x)
-        yProj_input.append(y)
-        e_input.append(elev_dict[keys])
-
-    source_elev = np.array(e_input)
-
-    Xi1_grd = np.array(Xi1_grd)
-    Yi1_grd = np.array(Yi1_grd)
-
-    df_trainX = pd.DataFrame(
-        {'xProj': xProj, 'yProj': yProj, 'elev': source_elev, 'var': z,'var2':z2,'var3':z3,'var4':z4})
-
-    df_testX = pd.DataFrame({'xProj': Xi1_grd, 'yProj': Yi1_grd, 'elev': elev_array})
-    
-    df_testC = pd.DataFrame({0: Xi1_grd, 1: Yi1_grd, 2: elev_array})
-    
-    df_testX['var'] = np.nan
-    df_testX['var2'] = np.nan
-    df_testX['var3'] = np.nan
-    df_testX['var4'] = np.nan
-
-    trainer = pd.concat([df_trainX[['xProj', 'yProj', 'elev','var','var2','var3','var4']],\
-                        df_testX[['xProj', 'yProj', 'elev','var','var2','var3','var4']]])
-    
-
-    y = np.array(trainer[['var','var2','var3','var4']])
-    y_rem = np.argwhere(np.isnan(y))
-    y_test = np.array(df_testX[['var','var2','var3','var4']])
-    #print(y)
-    X_train = np.array(trainer[['xProj', 'yProj', 'elev']])
-    #X_train_coords = [(x,y,z,) for x,y,z in zip(xProj,yProj,source_elev)]
-    #print(X_train)
-    X_test = list(df_testX[['xProj', 'yProj', 'elev']])
-
-    #new_train = [X_train[:]]
-    new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
-    #print(new_train)
-    #print(len(new_train))
-
-    data = mogptk.DataSet()
-    cols = ['Temp','RH','Wind','Pcp']
-    for i in range(4):
-        inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
-        y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
-        inst.remove_index(y_rem)
-        data.append(inst)
-    
+##
+##    y = np.array(lat)
+##    x = np.array(lon)
+##    z = np.array(Cvar)
+##    z2 = np.array(Cvar2)
+##    z3 = np.array(Cvar3)
+##    z4 = np.array(Cvar4)
+##
+##    pixelHeight = res
+##    pixelWidth = res
+##
+##    num_col = int((xmax - xmin) / pixelHeight)
+##    num_row = int((ymax - ymin) / pixelWidth)
+##
+##    #print(num_col)
+##
+##    # We need to project to a projected system before making distance matrix
+##    source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+##    xProj, yProj = pyproj.Proj('esri:102001')(x, y)
+##
+##    df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z,'var2':z2,'var3':z3,'var4':z4})
+##
+##    yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
+##    xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
+##
+##    Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row+1)
+##    Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col+1)
+##
+##    Xi, Yi = np.meshgrid(Xi, Yi)
+##    Xi, Yi = Xi.flatten(), Yi.flatten()
+##
+##    maxmin = [np.min(yProj_extent), np.max(yProj_extent),
+##              np.max(xProj_extent), np.min(xProj_extent)]
+##
+##    # Elevation
+##    # Preparing the coordinates to send to the function that will get the elevation grid
+##    concat = np.array((Xi.flatten(), Yi.flatten())).T
+##    send_to_list = concat.tolist()
+##    # The elevation function takes a tuple
+##    send_to_tuple = [tuple(x) for x in send_to_list]
+##
+##    Xi1_grd = []
+##    Yi1_grd = []
+##    elev_grd = []
+##    # Get the elevations from the lookup file
+##    elev_grd_dict = GD.finding_data_frm_lookup(
+##        send_to_tuple, file_path_elev, idx_list)
+##
+##    for keys in elev_grd_dict.keys():  # The keys are each lat lon pair
+##        x = keys[0]
+##        y = keys[1]
+##        Xi1_grd.append(x)
+##        Yi1_grd.append(y)
+##        # Append the elevation data to the empty list
+##        elev_grd.append(elev_grd_dict[keys])
+##
+##    elev_array = np.array(elev_grd)  # make an elevation array
+##
+##    elev_dict = GD.finding_data_frm_lookup(zip(
+##        xProj, yProj), file_path_elev, idx_list)  # Get the elevations for the stations
+##
+##    xProj_input = []
+##    yProj_input = []
+##    e_input = []
+##
+##    for keys in zip(xProj, yProj):  # Repeat process for just the stations not the whole grid
+##        x = keys[0]
+##        y = keys[1]
+##        xProj_input.append(x)
+##        yProj_input.append(y)
+##        e_input.append(elev_dict[keys])
+##
+##    source_elev = np.array(e_input)
+##
+##    Xi1_grd = np.array(Xi1_grd)
+##    Yi1_grd = np.array(Yi1_grd)
+##
+##    df_trainX = pd.DataFrame(
+##        {'xProj': xProj, 'yProj': yProj, 'elev': source_elev, 'var': z,'var2':z2,'var3':z3,'var4':z4})
+##
+##    df_testX = pd.DataFrame({'xProj': Xi1_grd, 'yProj': Yi1_grd, 'elev': elev_array})
+##    
+##    df_testC = pd.DataFrame({0: Xi1_grd, 1: Yi1_grd, 2: elev_array})
+##    
+##    df_testX['var'] = np.nan
+##    df_testX['var2'] = np.nan
+##    df_testX['var3'] = np.nan
+##    df_testX['var4'] = np.nan
+##
+##    trainer = pd.concat([df_trainX[['xProj', 'yProj', 'elev','var','var2','var3','var4']],\
+##                        df_testX[['xProj', 'yProj', 'elev','var','var2','var3','var4']]])
+##    
+##
+##    y = np.array(trainer[['var','var2','var3','var4']])
+##    y_rem = np.argwhere(np.isnan(y))
+##    y_test = np.array(df_testX[['var','var2','var3','var4']])
+##    #print(y)
+##    X_train = np.array(trainer[['xProj', 'yProj', 'elev']])
+##    #X_train_coords = [(x,y,z,) for x,y,z in zip(xProj,yProj,source_elev)]
+##    #print(X_train)
+##    X_test = list(df_testX[['xProj', 'yProj', 'elev']])
+##
+##    #new_train = [X_train[:]]
+##    new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
+##    #print(new_train)
+##    #print(len(new_train))
+##
+##    data = mogptk.DataSet()
+##    cols = ['Temp','RH','Wind','Pcp']
+##    for i in range(4):
+##        inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
+##        y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
+##        inst.remove_index(y_rem)
+##        data.append(inst)
+##    
 
     #print(data)
     #data.transform(mogptk.TransformDetrend()) #Cannot detrend on 2-3d input data
     #data.plot(title='Untrained model | Known Set')
     #plt.show()
-    print('Data initialized') 
-    model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
-    model.init_parameters('LS')
-    model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
-    
+##    print('Data initialized') 
+##    model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
+##    model.init_parameters('LS')
+##    model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
+##    
 
     for station_name_hold_back in station_set:
 
@@ -687,6 +666,8 @@ def cross_validate_mogp(latlon_dict, daily_dict,  Cvar_dict, Cvar_dict2, \
 
         trainer = pd.concat([df_trainX[['xProj', 'yProj', 'elev','var','var2','var3','var4']],\
                             df_testX[['xProj', 'yProj', 'elev','var','var2','var3','var4']]])
+
+        len_trainer_1 = len(df_trainX)
         
 
         y = np.array(trainer[['var','var2','var3','var4']])
@@ -700,12 +681,30 @@ def cross_validate_mogp(latlon_dict, daily_dict,  Cvar_dict, Cvar_dict2, \
 
         #new_train = [X_train[:]]
         new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
+        training_triple = [new_train,new_train,new_train,new_train]
+        data = mogptk.DataSet()
+        cols = ['Temp','RH','Wind','Pcp']
+        for i in range(4):
+            inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
+            y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
+            inst.remove_index(y_rem)
+            data.append(inst)
+        
 
-        surfaces = model.predict(new_train)
-        gtemp = surfaces[0][0]
-        grh = surfaces[0][1]
-        gwind = surfaces[0][2]
-        gpcp = surfaces[0][3]
+        #print(data)
+        #data.transform(mogptk.TransformDetrend()) #Cannot detrend on 2-3d input data
+        #data.plot(title='Untrained model | Known Set')
+        #plt.show()
+        print('Data initialized') 
+        model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
+        model.init_parameters('LS')
+        model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
+        surfaces = model.predict(training_triple)
+        gtemp = surfaces[0][0][len_trainer_1:].reshape(num_row + 1, num_col + 1)
+        print(gtemp)
+        grh = surfaces[0][1][len_trainer_1:].reshape(num_row + 1, num_col + 1)
+        gwind = surfaces[0][2][len_trainer_1:].reshape(num_row + 1, num_col + 1)
+        gpcp = surfaces[0][3][len_trainer_1:].reshape(num_row + 1, num_col + 1)
         
         coord_pair = projected_lat_lon[station_name_hold_back]
         x_orig = int((coord_pair[0] - float(xmin)) / pixelHeight)  # lon
