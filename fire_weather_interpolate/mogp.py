@@ -31,7 +31,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def MOGP_interpolator(latlon_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, input_date, var_name, shapefile, show,
+def MOGP_interpolator(latlon_dict,daily_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, Cvar_dict4, input_date, var_name, shapefile, show,
                      file_path_elev, idx_list, expand_area, res=10000):
     '''Base interpolator function for gaussian process regression
 
@@ -80,7 +80,8 @@ def MOGP_interpolator(latlon_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, input_date
     lon = []
     Cvar = []
     Cvar2 = []
-    Cvar3 = [] 
+    Cvar3 = []
+    Cvar4 = [] 
 
     na_map = gpd.read_file(shapefile)
     bounds = na_map.bounds
@@ -95,16 +96,25 @@ def MOGP_interpolator(latlon_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, input_date
         ymax = bounds['maxy']
         ymin = bounds['miny']
 
-    list_of_stations = [Cvar_dict.keys(),Cvar_dict2.keys(),Cvar_dict3.keys()]
+    list_of_stations = [Cvar_dict.keys(),Cvar_dict2.keys(),Cvar_dict3.keys(),Cvar_dict4.keys()]
 
     combo_keys = [j for i in list_of_stations for j in i]
 
     for station_name in combo_keys:
-        if station_name in latlon_dict.keys(): #or daily_dict
+        if station_name in latlon_dict.keys() or station_name in daily_dict.keys(): #or daily_dict
+            if station_name in latlon_dict.keys():
 
-            loc = latlon_dict[station_name]
-            latitude = loc[0]
-            longitude = loc[1]
+                loc = latlon_dict[station_name]
+                latitude = loc[0]
+                longitude = loc[1]
+            elif station_name in daily_dict.keys():
+                loc = daily_dict[station_name]
+                latitude = loc[0]
+                longitude = loc[1]
+            else:
+                print('Unknown station!')
+                sys.exit() 
+            
             # Filter out stations outside of grid
             proj_coord = pyproj.Proj('esri:102001')(longitude, latitude)
             if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >=
@@ -122,17 +132,24 @@ def MOGP_interpolator(latlon_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, input_date
                     cvar3_val = Cvar_dict3[station_name]
                 else:
                     cvar3_val = np.nan
+                if station_name in Cvar_dict4.keys():
+                    cvar4_val = Cvar_dict4[station_name]
+                else:
+                    cvar4_val = np.nan
+                    
                 lat.append(float(latitude))
                 lon.append(float(longitude))
                 Cvar.append(cvar_val)
                 Cvar2.append(cvar2_val)
                 Cvar3.append(cvar3_val)
+                Cvar4.append(cvar4_val)
 
     y = np.array(lat)
     x = np.array(lon)
     z = np.array(Cvar)
     z2 = np.array(Cvar2)
-    z3 = np.array(Cvar3) 
+    z3 = np.array(Cvar3)
+    z4 = np.array(Cvar4)
 
     pixelHeight = res
     pixelWidth = res
@@ -140,13 +157,13 @@ def MOGP_interpolator(latlon_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, input_date
     num_col = int((xmax - xmin) / pixelHeight)
     num_row = int((ymax - ymin) / pixelWidth)
 
-    print(num_col)
+    #print(num_col)
 
     # We need to project to a projected system before making distance matrix
     source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
     xProj, yProj = pyproj.Proj('esri:102001')(x, y)
 
-    df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z,'var2':z2,'var3':z3})
+    df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z,'var2':z2,'var3':z3,'var4':z4})
 
     if expand_area:
 
@@ -212,7 +229,7 @@ def MOGP_interpolator(latlon_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, input_date
     Yi1_grd = np.array(Yi1_grd)
 
     df_trainX = pd.DataFrame(
-        {'xProj': xProj, 'yProj': yProj, 'elev': source_elev, 'var': z,'var2':z2,'var3':z3})
+        {'xProj': xProj, 'yProj': yProj, 'elev': source_elev, 'var': z,'var2':z2,'var3':z3,'var4':z4})
 
     df_testX = pd.DataFrame({'xProj': Xi1_grd, 'yProj': Yi1_grd, 'elev': elev_array})
     
@@ -221,45 +238,52 @@ def MOGP_interpolator(latlon_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, input_date
     df_testX['var'] = np.nan
     df_testX['var2'] = np.nan
     df_testX['var3'] = np.nan
+    df_testX['var4'] = np.nan
 
-    trainer = pd.concat([df_trainX[['xProj', 'yProj', 'elev','var','var2','var3']],\
-                        df_testX[['xProj', 'yProj', 'elev','var','var2','var3']]])
+    trainer = pd.concat([df_trainX[['xProj', 'yProj', 'elev','var','var2','var3','var4']],\
+                        df_testX[['xProj', 'yProj', 'elev','var','var2','var3','var4']]])
     
 
-    y = np.array(trainer[['var','var2','var3']])
+    y = np.array(trainer[['var','var2','var3','var4']])
     y_rem = np.argwhere(np.isnan(y))
-    y_test = np.array(df_testX[['var','var2','var3']])
-    print(y)
+    y_test = np.array(df_testX[['var','var2','var3','var4']])
+    #print(y)
     X_train = np.array(trainer[['xProj', 'yProj', 'elev']])
     #X_train_coords = [(x,y,z,) for x,y,z in zip(xProj,yProj,source_elev)]
-    print(X_train)
+    #print(X_train)
     X_test = list(df_testX[['xProj', 'yProj', 'elev']])
 
-    new_train = [X_train[:,0]]
-    print(new_train)
-    print(len(new_train))
-    tester = [new_train,new_train,new_train]
-    print(len(tester))
+    #new_train = [X_train[:]]
+    new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
+    #print(new_train)
+    #print(len(new_train))
 
     data = mogptk.DataSet()
-    cols = ['Temp','RH','Wind']
-    for i in range(3):
-        inst = mogptk.Data(X_train[:,0],y[:, i], name=cols[i])
+    cols = ['Temp','RH','Wind','Pcp']
+    for i in range(4):
+        inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
         y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
         inst.remove_index(y_rem)
         data.append(inst)
     
 
-    print(data)
+    #print(data)
     #data.transform(mogptk.TransformDetrend()) #Cannot detrend on 2-3d input data
-    data.plot(title='Untrained model | Known Set')
-    plt.show()
-    model = mogptk.SM(data, Q=3)
-    model.init_parameters('BNSE')
-    model.train(verbose=True,iters=1000) #Cannot be verbose in the IDLE
+    #data.plot(title='Untrained model | Known Set')
+    #plt.show()
+    print('Data initialized') 
+    model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
+    model.init_parameters('LS')
+    model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
 
 
     vals = model.predict()
+
+    temp = vals[0][0]
+    rh = vals[0][1]
+    wind = vals[0][2]
+    pcp = vals[0][3]
+    
     #print(X_train)
 ##    np.set_printoptions(suppress=True)
 ##
@@ -282,15 +306,16 @@ def MOGP_interpolator(latlon_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, input_date
 ##    print(results)
 ##    results.to_csv('Data.txt',sep=',') 
     
-    data.plot(title='Trained model on Unknown Set')
-    plt.show()
+    #data.plot(title='Trained model on Unknown Set')
+    #plt.show()
+
+    #This part is what we do for the xval, after initial model training! 
     
-    training_triple = [new_train,new_train,new_train] #,X_train[:,0],X_train[:,0]] #[new_train] for single output
+    training_triple = [new_train,new_train,new_train,new_train] #,X_train[:,0],X_train[:,0]] #[new_train] for single output
     print(len(training_triple))
     print(training_triple)
     vals = model.predict(training_triple)
 
     print(vals)
-    
     
 
