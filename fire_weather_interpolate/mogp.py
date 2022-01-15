@@ -235,6 +235,12 @@ def MOGP_interpolator(latlon_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, input_date
     print(X_train)
     X_test = list(df_testX[['xProj', 'yProj', 'elev']])
 
+    new_train = [X_train[:,0]]
+    print(new_train)
+    print(len(new_train))
+    tester = [new_train,new_train,new_train]
+    print(len(tester))
+
     data = mogptk.DataSet()
     cols = ['Temp','RH','Wind']
     for i in range(3):
@@ -250,11 +256,11 @@ def MOGP_interpolator(latlon_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, input_date
     plt.show()
     model = mogptk.SM(data, Q=3)
     model.init_parameters('BNSE')
-    model.train(verbose=True,iters=2000) #Cannot be verbose in the IDLE
+    model.train(verbose=True,iters=1000) #Cannot be verbose in the IDLE
 
 
     vals = model.predict()
-    print(vals[0][0])
+    #print(X_train)
 ##    np.set_printoptions(suppress=True)
 ##
 ##    results = pd.DataFrame()
@@ -278,6 +284,13 @@ def MOGP_interpolator(latlon_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, input_date
     
     data.plot(title='Trained model on Unknown Set')
     plt.show()
+    
+    training_triple = [new_train,new_train,new_train] #,X_train[:,0],X_train[:,0]] #[new_train] for single output
+    print(len(training_triple))
+    print(training_triple)
+    vals = model.predict(training_triple)
+
+    print(vals)
     
     
 
