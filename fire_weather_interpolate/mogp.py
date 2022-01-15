@@ -319,3 +319,427 @@ def MOGP_interpolator(latlon_dict,daily_dict, Cvar_dict, Cvar_dict2, Cvar_dict3,
     print(vals)
     
 
+def cross_validate_mogp(latlon_dict, daily_dict,  Cvar_dict, Cvar_dict2, \
+                        Cvar_dict3, Cvar_dict4, shapefile, res=10000):
+    '''Leave-one-out cross-validation procedure for MOGP
+
+    Parameters
+    ----------
+         latlon_dict : dictionary
+              the latitude and longitudes of the stations
+         Cvar_dict : dictionary
+              dictionary of weather variable values for each station
+         shapefile : string
+              path to the study area shapefile, including its name
+         d : int
+              the weighting for IDW interpolation
+         pass_to_plot : bool
+              whether you will be plotting the error and need a version without absolute value error (i.e. fire season days)
+         expand_area : bool
+              function will expand the study area so that more stations are taken into account (200 km)
+              
+    Returns
+    ----------
+         dictionary
+              - a dictionary of the absolute error at each station when it was left out
+    '''
+
+    lat = []
+    lon = []
+    Cvar = []
+    Cvar2 = []
+    Cvar3 = []
+    Cvar4 = []
+
+    temp_absolute_error_dictionary = {}
+    rh_absolute_error_dictionary = {}
+    wind_absolute_error_dictionary = {}
+    pcp_absolute_error_dictionary = {}
+    
+    projected_lat_lon = {}
+    
+    #station lists for xval
+
+    na_map = gpd.read_file(shapefile)
+    bounds = na_map.bounds
+    xmax = bounds['maxx']
+    xmin = bounds['minx']
+    ymax = bounds['maxy']
+    ymin = bounds['miny']
+
+    list_of_stations = [Cvar_dict.keys(),Cvar_dict2.keys(),Cvar_dict3.keys(),Cvar_dict4.keys()] 
+
+    combo_keys = [j for i in list_of_stations for j in i]
+    station_set = list(set(combo_keys))
+
+    for station_name in station_set:
+        if station_name in latlon_dict.keys() or station_name in daily_dict.keys(): #or daily_dict
+            if station_name in latlon_dict.keys():
+
+                loc = latlon_dict[station_name]
+                latitude = loc[0]
+                longitude = loc[1]
+            elif station_name in daily_dict.keys():
+                loc = daily_dict[station_name]
+                latitude = loc[0]
+                longitude = loc[1]
+            else:
+                pass
+            
+            # Filter out stations outside of grid
+            Plat, Plon = pyproj.Proj('esri:102001')(longitude, latitude)
+            proj_coord = pyproj.Proj('esri:102001')(longitude, latitude)
+            if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >=
+                float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and
+                    proj_coord[0] >= float(xmin[0])):
+                if station_name in Cvar_dict.keys(): 
+                    cvar_val = Cvar_dict[station_name]
+                else:
+                    cvar_val = np.nan
+                if station_name in Cvar_dict2.keys(): 
+                    cvar2_val = Cvar_dict2[station_name]
+                else:
+                    cvar2_val = np.nan
+                if station_name in Cvar_dict3.keys():
+                    cvar3_val = Cvar_dict3[station_name]
+                else:
+                    cvar3_val = np.nan
+                if station_name in Cvar_dict4.keys():
+                    cvar4_val = Cvar_dict4[station_name]
+                else:
+                    cvar4_val = np.nan
+                    
+                lat.append(float(latitude))
+                lon.append(float(longitude))
+                Cvar.append(cvar_val)
+                Cvar2.append(cvar2_val)
+                Cvar3.append(cvar3_val)
+                Cvar4.append(cvar4_val)
+                Plat = float(Plat)
+                Plon = float(Plon)
+                projected_lat_lon[station_name] = [Plat, Plon]
+
+    y = np.array(lat)
+    x = np.array(lon)
+    z = np.array(Cvar)
+    z2 = np.array(Cvar2)
+    z3 = np.array(Cvar3)
+    z4 = np.array(Cvar4)
+
+    pixelHeight = res
+    pixelWidth = res
+
+    num_col = int((xmax - xmin) / pixelHeight)
+    num_row = int((ymax - ymin) / pixelWidth)
+
+    #print(num_col)
+
+    # We need to project to a projected system before making distance matrix
+    source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+    xProj, yProj = pyproj.Proj('esri:102001')(x, y)
+
+    df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z,'var2':z2,'var3':z3,'var4':z4})
+
+    yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
+    xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
+
+    Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row+1)
+    Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col+1)
+
+    Xi, Yi = np.meshgrid(Xi, Yi)
+    Xi, Yi = Xi.flatten(), Yi.flatten()
+
+    maxmin = [np.min(yProj_extent), np.max(yProj_extent),
+              np.max(xProj_extent), np.min(xProj_extent)]
+
+    # Elevation
+    # Preparing the coordinates to send to the function that will get the elevation grid
+    concat = np.array((Xi.flatten(), Yi.flatten())).T
+    send_to_list = concat.tolist()
+    # The elevation function takes a tuple
+    send_to_tuple = [tuple(x) for x in send_to_list]
+
+    Xi1_grd = []
+    Yi1_grd = []
+    elev_grd = []
+    # Get the elevations from the lookup file
+    elev_grd_dict = GD.finding_data_frm_lookup(
+        send_to_tuple, file_path_elev, idx_list)
+
+    for keys in elev_grd_dict.keys():  # The keys are each lat lon pair
+        x = keys[0]
+        y = keys[1]
+        Xi1_grd.append(x)
+        Yi1_grd.append(y)
+        # Append the elevation data to the empty list
+        elev_grd.append(elev_grd_dict[keys])
+
+    elev_array = np.array(elev_grd)  # make an elevation array
+
+    elev_dict = GD.finding_data_frm_lookup(zip(
+        xProj, yProj), file_path_elev, idx_list)  # Get the elevations for the stations
+
+    xProj_input = []
+    yProj_input = []
+    e_input = []
+
+    for keys in zip(xProj, yProj):  # Repeat process for just the stations not the whole grid
+        x = keys[0]
+        y = keys[1]
+        xProj_input.append(x)
+        yProj_input.append(y)
+        e_input.append(elev_dict[keys])
+
+    source_elev = np.array(e_input)
+
+    Xi1_grd = np.array(Xi1_grd)
+    Yi1_grd = np.array(Yi1_grd)
+
+    df_trainX = pd.DataFrame(
+        {'xProj': xProj, 'yProj': yProj, 'elev': source_elev, 'var': z,'var2':z2,'var3':z3,'var4':z4})
+
+    df_testX = pd.DataFrame({'xProj': Xi1_grd, 'yProj': Yi1_grd, 'elev': elev_array})
+    
+    df_testC = pd.DataFrame({0: Xi1_grd, 1: Yi1_grd, 2: elev_array})
+    
+    df_testX['var'] = np.nan
+    df_testX['var2'] = np.nan
+    df_testX['var3'] = np.nan
+    df_testX['var4'] = np.nan
+
+    trainer = pd.concat([df_trainX[['xProj', 'yProj', 'elev','var','var2','var3','var4']],\
+                        df_testX[['xProj', 'yProj', 'elev','var','var2','var3','var4']]])
+    
+
+    y = np.array(trainer[['var','var2','var3','var4']])
+    y_rem = np.argwhere(np.isnan(y))
+    y_test = np.array(df_testX[['var','var2','var3','var4']])
+    #print(y)
+    X_train = np.array(trainer[['xProj', 'yProj', 'elev']])
+    #X_train_coords = [(x,y,z,) for x,y,z in zip(xProj,yProj,source_elev)]
+    #print(X_train)
+    X_test = list(df_testX[['xProj', 'yProj', 'elev']])
+
+    #new_train = [X_train[:]]
+    new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
+    #print(new_train)
+    #print(len(new_train))
+
+    data = mogptk.DataSet()
+    cols = ['Temp','RH','Wind','Pcp']
+    for i in range(4):
+        inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
+        y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
+        inst.remove_index(y_rem)
+        data.append(inst)
+    
+
+    #print(data)
+    #data.transform(mogptk.TransformDetrend()) #Cannot detrend on 2-3d input data
+    #data.plot(title='Untrained model | Known Set')
+    #plt.show()
+    print('Data initialized') 
+    model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
+    model.init_parameters('LS')
+    model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
+    
+
+    for station_name_hold_back in station_set:
+
+        lat = []
+        lon = []
+        Cvar = []
+        Cvar2 = []
+        Cvar3 = []
+        Cvar4 = [] 
+        for station_name in station_set:
+            if station_name in latlon_dict.keys() or station_name in daily_dict.keys(): #or daily_dict
+                if station_name != station_name_hold_back:
+                    if station_name in latlon_dict.keys():
+                        loc = latlon_dict[station_name]
+                        latitude = loc[0]
+                        longitude = loc[1]
+                    elif station_name in daily_dict.keys():
+                        loc = daily_dict[station_name]
+                        latitude = loc[0]
+                        longitude = loc[1]
+                    else:
+                        pass
+                
+                    # Filter out stations outside of grid
+                    proj_coord = pyproj.Proj('esri:102001')(longitude, latitude)
+                    if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >=
+                        float(ymin[0]) and proj_coord[0] <= float(xmax[0]) and
+                            proj_coord[0] >= float(xmin[0])):
+                        if station_name in Cvar_dict.keys(): 
+                            cvar_val = Cvar_dict[station_name]
+                        else:
+                            cvar_val = np.nan
+                        if station_name in Cvar_dict2.keys(): 
+                            cvar2_val = Cvar_dict2[station_name]
+                        else:
+                            cvar2_val = np.nan
+                        if station_name in Cvar_dict3.keys():
+                            cvar3_val = Cvar_dict3[station_name]
+                        else:
+                            cvar3_val = np.nan
+                        if station_name in Cvar_dict4.keys():
+                            cvar4_val = Cvar_dict4[station_name]
+                        else:
+                            cvar4_val = np.nan
+                            
+                        lat.append(float(latitude))
+                        lon.append(float(longitude))
+                        Cvar.append(cvar_val)
+                        Cvar2.append(cvar2_val)
+                        Cvar3.append(cvar3_val)
+                        Cvar4.append(cvar4_val)
+
+
+
+        y = np.array(lat)
+        x = np.array(lon)
+        z = np.array(Cvar)
+        z2 = np.array(Cvar2)
+        z3 = np.array(Cvar3)
+        z4 = np.array(Cvar4)
+
+        pixelHeight = res
+        pixelWidth = res
+
+        num_col = int((xmax - xmin) / pixelHeight)
+        num_row = int((ymax - ymin) / pixelWidth)
+
+        #print(num_col)
+
+        # We need to project to a projected system before making distance matrix
+        source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+        xProj, yProj = pyproj.Proj('esri:102001')(x, y)
+
+        df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z,'var2':z2,'var3':z3,'var4':z4})
+
+        yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
+        xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
+
+        Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row+1)
+        Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col+1)
+
+        Xi, Yi = np.meshgrid(Xi, Yi)
+        Xi, Yi = Xi.flatten(), Yi.flatten()
+
+        maxmin = [np.min(yProj_extent), np.max(yProj_extent),
+                  np.max(xProj_extent), np.min(xProj_extent)]
+
+        # Elevation
+        # Preparing the coordinates to send to the function that will get the elevation grid
+        concat = np.array((Xi.flatten(), Yi.flatten())).T
+        send_to_list = concat.tolist()
+        # The elevation function takes a tuple
+        send_to_tuple = [tuple(x) for x in send_to_list]
+
+        Xi1_grd = []
+        Yi1_grd = []
+        elev_grd = []
+        # Get the elevations from the lookup file
+        elev_grd_dict = GD.finding_data_frm_lookup(
+            send_to_tuple, file_path_elev, idx_list)
+
+        for keys in elev_grd_dict.keys():  # The keys are each lat lon pair
+            x = keys[0]
+            y = keys[1]
+            Xi1_grd.append(x)
+            Yi1_grd.append(y)
+            # Append the elevation data to the empty list
+            elev_grd.append(elev_grd_dict[keys])
+
+        elev_array = np.array(elev_grd)  # make an elevation array
+
+        elev_dict = GD.finding_data_frm_lookup(zip(
+            xProj, yProj), file_path_elev, idx_list)  # Get the elevations for the stations
+
+        xProj_input = []
+        yProj_input = []
+        e_input = []
+
+        for keys in zip(xProj, yProj):  # Repeat process for just the stations not the whole grid
+            x = keys[0]
+            y = keys[1]
+            xProj_input.append(x)
+            yProj_input.append(y)
+            e_input.append(elev_dict[keys])
+
+        source_elev = np.array(e_input)
+
+        Xi1_grd = np.array(Xi1_grd)
+        Yi1_grd = np.array(Yi1_grd)
+
+        df_trainX = pd.DataFrame(
+            {'xProj': xProj, 'yProj': yProj, 'elev': source_elev, 'var': z,'var2':z2,'var3':z3,'var4':z4})
+
+        df_testX = pd.DataFrame({'xProj': Xi1_grd, 'yProj': Yi1_grd, 'elev': elev_array})
+        
+        df_testC = pd.DataFrame({0: Xi1_grd, 1: Yi1_grd, 2: elev_array})
+        
+        df_testX['var'] = np.nan
+        df_testX['var2'] = np.nan
+        df_testX['var3'] = np.nan
+        df_testX['var4'] = np.nan
+
+        trainer = pd.concat([df_trainX[['xProj', 'yProj', 'elev','var','var2','var3','var4']],\
+                            df_testX[['xProj', 'yProj', 'elev','var','var2','var3','var4']]])
+        
+
+        y = np.array(trainer[['var','var2','var3','var4']])
+        y_rem = np.argwhere(np.isnan(y))
+        y_test = np.array(df_testX[['var','var2','var3','var4']])
+        #print(y)
+        X_train = np.array(trainer[['xProj', 'yProj', 'elev']])
+        #X_train_coords = [(x,y,z,) for x,y,z in zip(xProj,yProj,source_elev)]
+        #print(X_train)
+        X_test = list(df_testX[['xProj', 'yProj', 'elev']])
+
+        #new_train = [X_train[:]]
+        new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
+
+        surfaces = model.predict(new_train)
+        gtemp = surfaces[0][0]
+        grh = surfaces[0][1]
+        gwind = surfaces[0][2]
+        gpcp = surfaces[0][3]
+        
+        coord_pair = projected_lat_lon[station_name_hold_back]
+        x_orig = int((coord_pair[0] - float(xmin)) / pixelHeight)  # lon
+        y_orig = int((coord_pair[1] - float(ymin)) / pixelWidth)  # lat
+        
+        #Temp
+        interpolated_temp = gtemp[y_orig][x_orig]
+
+        #RH
+        interpolated_rh = grh[y_orig][x_orig]
+
+        #Wind
+        interpolated_wind = gwind[y_orig][x_orig]
+
+        #pcp
+        interpolated_pcp = gpcp[y_orig][x_orig]
+
+        if station_name_hold_back in Cvar_dict.keys():
+            original_val = Cvar_dict[station_name_hold_back]
+            absolute_error = abs(interpolated_temp - original_val)
+            temp_absolute_error_dictionary[station_name_hold_back] = absolute_error
+        if station_name_hold_back in Cvar_dict2.keys():
+            original_val = Cvar_dict2[station_name_hold_back]
+            absolute_error = abs(interpolated_rh - original_val)
+            rh_absolute_error_dictionary[station_name_hold_back] = absolute_error            
+        if station_name_hold_back in Cvar_dict3.keys():
+            original_val = Cvar_dict3[station_name_hold_back]
+            absolute_error = abs(interpolated_wind - original_val)
+            wind_absolute_error_dictionary[station_name_hold_back] = absolute_error
+        if station_name_hold_back in Cvar_dict4.keys():
+            original_val = Cvar_dict4[station_name_hold_back]
+            absolute_error = abs(interpolated_pcp - original_val)
+            pcp_absolute_error_dictionary[station_name_hold_back] = absolute_error
+
+        
+        return temp_absolute_error_dictionary,rh_absolute_error_dictionary,wind_absolute_error_dictionary,\
+               pcp_absolute_error_dictionary
