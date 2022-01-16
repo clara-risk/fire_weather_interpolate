@@ -32,7 +32,7 @@ warnings.filterwarnings("ignore")
 
 
 def MOGP_interpolator(latlon_dict,daily_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, Cvar_dict4, input_date, var_name, shapefile, show,
-                     file_path_elev, idx_list, expand_area, res=10000):
+                     file_path_elev, idx_list, expand_area, res=10000,manage_memory = False):
     '''Base interpolator function for gaussian process regression
 
     Parameters
@@ -254,75 +254,137 @@ def MOGP_interpolator(latlon_dict,daily_dict, Cvar_dict, Cvar_dict2, Cvar_dict3,
     #print(X_train)
     X_test = list(df_testX[['xProj', 'yProj', 'elev']])
 
-    #new_train = [X_train[:]]
-    new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
-    #print(new_train)
-    #print(len(new_train))
+    if manage_memory:
+        new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
+        total_len= len(X_test[:,0])
 
-    data = mogptk.DataSet()
-    cols = ['Temp','RH','Wind','Pcp']
-    for i in range(4):
-        inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
-        y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
-        inst.remove_index(y_rem)
-        data.append(inst)
-    
+        eights = int(total_len/8)
+        e1 = eights+len_trainer_1
+        e2 = eights*2
+        e3 = eights*3
+        e4 = eights*4
+        e5 = eights*5
+        e6 = eights*6
+        e7 = eights*7
+       
+        new_train1 =[X_train[:len_trainer_1,0],X_train[:len_trainer_1,1],X_train[:len_trainer_1,2]]
+        new_train2 = [X_train[len_trainer_1:e1,0],X_train[len_trainer_1:e1,1],X_train[len_trainer_1:e1,2]] #does the trainer need to be in there?
+        new_train3 = [X_train[e1:e2,0],X_train[e1:e2,1],X_train[e1:e2,2]]
 
-    #print(data)
-    #data.transform(mogptk.TransformDetrend()) #Cannot detrend on 2-3d input data
-    #data.plot(title='Untrained model | Known Set')
-    #plt.show()
-    print('Data initialized') 
-    model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
-    model.init_parameters('LS')
-    model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
+        new_train4 = [X_train[e1:e2,0],X_train[e1:e2,1],X_train[e1:e2,2]]
+        new_train5 = [X_train[e2:e3,0],X_train[e2:e3,1],X_train[e2:e3,2]]
+        new_train6 = [X_train[e3:e4,0],X_train[e3:e4,1],X_train[e3:e4,2]]
+        new_train7 = [X_train[e4:e5,0],X_train[e4:e5,1],X_train[e4:e5,2]]
+        new_train8 = [X_train[e5:e6,0],X_train[e5:e6,1],X_train[e5:e6,2]]
+        new_train9 = [X_train[e6:e7,0],X_train[e6:e7,1],X_train[e6:e7,2]]
+        new_train10 = [X_train[e7:,0],X_train[e7:,1],X_train[e7:,2]]
+        
+
+        training1 = [new_train1,new_train1,new_train1,new_train1]
+        training2 = [new_train2,new_train2,new_train2,new_train2]
+        training3 = [new_train3,new_train3,new_train3,new_train3]
+        training4 = [new_train4,new_train4,new_train4,new_train4]
+        training5 = [new_train5,new_train5,new_train5,new_train5]
+        training6 = [new_train6,new_train6,new_train6,new_train6]
+        training7 = [new_train7,new_train7,new_train7,new_train7]
+        training8 = [new_train8,new_train8,new_train8,new_train8]
+        training9 = [new_train9,new_train9,new_train9,new_train9]
+        training10 = [new_train10,new_train10,new_train10,new_train10]
+        
+        data = mogptk.DataSet()
+        cols = ['Temp','RH','Wind','Pcp']
+        for i in range(4):
+            inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
+            y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
+            inst.remove_index(y_rem)
+            data.append(inst)
+        
+
+        #print(data)
+        #data.transform(mogptk.TransformDetrend()) #Cannot detrend on 2-3d input data
+        #data.plot(title='Untrained model | Known Set')
+        #plt.show()
+        print('Data initialized') 
+        model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
+        model.init_parameters('LS')
+        model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
+        #surfaces = model.predict(training_triple)
+        surfaces1 = model.predict(training2)
+        surfaces2 = model.predict(training3)
+        surfaces3 = model.predict(training4)
+        surfaces4 = model.predict(training5)
+        surfaces5 = model.predict(training6)
+        surfaces6 = model.predict(training7)
+        surfaces7 = model.predict(training8)
+        surfaces8 = model.predict(training9)
+        surfaces9 = model.predict(training10)
+        
+        
+        #surfaces = model.predict()
+        #gtemp = surfaces[0][0][len_trainer_1:] + surfaces1[0][0]
+        gtemp = np.array(list(surfaces1[0][0]) + list(surfaces2[0][0]) + list(surfaces3[0][0])\
+                         + list(surfaces4[0][0])+ list(surfaces5[0][0])+ list(surfaces6[0][0])\
+                         + list(surfaces7[0][0])+ list(surfaces8[0][0])+ list(surfaces9[0][0]))
+        gtemp = gtemp.reshape(num_row + 1, num_col + 1)
+
+        grh = np.array(list(surfaces1[0][1]) + list(surfaces2[0][1]) + list(surfaces3[0][1])\
+                         + list(surfaces4[0][1])+ list(surfaces5[0][1])+ list(surfaces6[0][1])\
+                         + list(surfaces7[0][1])+ list(surfaces8[0][1])+ list(surfaces9[0][1]))
+        grh = grh.reshape(num_row + 1, num_col + 1)
+        
+        
+        gwind = np.array(list(surfaces1[0][2]) + list(surfaces2[0][2]) + list(surfaces3[0][2])\
+                         + list(surfaces4[0][2])+ list(surfaces5[0][2])+ list(surfaces6[0][2])\
+                         + list(surfaces7[0][2])+ list(surfaces8[0][2])+ list(surfaces9[0][2]))
+        gwind = gwind.reshape(num_row + 1, num_col + 1)
+
+        gpcp = np.array(list(surfaces1[0][3]) + list(surfaces2[0][3]) + list(surfaces3[0][3])\
+                         + list(surfaces4[0][3])+ list(surfaces5[0][3])+ list(surfaces6[0][3])\
+                         + list(surfaces7[0][3])+ list(surfaces8[0][3])+ list(surfaces9[0][3]))
+        gpcp = gwind.reshape(num_row + 1, num_col + 1)
+        
 
 
-    vals = model.predict()
+    else: 
 
-    temp = vals[0][0][len_trainer_1:]
-    rh = vals[0][1][len_trainer_1:]
-    wind = vals[0][2][len_trainer_1:]
-    pcp = vals[0][3][len_trainer_1:]
-    
-    #print(X_train)
-##    np.set_printoptions(suppress=True)
-##
-##    results = pd.DataFrame()
-##
-##    
-##
-##    results['Lon'] = list(trainer['xProj'])
-##    results['Lat'] = list(trainer['yProj'])
-##    results['Temp'] = vals[0][0]
-##    results['Rh'] = vals[0][1]
-##    #results['Pred3'] = vals[0][2]
-##    results['TempLower-Conf'] = vals[1][0]
-##    results['RhLower-Conf'] = vals[1][1]
-##    results['TempUpper-Conf'] = vals[2][0]
-##    results['RhUpper-Conf'] = vals[2][1]
-##
-##    print(np.shape(vals))
-##    
-##    print(results)
-##    results.to_csv('Data.txt',sep=',') 
-    
-    #data.plot(title='Trained model on Unknown Set')
-    #plt.show()
+        #new_train = [X_train[:]]
+        new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
+        #print(new_train)
+        #print(len(new_train))
 
-    #This part is what we do for the xval, after initial model training! 
-    
-##    training_triple = [new_train,new_train,new_train,new_train] #,X_train[:,0],X_train[:,0]] #[new_train] for single output
-##    print(len(training_triple))
-##    print(training_triple)
-##    vals = model.predict(training_triple)
-##
-##    print(vals)
+        data = mogptk.DataSet()
+        cols = ['Temp','RH','Wind','Pcp']
+        for i in range(4):
+            inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
+            y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
+            inst.remove_index(y_rem)
+            data.append(inst)
+        
+
+        #print(data)
+        #data.transform(mogptk.TransformDetrend()) #Cannot detrend on 2-3d input data
+        #data.plot(title='Untrained model | Known Set')
+        #plt.show()
+        print('Data initialized') 
+        model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
+        model.init_parameters('LS')
+        model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
+
+
+        vals = model.predict()
+
+        gtemp = vals[0][0][len_trainer_1:]
+        grh = vals[0][1][len_trainer_1:]
+        gwind = vals[0][2][len_trainer_1:]
+        gpcp = vals[0][3][len_trainer_1:]
+
+
+    return gtemp, grh, gwind, gpcp 
     
     
 
 def cross_validate_mogp(latlon_dict, daily_dict,  Cvar_dict, Cvar_dict2, \
-                        Cvar_dict3, Cvar_dict4, shapefile,file_path_elev, idx_list, res=10000):
+                        Cvar_dict3, Cvar_dict4, shapefile,file_path_elev, idx_list, res=10000,manage_memory = False):
     '''Leave-one-out cross-validation procedure for MOGP
 
     Parameters
@@ -397,6 +459,131 @@ def cross_validate_mogp(latlon_dict, daily_dict,  Cvar_dict, Cvar_dict2, \
                 Plat = float(Plat)
                 Plon = float(Plon)
                 projected_lat_lon[station_name] = [Plat, Plon]
+##
+##    y = np.array(lat)
+##    x = np.array(lon)
+##    z = np.array(Cvar)
+##    z2 = np.array(Cvar2)
+##    z3 = np.array(Cvar3)
+##    z4 = np.array(Cvar4)
+##
+##    pixelHeight = res
+##    pixelWidth = res
+##
+##    num_col = int((xmax - xmin) / pixelHeight)
+##    num_row = int((ymax - ymin) / pixelWidth)
+##
+##    #print(num_col)
+##
+##    # We need to project to a projected system before making distance matrix
+##    source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+##    xProj, yProj = pyproj.Proj('esri:102001')(x, y)
+##
+##    df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z,'var2':z2,'var3':z3,'var4':z4})
+##
+##    yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
+##    xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
+##
+##    Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row+1)
+##    Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col+1)
+##
+##    Xi, Yi = np.meshgrid(Xi, Yi)
+##    Xi, Yi = Xi.flatten(), Yi.flatten()
+##
+##    maxmin = [np.min(yProj_extent), np.max(yProj_extent),
+##              np.max(xProj_extent), np.min(xProj_extent)]
+##
+##    # Elevation
+##    # Preparing the coordinates to send to the function that will get the elevation grid
+##    concat = np.array((Xi.flatten(), Yi.flatten())).T
+##    send_to_list = concat.tolist()
+##    # The elevation function takes a tuple
+##    send_to_tuple = [tuple(x) for x in send_to_list]
+##
+##    Xi1_grd = []
+##    Yi1_grd = []
+##    elev_grd = []
+##    # Get the elevations from the lookup file
+##    elev_grd_dict = GD.finding_data_frm_lookup(
+##        send_to_tuple, file_path_elev, idx_list)
+##
+##    for keys in elev_grd_dict.keys():  # The keys are each lat lon pair
+##        x = keys[0]
+##        y = keys[1]
+##        Xi1_grd.append(x)
+##        Yi1_grd.append(y)
+##        # Append the elevation data to the empty list
+##        elev_grd.append(elev_grd_dict[keys])
+##
+##    elev_array = np.array(elev_grd)  # make an elevation array
+##
+##    elev_dict = GD.finding_data_frm_lookup(zip(
+##        xProj, yProj), file_path_elev, idx_list)  # Get the elevations for the stations
+##
+##    xProj_input = []
+##    yProj_input = []
+##    e_input = []
+##
+##    for keys in zip(xProj, yProj):  # Repeat process for just the stations not the whole grid
+##        x = keys[0]
+##        y = keys[1]
+##        xProj_input.append(x)
+##        yProj_input.append(y)
+##        e_input.append(elev_dict[keys])
+##
+##    source_elev = np.array(e_input)
+##
+##    Xi1_grd = np.array(Xi1_grd)
+##    Yi1_grd = np.array(Yi1_grd)
+##
+##    df_trainX = pd.DataFrame(
+##        {'xProj': xProj, 'yProj': yProj, 'elev': source_elev, 'var': z,'var2':z2,'var3':z3,'var4':z4})
+##
+##    df_testX = pd.DataFrame({'xProj': Xi1_grd, 'yProj': Yi1_grd, 'elev': elev_array})
+##    
+##    df_testC = pd.DataFrame({0: Xi1_grd, 1: Yi1_grd, 2: elev_array})
+##    
+##    df_testX['var'] = np.nan
+##    df_testX['var2'] = np.nan
+##    df_testX['var3'] = np.nan
+##    df_testX['var4'] = np.nan
+##
+##    trainer = pd.concat([df_trainX[['xProj', 'yProj', 'elev','var','var2','var3','var4']],\
+##                        df_testX[['xProj', 'yProj', 'elev','var','var2','var3','var4']]])
+##    
+##
+##    y = np.array(trainer[['var','var2','var3','var4']])
+##    y_rem = np.argwhere(np.isnan(y))
+##    y_test = np.array(df_testX[['var','var2','var3','var4']])
+##    #print(y)
+##    X_train = np.array(trainer[['xProj', 'yProj', 'elev']])
+##    #X_train_coords = [(x,y,z,) for x,y,z in zip(xProj,yProj,source_elev)]
+##    #print(X_train)
+##    X_test = list(df_testX[['xProj', 'yProj', 'elev']])
+##
+##    #new_train = [X_train[:]]
+##    new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
+##    #print(new_train)
+##    #print(len(new_train))
+##
+##    data = mogptk.DataSet()
+##    cols = ['Temp','RH','Wind','Pcp']
+##    for i in range(4):
+##        inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
+##        y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
+##        inst.remove_index(y_rem)
+##        data.append(inst)
+##    
+
+    #print(data)
+    #data.transform(mogptk.TransformDetrend()) #Cannot detrend on 2-3d input data
+    #data.plot(title='Untrained model | Known Set')
+    #plt.show()
+##    print('Data initialized') 
+##    model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
+##    model.init_parameters('LS')
+##    model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
+##    
 
     for station_name_hold_back in station_set:
 
@@ -555,93 +742,127 @@ def cross_validate_mogp(latlon_dict, daily_dict,  Cvar_dict, Cvar_dict2, \
         X_test = np.array(df_testX[['xProj', 'yProj', 'elev']])
 
         #new_train = [X_train[:]]
-        new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
-        total_len= len(X_test[:,0])
+        if manage_memory: 
+            new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
+            total_len= len(X_test[:,0])
 
-        eights = int(total_len/8)
-        e1 = eights+len_trainer_1
-        e2 = eights*2
-        e3 = eights*3
-        e4 = eights*4
-        e5 = eights*5
-        e6 = eights*6
-        e7 = eights*7
-       
-        new_train1 =[X_train[:len_trainer_1,0],X_train[:len_trainer_1,1],X_train[:len_trainer_1,2]]
-        new_train2 = [X_train[len_trainer_1:e1,0],X_train[len_trainer_1:e1,1],X_train[len_trainer_1:e1,2]] #does the trainer need to be in there?
-        new_train3 = [X_train[e1:e2,0],X_train[e1:e2,1],X_train[e1:e2,2]]
+            eights = int(total_len/8)
+            e1 = eights+len_trainer_1
+            e2 = eights*2
+            e3 = eights*3
+            e4 = eights*4
+            e5 = eights*5
+            e6 = eights*6
+            e7 = eights*7
+           
+            new_train1 =[X_train[:len_trainer_1,0],X_train[:len_trainer_1,1],X_train[:len_trainer_1,2]]
+            new_train2 = [X_train[len_trainer_1:e1,0],X_train[len_trainer_1:e1,1],X_train[len_trainer_1:e1,2]] #does the trainer need to be in there?
+            new_train3 = [X_train[e1:e2,0],X_train[e1:e2,1],X_train[e1:e2,2]]
 
-        new_train4 = [X_train[e1:e2,0],X_train[e1:e2,1],X_train[e1:e2,2]]
-        new_train5 = [X_train[e2:e3,0],X_train[e2:e3,1],X_train[e2:e3,2]]
-        new_train6 = [X_train[e3:e4,0],X_train[e3:e4,1],X_train[e3:e4,2]]
-        new_train7 = [X_train[e4:e5,0],X_train[e4:e5,1],X_train[e4:e5,2]]
-        new_train8 = [X_train[e5:e6,0],X_train[e5:e6,1],X_train[e5:e6,2]]
-        new_train9 = [X_train[e6:e7,0],X_train[e6:e7,1],X_train[e6:e7,2]]
-        new_train10 = [X_train[e7:,0],X_train[e7:,1],X_train[e7:,2]]
-        
+            new_train4 = [X_train[e1:e2,0],X_train[e1:e2,1],X_train[e1:e2,2]]
+            new_train5 = [X_train[e2:e3,0],X_train[e2:e3,1],X_train[e2:e3,2]]
+            new_train6 = [X_train[e3:e4,0],X_train[e3:e4,1],X_train[e3:e4,2]]
+            new_train7 = [X_train[e4:e5,0],X_train[e4:e5,1],X_train[e4:e5,2]]
+            new_train8 = [X_train[e5:e6,0],X_train[e5:e6,1],X_train[e5:e6,2]]
+            new_train9 = [X_train[e6:e7,0],X_train[e6:e7,1],X_train[e6:e7,2]]
+            new_train10 = [X_train[e7:,0],X_train[e7:,1],X_train[e7:,2]]
+            
 
-        training1 = [new_train1,new_train1,new_train1,new_train1]
-        training2 = [new_train2,new_train2,new_train2,new_train2]
-        training3 = [new_train3,new_train3,new_train3,new_train3]
-        training4 = [new_train4,new_train4,new_train4,new_train4]
-        training5 = [new_train5,new_train5,new_train5,new_train5]
-        training6 = [new_train6,new_train6,new_train6,new_train6]
-        training7 = [new_train7,new_train7,new_train7,new_train7]
-        training8 = [new_train8,new_train8,new_train8,new_train8]
-        training9 = [new_train9,new_train9,new_train9,new_train9]
-        training10 = [new_train10,new_train10,new_train10,new_train10]
-        
-        data = mogptk.DataSet()
-        cols = ['Temp','RH','Wind','Pcp']
-        for i in range(4):
-            inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
-            y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
-            inst.remove_index(y_rem)
-            data.append(inst)
-        
+            training1 = [new_train1,new_train1,new_train1,new_train1]
+            training2 = [new_train2,new_train2,new_train2,new_train2]
+            training3 = [new_train3,new_train3,new_train3,new_train3]
+            training4 = [new_train4,new_train4,new_train4,new_train4]
+            training5 = [new_train5,new_train5,new_train5,new_train5]
+            training6 = [new_train6,new_train6,new_train6,new_train6]
+            training7 = [new_train7,new_train7,new_train7,new_train7]
+            training8 = [new_train8,new_train8,new_train8,new_train8]
+            training9 = [new_train9,new_train9,new_train9,new_train9]
+            training10 = [new_train10,new_train10,new_train10,new_train10]
+            
+            data = mogptk.DataSet()
+            cols = ['Temp','RH','Wind','Pcp']
+            for i in range(4):
+                inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
+                y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
+                inst.remove_index(y_rem)
+                data.append(inst)
+            
 
-        #print(data)
-        #data.transform(mogptk.TransformDetrend()) #Cannot detrend on 2-3d input data
-        #data.plot(title='Untrained model | Known Set')
-        #plt.show()
-        print('Data initialized') 
-        model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
-        model.init_parameters('LS')
-        model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
-        #surfaces = model.predict(training_triple)
-        surfaces1 = model.predict(training2)
-        surfaces2 = model.predict(training3)
-        surfaces3 = model.predict(training4)
-        surfaces4 = model.predict(training5)
-        surfaces5 = model.predict(training6)
-        surfaces6 = model.predict(training7)
-        surfaces7 = model.predict(training8)
-        surfaces8 = model.predict(training9)
-        surfaces9 = model.predict(training10)
-        
-        
-        #surfaces = model.predict()
-        #gtemp = surfaces[0][0][len_trainer_1:] + surfaces1[0][0]
-        gtemp = np.array(list(surfaces1[0][0]) + list(surfaces2[0][0]) + list(surfaces3[0][0])\
-                         + list(surfaces4[0][0])+ list(surfaces5[0][0])+ list(surfaces6[0][0])\
-                         + list(surfaces7[0][0])+ list(surfaces8[0][0])+ list(surfaces9[0][0]))
-        gtemp = gtemp.reshape(num_row + 1, num_col + 1)
+            #print(data)
+            #data.transform(mogptk.TransformDetrend()) #Cannot detrend on 2-3d input data
+            #data.plot(title='Untrained model | Known Set')
+            #plt.show()
+            print('Data initialized') 
+            model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
+            model.init_parameters('LS')
+            model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
+            #surfaces = model.predict(training_triple)
+            surfaces1 = model.predict(training2)
+            surfaces2 = model.predict(training3)
+            surfaces3 = model.predict(training4)
+            surfaces4 = model.predict(training5)
+            surfaces5 = model.predict(training6)
+            surfaces6 = model.predict(training7)
+            surfaces7 = model.predict(training8)
+            surfaces8 = model.predict(training9)
+            surfaces9 = model.predict(training10)
+            
+            
+            #surfaces = model.predict()
+            #gtemp = surfaces[0][0][len_trainer_1:] + surfaces1[0][0]
+            gtemp = np.array(list(surfaces1[0][0]) + list(surfaces2[0][0]) + list(surfaces3[0][0])\
+                             + list(surfaces4[0][0])+ list(surfaces5[0][0])+ list(surfaces6[0][0])\
+                             + list(surfaces7[0][0])+ list(surfaces8[0][0])+ list(surfaces9[0][0]))
+            gtemp = gtemp.reshape(num_row + 1, num_col + 1)
 
-        grh = np.array(list(surfaces1[0][1]) + list(surfaces2[0][1]) + list(surfaces3[0][1])\
-                         + list(surfaces4[0][1])+ list(surfaces5[0][1])+ list(surfaces6[0][1])\
-                         + list(surfaces7[0][1])+ list(surfaces8[0][1])+ list(surfaces9[0][1]))
-        grh = grh.reshape(num_row + 1, num_col + 1)
-        
-        
-        gwind = np.array(list(surfaces1[0][2]) + list(surfaces2[0][2]) + list(surfaces3[0][2])\
-                         + list(surfaces4[0][2])+ list(surfaces5[0][2])+ list(surfaces6[0][2])\
-                         + list(surfaces7[0][2])+ list(surfaces8[0][2])+ list(surfaces9[0][2]))
-        gwind = gwind.reshape(num_row + 1, num_col + 1)
+            grh = np.array(list(surfaces1[0][1]) + list(surfaces2[0][1]) + list(surfaces3[0][1])\
+                             + list(surfaces4[0][1])+ list(surfaces5[0][1])+ list(surfaces6[0][1])\
+                             + list(surfaces7[0][1])+ list(surfaces8[0][1])+ list(surfaces9[0][1]))
+            grh = grh.reshape(num_row + 1, num_col + 1)
+            
+            
+            gwind = np.array(list(surfaces1[0][2]) + list(surfaces2[0][2]) + list(surfaces3[0][2])\
+                             + list(surfaces4[0][2])+ list(surfaces5[0][2])+ list(surfaces6[0][2])\
+                             + list(surfaces7[0][2])+ list(surfaces8[0][2])+ list(surfaces9[0][2]))
+            gwind = gwind.reshape(num_row + 1, num_col + 1)
 
-        gpcp = np.array(list(surfaces1[0][3]) + list(surfaces2[0][3]) + list(surfaces3[0][3])\
-                         + list(surfaces4[0][3])+ list(surfaces5[0][3])+ list(surfaces6[0][3])\
-                         + list(surfaces7[0][3])+ list(surfaces8[0][3])+ list(surfaces9[0][3]))
-        gpcp = gwind.reshape(num_row + 1, num_col + 1)
+            gpcp = np.array(list(surfaces1[0][3]) + list(surfaces2[0][3]) + list(surfaces3[0][3])\
+                             + list(surfaces4[0][3])+ list(surfaces5[0][3])+ list(surfaces6[0][3])\
+                             + list(surfaces7[0][3])+ list(surfaces8[0][3])+ list(surfaces9[0][3]))
+            gpcp = gwind.reshape(num_row + 1, num_col + 1)
+
+        else:
+
+            #new_train = [X_train[:]]
+            new_train = [X_train[:,0],X_train[:,1],X_train[:,2]]
+            #print(new_train)
+            #print(len(new_train))
+
+            data = mogptk.DataSet()
+            cols = ['Temp','RH','Wind','Pcp']
+            for i in range(4):
+                inst = mogptk.Data(X_train[:],y[:, i], name=cols[i]) #X_train[:,0] for 1 input (lon)
+                y_rem = np.argwhere(np.isnan(np.array(y[:, i])))
+                inst.remove_index(y_rem)
+                data.append(inst)
+            
+
+            #print(data)
+            #data.transform(mogptk.TransformDetrend()) #Cannot detrend on 2-3d input data
+            #data.plot(title='Untrained model | Known Set')
+            #plt.show()
+            print('Data initialized') 
+            model = mogptk.SM(data, Q=12) #Q = n* original Q for 1 input 
+            model.init_parameters('LS')
+            model.train(verbose=True,iters=100,lr=0.1) #Cannot be verbose in the IDLE, unless you edit the source code
+
+
+            vals = model.predict()
+
+            gtemp = vals[0][0][len_trainer_1:]
+            grh = vals[0][1][len_trainer_1:]
+            gwind = vals[0][2][len_trainer_1:]
+            gpcp = vals[0][3][len_trainer_1:]
         
         
         coord_pair = projected_lat_lon[station_name_hold_back]
