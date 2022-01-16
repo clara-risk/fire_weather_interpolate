@@ -1077,8 +1077,7 @@ def buffer_LOO_tps(latlon_dict, Cvar_dict, shapefile, phi,buffer_size):
               - if pass_to_plot = True, returns a dictionary without the absolute value of the error, for example for plotting fire season error
      '''
     source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
-    x_origin_list = []
-    y_origin_list = []
+
 
     absolute_error_dictionary = {}  # for plotting
     no_absolute_value_dict = {}
@@ -1087,6 +1086,8 @@ def buffer_LOO_tps(latlon_dict, Cvar_dict, shapefile, phi,buffer_size):
 
     na_map = gpd.read_file(shapefile)
     bounds = na_map.bounds
+    pixelHeight = 10000
+    pixelWidth = 10000
     xmax = bounds['maxx']
     xmin = bounds['minx']
     ymax = bounds['maxy']
@@ -1126,14 +1127,15 @@ def buffer_LOO_tps(latlon_dict, Cvar_dict, shapefile, phi,buffer_size):
         all_station_names = [] 
         for station_name in sorted(Cvar_dict.keys()):
             if station_name != station_name_hold_back:
-                stat_loc = latlon_dict[station_name]
-                stat_latitude = stat_loc[0]
-                stat_longitude = stat_loc[1]
-                source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
-                Xlon,Xlat = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
-                all_station_lon.append(Xlon)
-                all_station_lat.append(Xlat)
-                all_station_names.append(station_name)
+                if station_name in latlon_dict.keys():
+                    stat_loc = latlon_dict[station_name]
+                    stat_latitude = stat_loc[0]
+                    stat_longitude = stat_loc[1]
+                    source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+                    Xlon,Xlat = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
+                    all_station_lon.append(Xlon)
+                    all_station_lat.append(Xlat)
+                    all_station_names.append(station_name)
 
         df_storage = pd.DataFrame()
         df_storage['lat'] = all_station_lat
@@ -1156,7 +1158,11 @@ def buffer_LOO_tps(latlon_dict, Cvar_dict, shapefile, phi,buffer_size):
 ##        plt.show() 
         xval_stations_list = list(all_stat_geometry['name'])
         
-        #Get all stations within x buffer of the station 
+        #Get all stations within x buffer of the station
+        x_origin_list = []
+        y_origin_list = []
+        z_origin_list = [] 
+
 
         lat = []
         lon = []
@@ -1175,6 +1181,16 @@ def buffer_LOO_tps(latlon_dict, Cvar_dict, shapefile, phi,buffer_size):
                         lat.append(float(latitude))
                         lon.append(float(longitude))
                         Cvar.append(cvar_val)
+
+                        coord_pair = projected_lat_lon[station_name]
+
+                        x_orig = int(
+                            (coord_pair[0] - float(bounds['minx']))/pixelHeight)  # lon
+                        y_orig = int(
+                            (coord_pair[1] - float(bounds['miny']))/pixelWidth)  # lat
+                        x_origin_list.append(x_orig)
+                        y_origin_list.append(y_orig)
+                        z_origin_list.append(Cvar_dict[station_name])
                     else:
 
                         pass
