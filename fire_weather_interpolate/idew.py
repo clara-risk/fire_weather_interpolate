@@ -1265,14 +1265,15 @@ def buffer_LOO_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_arra
         all_station_names = [] 
         for station_name in sorted(Cvar_dict.keys()):
             if station_name != station_name_hold_back:
-                stat_loc = latlon_dict[station_name]
-                stat_latitude = stat_loc[0]
-                stat_longitude = stat_loc[1]
-                source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
-                Xlon,Xlat = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
-                all_station_lon.append(Xlon)
-                all_station_lat.append(Xlat)
-                all_station_names.append(station_name)
+                if station_name in latlon_dict.keys():
+                    stat_loc = latlon_dict[station_name]
+                    stat_latitude = stat_loc[0]
+                    stat_longitude = stat_loc[1]
+                    source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+                    Xlon,Xlat = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
+                    all_station_lon.append(Xlon)
+                    all_station_lat.append(Xlat)
+                    all_station_names.append(station_name)
 
         df_storage = pd.DataFrame()
         df_storage['lat'] = all_station_lat
@@ -1412,3 +1413,4 @@ def buffer_LOO_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_arra
         absolute_error_dictionary[station_name_hold_back] = absolute_error
 
     return absolute_error_dictionary
+
