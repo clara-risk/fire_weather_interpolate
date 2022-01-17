@@ -1256,7 +1256,7 @@ def buffer_LOO_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, \
         all_station_names = [] 
         for station_name in sorted(Cvar_dict.keys()):
             if station_name != station_name_hold_back:
-                if station_name != station_name_hold_back:
+                if station_name in latlon_dict.keys():
                     stat_loc = latlon_dict[station_name]
                     stat_latitude = stat_loc[0]
                     stat_longitude = stat_loc[1]
@@ -1423,6 +1423,3 @@ def buffer_LOO_rf(latlon_dict, Cvar_dict, shapefile, file_path_elev, \
             pass
 
     return absolute_error_dictionary
-
-
-
