@@ -14,15 +14,19 @@ Rasmussen, C. E., & Williams, C. K. I. (2006). Gaussian processes for machine le
 """
 
 # import
-#import fiona
+import fiona
 import statistics
 import Eval as Eval
 import make_blocks as mbk
 import cluster_3d as c3d
 import get_data as GD
+from sklearn.gaussian_process.kernels import (RBF, Matern, RationalQuadratic,
+                                              ExpSineSquared, DotProduct,
+                                              ConstantKernel)
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
+from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn import metrics
 from sklearn.model_selection import ShuffleSplit
-from sklearn.ensemble import RandomForestRegressor
 import geopandas as gpd
 from shapely.geometry import Point
 import pandas as pd
@@ -32,6 +36,7 @@ import matplotlib.pyplot as plt
 import warnings
 # Runtime warning suppress, this suppresses the /0 warning
 warnings.filterwarnings("ignore")
+
 
 
 def GPR_interpolator(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show,
