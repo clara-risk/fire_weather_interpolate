@@ -1277,7 +1277,7 @@ def spatial_groups_gpr(idw_example_grid, loc_dict, Cvar_dict, shapefile, file_pa
     return overall_error
   
 def buffer_LOO_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, \
-                   cov_function, buffer_size):
+                   cov_function, buffer_size, colab):
     '''Buffered LOO cross-validation procedure for GPR
 
     Parameters
@@ -1497,9 +1497,16 @@ def buffer_LOO_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array
         # Wind =
 
         #kernels = [316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
-        kernels = [eval(cov_function[0])]
-        reg = GaussianProcessRegressor(
-            kernel=kernels[0], normalize_y=True, n_restarts_optimizer=0, optimizer=None)
+        
+        if colab: 
+            kernels={'temp':[316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]\
+                            ,'rh':[307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)],\
+                            'pcp':[316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)],\
+                            'wind':[316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]}
+            reg = GaussianProcessRegressor(kernel=kernels[var], normalize_y=True, n_restarts_optimizer=0, optimizer=None)
+        else:       
+            kernels = [eval(cov_function[0])]
+            reg = GaussianProcessRegressor(kernel=kernels[0], normalize_y=True, n_restarts_optimizer=0, optimizer=None)
 
         y = np.array(df_trainX['var']).reshape(-1, 1)
         X_train = np.array(df_trainX[['xProj', 'yProj', 'elevS']])
