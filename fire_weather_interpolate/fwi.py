@@ -1351,7 +1351,7 @@ def FFMC(input_date, rain_grid, rh_grid, temp_grid, wind_grid, maxmin, ffmc_yest
     ndarray
         - array of ffmc values on the date on interest for the study area
     '''
-     yesterday_index = index-1
+    yesterday_index = index-1
 
     if yesterday_index == -1: #test
         rain_shape = rain_grid.shape
