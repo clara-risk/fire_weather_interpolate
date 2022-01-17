@@ -8,7 +8,7 @@ Code for making spatial clusters for cross-validation.
 
 # import
 import get_data as GD
-from mpl_toolkits.basemap import Basemap
+#from mpl_toolkits.basemap import Basemap #comment out for compatability with Google colab
 import mpl_toolkits.mplot3d.axes3d as p3
 from sklearn.neighbors import kneighbors_graph
 from sklearn.cluster import AgglomerativeClustering
