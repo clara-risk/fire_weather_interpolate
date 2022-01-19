@@ -1131,7 +1131,8 @@ def buffer_LOO(latlon_dict, Cvar_dict, shapefile,
                 # Only append if it falls inside the generated grid
                 station_name_list.append(station_name)
 
-    station_tracker = [] 
+    station_tracker = []
+    station_name_list = shuffle(station_name_list)
     for station_name_hold_back in station_name_list:
         merge_tracker =  [j for i in station_tracker for j in i]
         #print(station_name_hold_back)
@@ -1290,4 +1291,3 @@ def buffer_LOO(latlon_dict, Cvar_dict, shapefile,
 
  
     return absolute_error_dictionary    
-
