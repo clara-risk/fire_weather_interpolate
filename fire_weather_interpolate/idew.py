@@ -1249,168 +1249,172 @@ def buffer_LOO_IDEW(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_arra
     elev_dict = GD.finding_data_frm_lookup(
         zip(xProjO, yProjO), file_path_elev, idx_list)
 
+    station_tracker = [] 
     for station_name_hold_back in station_name_list:
-        #print(station_name_hold_back)
-        #get station location 
-        stat_loc = latlon_dict[station_name_hold_back]
-        stat_latitude = stat_loc[0]
-        stat_longitude = stat_loc[1]
-        source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
-        lon1,lat1 = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
-        stat_point = Point(lon1,lat1)
+        merge_tracker =  [j for i in station_tracker for j in i]
+        if station_name_hold_back not in merge_tracker: 
+            #print(station_name_hold_back)
+            #get station location 
+            stat_loc = latlon_dict[station_name_hold_back]
+            stat_latitude = stat_loc[0]
+            stat_longitude = stat_loc[1]
+            source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+            lon1,lat1 = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
+            stat_point = Point(lon1,lat1)
 
-        #project all stations in the dataset
-        all_station_lon = []
-        all_station_lat = []
-        all_station_names = [] 
-        for station_name in sorted(Cvar_dict.keys()):
-            if station_name != station_name_hold_back:
-                if station_name in latlon_dict.keys():
-                    stat_loc = latlon_dict[station_name]
-                    stat_latitude = stat_loc[0]
-                    stat_longitude = stat_loc[1]
-                    source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
-                    Xlon,Xlat = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
-                    all_station_lon.append(Xlon)
-                    all_station_lat.append(Xlat)
-                    all_station_names.append(station_name)
-
-        df_storage = pd.DataFrame()
-        df_storage['lat'] = all_station_lat
-        df_storage['lon'] = all_station_lon
-        df_storage['name'] = all_station_names
-
-        buffer_s = buffer_size * 1000 #conver to m 
-        
-        buff1 = stat_point.buffer(buffer_s)
-        gdf_buff = gpd.GeoDataFrame(geometry=[buff1])
-        all_stat_geometry = gpd.GeoDataFrame(df_storage[['name','lon','lat']],geometry=gpd.points_from_xy(df_storage['lon'],df_storage['lat']))
-
-        xval_stations = all_stat_geometry[~all_stat_geometry.geometry.within(buff1)] #delete the stations inside the buffer
-##        fig, ax = plt.subplots(figsize=(15, 15))
-##        plt.scatter(stat_point.x,stat_point.y,c='b',s=50)
-##        gdf_buff.plot(ax=ax,facecolor='None',edgecolor='k')
-##        
-##        plt.scatter(all_stat_geometry['lon'],all_stat_geometry['lat'],c='r',s=8)
-##        plt.scatter(xval_stations['lon'],xval_stations['lat'],c='k',s=25)
-##        plt.show() 
-        xval_stations_list = list(all_stat_geometry['name'])
-        
-        #Get all stations within x buffer of the station 
-
-        lat = []
-        lon = []
-        Cvar = []
-        for station_name in xval_stations_list:
-            if station_name in latlon_dict.keys():
+            #project all stations in the dataset
+            all_station_lon = []
+            all_station_lat = []
+            all_station_names = [] 
+            for station_name in sorted(Cvar_dict.keys()):
                 if station_name != station_name_hold_back:
-                    loc = latlon_dict[station_name]
-                    latitude = loc[0]
-                    longitude = loc[1]
-                    proj_coord = pyproj.Proj('esri:102001')(
-                        longitude, latitude)  # Filter out stations outside of grid
-                    if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
-                            ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
-                        cvar_val = Cvar_dict[station_name]
-                        lat.append(float(latitude))
-                        lon.append(float(longitude))
-                        Cvar.append(cvar_val)
-                    else:
+                    if station_name in latlon_dict.keys():
+                        stat_loc = latlon_dict[station_name]
+                        stat_latitude = stat_loc[0]
+                        stat_longitude = stat_loc[1]
+                        source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+                        Xlon,Xlat = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
+                        all_station_lon.append(Xlon)
+                        all_station_lat.append(Xlat)
+                        all_station_names.append(station_name)
 
-                        pass
+            df_storage = pd.DataFrame()
+            df_storage['lat'] = all_station_lat
+            df_storage['lon'] = all_station_lon
+            df_storage['name'] = all_station_names
 
-        y = np.array(lat)
-        x = np.array(lon)
-        z = np.array(Cvar)
-        
-        pixelHeight = 10000
-        pixelWidth = 10000
+            buffer_s = buffer_size * 1000 #conver to m 
+            
+            buff1 = stat_point.buffer(buffer_s)
+            gdf_buff = gpd.GeoDataFrame(geometry=[buff1])
+            all_stat_geometry = gpd.GeoDataFrame(df_storage[['name','lon','lat']],geometry=gpd.points_from_xy(df_storage['lon'],df_storage['lat']))
 
-        num_col = int((xmax - xmin) / pixelHeight)+1
-        num_row = int((ymax - ymin) / pixelWidth)+1 
+            xval_stations = all_stat_geometry[~all_stat_geometry.geometry.within(buff1)] #delete the stations inside the buffer
+    ##        fig, ax = plt.subplots(figsize=(15, 15))
+    ##        plt.scatter(stat_point.x,stat_point.y,c='b',s=50)
+    ##        gdf_buff.plot(ax=ax,facecolor='None',edgecolor='k')
+    ##        
+    ##        plt.scatter(all_stat_geometry['lon'],all_stat_geometry['lat'],c='r',s=8)
+    ##        plt.scatter(xval_stations['lon'],xval_stations['lat'],c='k',s=25)
+    ##        plt.show() 
+            xval_stations_list = list(xval_stations['name'])
+            remove = all_stat_geometry[all_stat_geometry.geometry.within(buff1)] 
+            station_tracker.append(list(remove['name']))            
+            #Get all stations within x buffer of the station 
 
-        # We need to project to a projected system before making distance matrix
-        # We dont know but assume
-        source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
-        xProj, yProj = pyproj.Proj('esri:102001')(x, y)
+            lat = []
+            lon = []
+            Cvar = []
+            for station_name in xval_stations_list:
+                if station_name in latlon_dict.keys():
+                    if station_name != station_name_hold_back:
+                        loc = latlon_dict[station_name]
+                        latitude = loc[0]
+                        longitude = loc[1]
+                        proj_coord = pyproj.Proj('esri:102001')(
+                            longitude, latitude)  # Filter out stations outside of grid
+                        if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
+                                ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                            cvar_val = Cvar_dict[station_name]
+                            lat.append(float(latitude))
+                            lon.append(float(longitude))
+                            Cvar.append(cvar_val)
+                        else:
 
-        yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
-        xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
+                            pass
 
-        Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row)
-        Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col)
+            y = np.array(lat)
+            x = np.array(lon)
+            z = np.array(Cvar)
+            
+            pixelHeight = 10000
+            pixelWidth = 10000
 
-        Xi, Yi = np.meshgrid(Xi, Yi)
-        Xi, Yi = Xi.flatten(), Yi.flatten()
-        maxmin = [np.min(yProj_extent), np.max(yProj_extent),
-                  np.max(xProj_extent), np.min(xProj_extent)]
+            num_col = int((xmax - xmin) / pixelHeight)+1
+            num_row = int((ymax - ymin) / pixelWidth)+1 
 
-        vals = np.vstack((xProj, yProj)).T
+            # We need to project to a projected system before making distance matrix
+            # We dont know but assume
+            source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+            xProj, yProj = pyproj.Proj('esri:102001')(x, y)
 
-        interpol = np.vstack((Xi, Yi)).T
-        # Length of the triangle side from the cell to the point with data
-        dist_not = np.subtract.outer(vals[:, 0], interpol[:, 0])
-        # Length of the triangle side from the cell to the point with data
-        dist_one = np.subtract.outer(vals[:, 1], interpol[:, 1])
-        # euclidean distance, getting the hypotenuse
-        distance_matrix = np.hypot(dist_not, dist_one)
+            yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
+            xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
 
-        # what if distance is 0 --> np.inf? have to account for the pixel underneath
-        weights = 1/(distance_matrix**d)
-        # Making sure to assign the value of the weather station above the pixel directly to the pixel underneath
-        weights[np.where(np.isinf(weights))] = 1/(1.0E-50)
-        weights /= weights.sum(axis=0)
+            Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row)
+            Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col)
 
-        Zi = np.dot(weights.T, z)
-        idw_grid = Zi.reshape(num_row, num_col)
+            Xi, Yi = np.meshgrid(Xi, Yi)
+            Xi, Yi = Xi.flatten(), Yi.flatten()
+            maxmin = [np.min(yProj_extent), np.max(yProj_extent),
+                      np.max(xProj_extent), np.min(xProj_extent)]
 
-        #elev_dict= GD.finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list)
+            vals = np.vstack((xProj, yProj)).T
 
-        xProj_input = []
-        yProj_input = []
-        e_input = []
+            interpol = np.vstack((Xi, Yi)).T
+            # Length of the triangle side from the cell to the point with data
+            dist_not = np.subtract.outer(vals[:, 0], interpol[:, 0])
+            # Length of the triangle side from the cell to the point with data
+            dist_one = np.subtract.outer(vals[:, 1], interpol[:, 1])
+            # euclidean distance, getting the hypotenuse
+            distance_matrix = np.hypot(dist_not, dist_one)
 
-        for keys in zip(xProj, yProj):  # in case there are two stations at the same lat\lon
-            x = keys[0]
-            y = keys[1]
-            xProj_input.append(x)
-            yProj_input.append(y)
-            e_input.append(elev_dict[keys])
+            # what if distance is 0 --> np.inf? have to account for the pixel underneath
+            weights = 1/(distance_matrix**d)
+            # Making sure to assign the value of the weather station above the pixel directly to the pixel underneath
+            weights[np.where(np.isinf(weights))] = 1/(1.0E-50)
+            weights /= weights.sum(axis=0)
 
-        source_elev = np.array(e_input)
+            Zi = np.dot(weights.T, z)
+            idw_grid = Zi.reshape(num_row, num_col)
 
-        vals2 = np.vstack(source_elev).T
+            #elev_dict= GD.finding_data_frm_lookup(zip(xProj, yProj),file_path_elev,idx_list)
 
-        interpol2 = np.vstack(elev_array).T
+            xProj_input = []
+            yProj_input = []
+            e_input = []
 
-        dist_not2 = np.subtract.outer(vals2[0], interpol2[0])
-        dist_not2 = np.absolute(dist_not2)
-        weights2 = 1/(dist_not2**d)
+            for keys in zip(xProj, yProj):  # in case there are two stations at the same lat\lon
+                x = keys[0]
+                y = keys[1]
+                xProj_input.append(x)
+                yProj_input.append(y)
+                e_input.append(elev_dict[keys])
 
-        weights2[np.where(np.isinf(weights2))] = 1
-        weights2 /= weights2.sum(axis=0)
+            source_elev = np.array(e_input)
 
-        fin = 0.8*np.dot(weights.T, z) + 0.2*np.dot(weights2.T, z)
+            vals2 = np.vstack(source_elev).T
 
-        fin = fin.reshape(num_row, num_col)
+            interpol2 = np.vstack(elev_array).T
 
-        # Calc the RMSE, MAE, NSE, and MRAE at the pixel loc
-        # Delete at a certain point
-        coord_pair = projected_lat_lon[station_name_hold_back]
+            dist_not2 = np.subtract.outer(vals2[0], interpol2[0])
+            dist_not2 = np.absolute(dist_not2)
+            weights2 = 1/(dist_not2**d)
 
-        x_orig = int(
-            (coord_pair[0] - float(bounds['minx']))/pixelHeight)  # lon
-        y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth)  # lat
-        x_origin_list.append(x_orig)
-        y_origin_list.append(y_orig)
+            weights2[np.where(np.isinf(weights2))] = 1
+            weights2 /= weights2.sum(axis=0)
 
-        interpolated_val = fin[y_orig][x_orig]
+            fin = 0.8*np.dot(weights.T, z) + 0.2*np.dot(weights2.T, z)
 
-        # Get the original value
-        original_val = Cvar_dict[station_name_hold_back]
-        # Calc the difference
-        absolute_error = abs(interpolated_val-original_val)
-        absolute_error_dictionary[station_name_hold_back] = absolute_error
+            fin = fin.reshape(num_row, num_col)
+
+            # Calc the RMSE, MAE, NSE, and MRAE at the pixel loc
+            # Delete at a certain point
+            coord_pair = projected_lat_lon[station_name_hold_back]
+
+            x_orig = int(
+                (coord_pair[0] - float(bounds['minx']))/pixelHeight)  # lon
+            y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth)  # lat
+            x_origin_list.append(x_orig)
+            y_origin_list.append(y_orig)
+
+            interpolated_val = fin[y_orig][x_orig]
+
+            # Get the original value
+            original_val = Cvar_dict[station_name_hold_back]
+            # Calc the difference
+            absolute_error = abs(interpolated_val-original_val)
+            absolute_error_dictionary[station_name_hold_back] = absolute_error
 
     return absolute_error_dictionary
 
