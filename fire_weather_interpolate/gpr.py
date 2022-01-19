@@ -1282,7 +1282,7 @@ def spatial_groups_gpr(idw_example_grid, loc_dict, Cvar_dict, shapefile, file_pa
     return overall_error
   
 def buffer_LOO_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array, idx_list, \
-                   cov_function, buffer_size, colab):
+                   cov_function, buffer_size):
     '''Buffered LOO cross-validation procedure for GPR
 
     Parameters
@@ -1343,206 +1343,202 @@ def buffer_LOO_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array
                 # Only append if it falls inside the generated grid
                 station_name_list.append(station_name)
 
+    station_tracker = [] 
     for station_name_hold_back in station_name_list:
-        #print(station_name_hold_back)
-        #get station location 
-        stat_loc = latlon_dict[station_name_hold_back]
-        stat_latitude = stat_loc[0]
-        stat_longitude = stat_loc[1]
-        source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
-        lon1,lat1 = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
-        stat_point = Point(lon1,lat1)
+        merge_tracker =  [j for i in station_tracker for j in i]
+        if station_name_hold_back not in merge_tracker: 
+            #print(station_name_hold_back)
+            #get station location 
+            stat_loc = latlon_dict[station_name_hold_back]
+            stat_latitude = stat_loc[0]
+            stat_longitude = stat_loc[1]
+            source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+            lon1,lat1 = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
+            stat_point = Point(lon1,lat1)
 
-        #project all stations in the dataset
-        all_station_lon = []
-        all_station_lat = []
-        all_station_names = [] 
-        for station_name in sorted(Cvar_dict.keys()):
-            if station_name != station_name_hold_back:
-                stat_loc = latlon_dict[station_name]
-                stat_latitude = stat_loc[0]
-                stat_longitude = stat_loc[1]
-                source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
-                Xlon,Xlat = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
-                all_station_lon.append(Xlon)
-                all_station_lat.append(Xlat)
-                all_station_names.append(station_name)
-
-        df_storage = pd.DataFrame()
-        df_storage['lat'] = all_station_lat
-        df_storage['lon'] = all_station_lon
-        df_storage['name'] = all_station_names
-
-        buffer_s = buffer_size * 1000 #conver to m 
-        
-        buff1 = stat_point.buffer(buffer_s)
-        gdf_buff = gpd.GeoDataFrame(geometry=[buff1])
-        all_stat_geometry = gpd.GeoDataFrame(df_storage[['name','lon','lat']],geometry=gpd.points_from_xy(df_storage['lon'],df_storage['lat']))
-
-        xval_stations = all_stat_geometry[~all_stat_geometry.geometry.within(buff1)] #delete the stations inside the buffer
-##        fig, ax = plt.subplots(figsize=(15, 15))
-##        plt.scatter(stat_point.x,stat_point.y,c='b',s=50)
-##        gdf_buff.plot(ax=ax,facecolor='None',edgecolor='k')
-##        
-##        plt.scatter(all_stat_geometry['lon'],all_stat_geometry['lat'],c='r',s=8)
-##        plt.scatter(xval_stations['lon'],xval_stations['lat'],c='k',s=25)
-##        plt.show() 
-        xval_stations_list = list(all_stat_geometry['name'])
-        
-        #Get all stations within x buffer of the station 
-
-        lat = []
-        lon = []
-        Cvar = []
-        for station_name in xval_stations_list:
-            if station_name in latlon_dict.keys():
+            #project all stations in the dataset
+            all_station_lon = []
+            all_station_lat = []
+            all_station_names = [] 
+            for station_name in sorted(Cvar_dict.keys()):
                 if station_name != station_name_hold_back:
-                    loc = latlon_dict[station_name]
-                    latitude = loc[0]
-                    longitude = loc[1]
-                    proj_coord = pyproj.Proj('esri:102001')(
-                        longitude, latitude)  # Filter out stations outside of grid
-                    if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
-                            ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
-                        cvar_val = Cvar_dict[station_name]
-                        lat.append(float(latitude))
-                        lon.append(float(longitude))
-                        Cvar.append(cvar_val)
-                    else:
+                    if station_name in latlon_dict.keys():
+                        stat_loc = latlon_dict[station_name]
+                        stat_latitude = stat_loc[0]
+                        stat_longitude = stat_loc[1]
+                        source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+                        Xlon,Xlat = pyproj.Proj('esri:102001')(stat_longitude, stat_latitude)
+                        all_station_lon.append(Xlon)
+                        all_station_lat.append(Xlat)
+                        all_station_names.append(station_name)
 
-                        pass
+            df_storage = pd.DataFrame()
+            df_storage['lat'] = all_station_lat
+            df_storage['lon'] = all_station_lon
+            df_storage['name'] = all_station_names
 
-        y = np.array(lat)
-        x = np.array(lon)
-        z = np.array(Cvar)
+            buffer_s = buffer_size * 1000 #conver to m 
+            
+            buff1 = stat_point.buffer(buffer_s)
+            gdf_buff = gpd.GeoDataFrame(geometry=[buff1])
+            all_stat_geometry = gpd.GeoDataFrame(df_storage[['name','lon','lat']],geometry=gpd.points_from_xy(df_storage['lon'],df_storage['lat']))
 
-        pixelHeight = 10000
-        pixelWidth = 10000
+            xval_stations = all_stat_geometry[~all_stat_geometry.geometry.within(buff1)] #delete the stations inside the buffer
+    ##        fig, ax = plt.subplots(figsize=(15, 15))
+    ##        plt.scatter(stat_point.x,stat_point.y,c='b',s=50)
+    ##        gdf_buff.plot(ax=ax,facecolor='None',edgecolor='k')
+    ##        
+    ##        plt.scatter(all_stat_geometry['lon'],all_stat_geometry['lat'],c='r',s=8)
+    ##        plt.scatter(xval_stations['lon'],xval_stations['lat'],c='k',s=25)
+    ##        plt.show() 
+            xval_stations_list = list(xval_stations['name'])
+            remove = all_stat_geometry[all_stat_geometry.geometry.within(buff1)] 
+            station_tracker.append(list(remove['name']))
+            #Get all stations within x buffer of the station 
 
-        num_col = int((xmax - xmin) / pixelHeight)+1
-        num_row = int((ymax - ymin) / pixelWidth)+1
+            lat = []
+            lon = []
+            Cvar = []
+            for station_name in xval_stations_list:
+                if station_name in latlon_dict.keys():
+                    if station_name != station_name_hold_back:
+                        loc = latlon_dict[station_name]
+                        latitude = loc[0]
+                        longitude = loc[1]
+                        proj_coord = pyproj.Proj('esri:102001')(
+                            longitude, latitude)  # Filter out stations outside of grid
+                        if (proj_coord[1] <= float(ymax[0]) and proj_coord[1] >= float(
+                                ymin[0]) and proj_coord[0] <= float(xmax[0]) and proj_coord[0] >= float(xmin[0])):
+                            cvar_val = Cvar_dict[station_name]
+                            lat.append(float(latitude))
+                            lon.append(float(longitude))
+                            Cvar.append(cvar_val)
+                        else:
 
-        # We need to project to a projected system before making distance matrix
-        source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
-        xProj, yProj = pyproj.Proj('esri:102001')(x, y)
+                            pass
 
-        df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z})
+            y = np.array(lat)
+            x = np.array(lon)
+            z = np.array(Cvar)
 
-        yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
-        xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
+            pixelHeight = 10000
+            pixelWidth = 10000
 
-        Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row)
-        Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col)
+            num_col = int((xmax - xmin) / pixelHeight)+1
+            num_row = int((ymax - ymin) / pixelWidth)+1
 
-        Xi, Yi = np.meshgrid(Xi, Yi)
-        Xi, Yi = Xi.flatten(), Yi.flatten()
+            # We need to project to a projected system before making distance matrix
+            source_proj = pyproj.Proj(proj='latlong', datum='NAD83')
+            xProj, yProj = pyproj.Proj('esri:102001')(x, y)
 
-        maxmin = [np.min(yProj_extent), np.max(yProj_extent),
-                  np.max(xProj_extent), np.min(xProj_extent)]
+            df_trainX = pd.DataFrame({'xProj': xProj, 'yProj': yProj, 'var': z})
 
-        # Elevation
-        # Preparing the coordinates to send to the function that will get the elevation grid
-        concat = np.array((Xi.flatten(), Yi.flatten())).T
-        send_to_list = concat.tolist()
-        # The elevation function takes a tuple
-        send_to_tuple = [tuple(x) for x in send_to_list]
+            yProj_extent = np.append(yProj, [bounds['maxy'], bounds['miny']])
+            xProj_extent = np.append(xProj, [bounds['maxx'], bounds['minx']])
 
-        Xi1_grd = []
-        Yi1_grd = []
-        elev_grd = []
-        # Get the elevations from the lookup file
-        elev_grd_dict = GD.finding_data_frm_lookup(
-            send_to_tuple, file_path_elev, idx_list)
+            Yi = np.linspace(np.min(yProj_extent), np.max(yProj_extent), num_row)
+            Xi = np.linspace(np.min(xProj_extent), np.max(xProj_extent), num_col)
 
-        for keys in elev_grd_dict.keys():  # The keys are each lat lon pair
-            x = keys[0]
-            y = keys[1]
-            Xi1_grd.append(x)
-            Yi1_grd.append(y)
-            # Append the elevation data to the empty list
-            elev_grd.append(elev_grd_dict[keys])
+            Xi, Yi = np.meshgrid(Xi, Yi)
+            Xi, Yi = Xi.flatten(), Yi.flatten()
 
-        elev_array = np.array(elev_grd)  # make an elevation array
+            maxmin = [np.min(yProj_extent), np.max(yProj_extent),
+                      np.max(xProj_extent), np.min(xProj_extent)]
 
-        elev_dict = GD.finding_data_frm_lookup(zip(
-            xProj, yProj), file_path_elev, idx_list)  # Get the elevations for the stations
+            # Elevation
+            # Preparing the coordinates to send to the function that will get the elevation grid
+            concat = np.array((Xi.flatten(), Yi.flatten())).T
+            send_to_list = concat.tolist()
+            # The elevation function takes a tuple
+            send_to_tuple = [tuple(x) for x in send_to_list]
 
-        xProj_input = []
-        yProj_input = []
-        e_input = []
+            Xi1_grd = []
+            Yi1_grd = []
+            elev_grd = []
+            # Get the elevations from the lookup file
+            elev_grd_dict = GD.finding_data_frm_lookup(
+                send_to_tuple, file_path_elev, idx_list)
 
-        for keys in zip(xProj, yProj):  # Repeat process for just the stations not the whole grid
-            x = keys[0]
-            y = keys[1]
-            xProj_input.append(x)
-            yProj_input.append(y)
-            e_input.append(elev_dict[keys])
+            for keys in elev_grd_dict.keys():  # The keys are each lat lon pair
+                x = keys[0]
+                y = keys[1]
+                Xi1_grd.append(x)
+                Yi1_grd.append(y)
+                # Append the elevation data to the empty list
+                elev_grd.append(elev_grd_dict[keys])
 
-        source_elev = np.array(e_input)
+            elev_array = np.array(elev_grd)  # make an elevation array
 
-        Xi1_grd = np.array(Xi1_grd)
-        Yi1_grd = np.array(Yi1_grd)
+            elev_dict = GD.finding_data_frm_lookup(zip(
+                xProj, yProj), file_path_elev, idx_list)  # Get the elevations for the stations
 
-        df_trainX = pd.DataFrame(
-            {'xProj': xProj, 'yProj': yProj, 'elevS': source_elev, 'var': z})
+            xProj_input = []
+            yProj_input = []
+            e_input = []
 
-        df_testX = pd.DataFrame(
-            {'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
+            for keys in zip(xProj, yProj):  # Repeat process for just the stations not the whole grid
+                x = keys[0]
+                y = keys[1]
+                xProj_input.append(x)
+                yProj_input.append(y)
+                e_input.append(elev_dict[keys])
 
-        #kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
-        #kernels = [multiplier**exponent * Matern(length_scale=length_scale_list,nu=param_initiate[1],length_scale_bounds='fixed')]
-        #kernels = [params]
+            source_elev = np.array(e_input)
 
-        # Temperature
-        #kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]
+            Xi1_grd = np.array(Xi1_grd)
+            Yi1_grd = np.array(Yi1_grd)
 
-        # RH
-        #kernels = [307**2 * Matern(length_scale=[9.51e+04, 9.58e+04, 3.8e+05], nu=0.5)]
+            df_trainX = pd.DataFrame(
+                {'xProj': xProj, 'yProj': yProj, 'elevS': source_elev, 'var': z})
 
-        # Wind =
+            df_testX = pd.DataFrame(
+                {'Xi': Xi1_grd, 'Yi': Yi1_grd, 'elev': elev_array})
 
-        #kernels = [316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
-        
-        if colab: 
-            kernels={'temp':[316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]\
-                            ,'rh':[307**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)],\
-                            'pcp':[316**2 * Matern(length_scale=[5e+05, 5e+05, 4.67e+05], nu=0.5)],\
-                            'wind':[316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]}
-            reg = GaussianProcessRegressor(kernel=kernels[var], normalize_y=True, n_restarts_optimizer=0, optimizer=None)
-        else:       
+            #kernels = [1.0 * RationalQuadratic(length_scale=1.0, alpha=alpha_input)]
+            #kernels = [multiplier**exponent * Matern(length_scale=length_scale_list,nu=param_initiate[1],length_scale_bounds='fixed')]
+            #kernels = [params]
+
+            # Temperature
+            #kernels = [316**2 * Matern(length_scale=[5e+05, 5e+05, 6.01e+03], nu=0.5)]
+
+            # RH
+            #kernels = [307**2 * Matern(length_scale=[9.51e+04, 9.58e+04, 3.8e+05], nu=0.5)]
+
+            # Wind =
+
+            #kernels = [316**2 * Matern(length_scale=[5e+05, 6.62e+04, 1.07e+04], nu=0.5)]
             kernels = [eval(cov_function[0])]
-            reg = GaussianProcessRegressor(kernel=kernels[0], normalize_y=True, n_restarts_optimizer=0, optimizer=None)
+            reg = GaussianProcessRegressor(
+                kernel=kernels[0], normalize_y=True, n_restarts_optimizer=0, optimizer=None)
 
-        y = np.array(df_trainX['var']).reshape(-1, 1)
-        X_train = np.array(df_trainX[['xProj', 'yProj', 'elevS']])
-        X_test = np.array(df_testX[['Xi', 'Yi', 'elev']])
+            y = np.array(df_trainX['var']).reshape(-1, 1)
+            X_train = np.array(df_trainX[['xProj', 'yProj', 'elevS']])
+            X_test = np.array(df_testX[['Xi', 'Yi', 'elev']])
 
-        reg.fit(X_train, y)
+            reg.fit(X_train, y)
 
-        Zi = reg.predict(X_test)
+            Zi = reg.predict(X_test)
 
-        gpr_grid = Zi.reshape(num_row, num_col)
+            gpr_grid = Zi.reshape(num_row, num_col)
 
-        # Calc the RMSE, MAE at the pixel loc
-        # Delete at a certain point
-        coord_pair = projected_lat_lon[station_name_hold_back]
+            # Calc the RMSE, MAE at the pixel loc
+            # Delete at a certain point
+            coord_pair = projected_lat_lon[station_name_hold_back]
 
-        x_orig = int(
-            (coord_pair[0] - float(bounds['minx']))/pixelHeight)  # lon
-        y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth)  # lat
-        x_origin_list.append(x_orig)
-        y_origin_list.append(y_orig)
+            x_orig = int(
+                (coord_pair[0] - float(bounds['minx']))/pixelHeight)  # lon
+            y_orig = int((coord_pair[1] - float(bounds['miny']))/pixelWidth)  # lat
+            x_origin_list.apend(x_orig)
+            y_origin_list.append(y_orig)
 
-        try: 
+            try: 
 
-            interpolated_val = gpr_grid[y_orig][x_orig]
+                interpolated_val = gpr_grid[y_orig][x_orig]
 
-            original_val = Cvar_dict[station_name_hold_back]
-            absolute_error = abs(interpolated_val-original_val)
-            absolute_error_dictionary[station_name_hold_back] = absolute_error
-        except IndexError:
-            pass
+                original_val = Cvar_dict[station_name_hold_back]
+                absolute_error = abs(interpolated_val-original_val)
+                absolute_error_dictionary[station_name_hold_back] = absolute_error
+            except IndexError:
+                pass
 
     return absolute_error_dictionary
-
-
