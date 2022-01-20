@@ -31,6 +31,7 @@ import sys
 import math
 import statistics
 import pandas as pd 
+import random
 
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.neighbors import kneighbors_graph
@@ -1062,11 +1063,9 @@ def shuffle_split(loc_dict, Cvar_dict, shapefile, d, rep, show, res=10000):
 
     return overall_error
 
-
 def buffer_LOO(latlon_dict, Cvar_dict, shapefile,
                        d, buffer_size, expand_area, res=10000, speed_up=True):
     '''Buffered LOO cross-validation procedure for IDW
-
     Parameters
     ----------
          latlon_dict : dictionary
@@ -1132,8 +1131,9 @@ def buffer_LOO(latlon_dict, Cvar_dict, shapefile,
                 station_name_list.append(station_name)
 
     station_tracker = []
-    station_name_list = shuffle(station_name_list)
-    for station_name_hold_back in station_name_list:
+    stations_shuffled = random.sample(station_name_list, len(station_name_list))  
+    #print(stations_shuffled)
+    for station_name_hold_back in stations_shuffled:
         merge_tracker =  [j for i in station_tracker for j in i]
         #print(station_name_hold_back)
         #print(merge_tracker)
@@ -1290,4 +1290,4 @@ def buffer_LOO(latlon_dict, Cvar_dict, shapefile,
             no_absolute_value_dict[station_name_hold_back] = interpolated_val - original_val
 
  
-    return absolute_error_dictionary    
+    return absolute_error_dictionary
