@@ -1344,8 +1344,8 @@ def buffer_LOO_gpr(latlon_dict, Cvar_dict, shapefile, file_path_elev, elev_array
                 station_name_list.append(station_name)
 
     station_tracker = [] 
-    station_name_list = shuffle(station_name_list)
-    for station_name_hold_back in station_name_list:
+    stations_shuffled = random.sample(station_name_list, len(station_name_list)) 
+    for station_name_hold_back in stations_shuffled:
         merge_tracker =  [j for i in station_tracker for j in i]
         if station_name_hold_back not in merge_tracker: 
             #print(station_name_hold_back)
