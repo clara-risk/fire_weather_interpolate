@@ -3,7 +3,7 @@
 """
 Summary
 -------
-Spatial interpolation functions for mogp interpolation using the scikit-learn package.
+Spatial interpolation functions for mogp interpolation using the mogptk package.
 
 Requires installation of IPython if it is not already installed 
 References
@@ -33,14 +33,14 @@ warnings.filterwarnings("ignore")
 
 def MOGP_interpolator(latlon_dict,daily_dict, Cvar_dict, Cvar_dict2, Cvar_dict3, Cvar_dict4, input_date, var_name, shapefile, show,
                      file_path_elev, idx_list, expand_area, res=10000,manage_memory = False):
-    '''Base interpolator function for gaussian process regression
+    '''Base interpolator function for multi-output gaussian process 
 
     Parameters
     ----------
     latlon_dict : dictionary
         the latitude and longitudes of the stations
-    Cvar_dict : dictionary
-        dictionary of weather variable values for each station
+    Cvar_dict : dictionaries
+        dictionary of weather variable values for each station (for each weather var)
     input_date : string
         the date you want to interpolate for
     shapefile : string
@@ -53,23 +53,10 @@ def MOGP_interpolator(latlon_dict,daily_dict, Cvar_dict, Cvar_dict2, Cvar_dict3,
         the index of the elevation data column in the lookup file 
     expand_area : bool
         function will expand the study area so that more stations are taken into account (200 km)   
-    kernel_object : list
-        kernel object describing input kernel you want to use, if optimizing a set of parameters, can input empty list
-    restarts : int
-        number of times to restart to avoid local optima
-    report_params : bool
-        if True, outputs optimized values for kernel hyperparameters
-    optimizer : bool
-        if False, fix parameters of covariance function
-    param_initiate : list
-        input parameters needed to start optimization, controls extent of the spatial autocorrelation modelled by the process
-        whether the spatial autocorrelation is the same in all directions will depend on the inputs for parameters,
-        you need to input the parameters of the function (distribution) as a vector not a scalar
-        since we are working in 3d (latitude, longitude, elevation) the vector must be len=3 because this corresponds to the [x,y,z]
-        if we are using an anisotropic distribution
-        ...for isotropic 1d, [1] (or if 2 parameters, [[1],[1]]), for anisotropic, will be [1,1,1] or [[1,1],[1,1],[1,1]]
-    cov_type : str
-        type of covariance function to use if have not specified a kernel object
+    res : int
+        resolution of interpolation grid
+    manage_memory : bool 
+        whether or not to output interpolation grid in chunks to manage RAM usage
 
     Returns
     ----------
