@@ -36,7 +36,7 @@ import matplotlib.pyplot as plt
 import warnings
 # Runtime warning suppress, this suppresses the /0 warning
 warnings.filterwarnings("ignore")
-from random import shuffle
+import random
 
 
 def GPR_interpolator(latlon_dict, Cvar_dict, input_date, var_name, shapefile, show,
