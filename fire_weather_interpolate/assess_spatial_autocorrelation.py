@@ -13,14 +13,16 @@ import get_data as GD
 
 def plot_MI(paths):
 
-    variables = ['ws','temp','rh','pcp'] 
+    dirname = 'C:/Users/clara/Documents/Earth_Space_Revisions/Moran/'
+
+    variables = ['temp'] 
 
     dfs = []
-
+    count = 0 
     for fp in paths:
 
-        df = pd.read_csv(fp, delimiter = ",")
-        dfs.append(df)
+        df = pd.read_csv(dirname+variables[0]+'/'+fp, delimiter = ",")
+        dfs.append(df.dropna(how='any'))
 
     years = []
     values = []
@@ -31,18 +33,67 @@ def plot_MI(paths):
         if count == 0:
             years.append(dates)
         
-        df['Moran_I'].loc[df['p'] > 0.01] = np.nan
-        df['Moran_I'].loc[df['Pos_Autocorrelation'] == 'No'] = np.nan
-        values.append(list(df['Moran_I']))
+##        df['Moran_I'].loc[df['p'] > 0.05] = np.nan
+##        #df['Moran_I'].loc[df['Pos_Autocorrelation'] == 'No'] = np.nan
+##        #df['Moran_I'].loc[df['Moran_I'] > 1] = 1
+##        df['Moran_I'].loc[df['Num_Pairs'] < 30] = np.nan
+##        values.append(list(df['Moran_I']))
+##        print(list(df['Moran_I']))
+##        mean_val = np.nanmean(np.array(list(df['Moran_I'])))
+##        print(variables[count])
+##        print(mean_val)
+##        print(len(df['Moran_I'].dropna(how='any')))
 
-        mean_val = np.nanmean(np.array(list(df['Moran_I'])))
-        print(variables[count])
-        print(mean_val)
+        df = df.dropna(how='any') 
+        df1 = df[df['Pos_Autocorrelation'] == 'No']
+        df1['Pos_Autocorrelation'].loc[df['p'] < 0.05] = np.nan
+        df1['Pos_Autocorrelation'].loc[df['Num_Pairs'] < 30] = np.nan
+        df1.dropna(how='any')
+        print('% neg') 
+        print(len(df1)/len(df))
+        df2 = df[df['Pos_Autocorrelation'] == 'Yes']
+        df2['Pos_Autocorrelation'].loc[df['p'] >= 0.05] = np.nan
+        df2['Pos_Autocorrelation'].loc[df['Num_Pairs'] < 30] = np.nan
+        print('% pos')
+        print(len(df2)/len(df))
         count+=1
 
-if __name__ == "__main__":
+def get_variogram(points,data,theor_model,num_lags,max_lag_150000):
 
-    #plot_MI(['100km_ws.txt','100km_temp.txt','100km_ws.txt','100km_pcp.txt'])
+    y = [i[0] for i in points]
+    x = [j[0] for j in points]
+    cval = data
+
+    if max_lag_150000: 
+    
+        V = Variogram(list(zip(x, y)), cval, normalize=False, n_lags=num_lags, \
+                      maxlag =  150000, model=theor_model,fit_method='trf')
+
+    else: 
+
+        #Variogram without max lag 
+
+        V = Variogram(list(zip(x, y)), cval, normalize=False,n_lags=num_lags,\
+                      model=theor_model,fit_method='trf')
+    V.plot()
+    print(V.describe())
+    print(V.r)
+
+
+#def get_heatmap():
+
+    
+    
+if __name__ == "__main__":
+    
+
+    #plot_MI(['temp200p.txt'])
+
+    #import time
+    #time.sleep(60)
+    
+    from skgstat import Variogram
+
             
     dirname = 'C:/Users/clara/Documents/cross-validation/'
 
@@ -77,24 +128,24 @@ if __name__ == "__main__":
     for year in years: 
        overall_dates.append((year)+'-07-01 13:00')
 
-    for x in [10,20,50,100,500]: 
+    for x in [200,500,800,1000,1300,100000000000000000]: #10,20,50,100,500]: 
         mi_list = []
         p_list =[]
         date = []
         num_pairs = []
         ref_list = []
         pos_autocorrelation = []
-
         for input_date in overall_dates:
              print(input_date)
              gc.collect()
              #Get the dictionary
              
-             temp = GD.get_noon_temp(str(input_date)[0:10]+' 13:00',file_path_hourly)
+             #temp = GD.get_noon_temp(str(input_date)[0:10]+' 13:00',file_path_hourly)
+             
              #print(temp) 
-             rh = GD.get_relative_humidity(str(input_date)[0:10]+' 13:00',file_path_hourly)
-             wind = GD.get_wind_speed(str(input_date)[0:10]+' 13:00',file_path_hourly)
-             pcp = GD.get_pcp(str(input_date)[0:10],file_path_daily,date_dictionary)
+             #temp = GD.get_relative_humidity(str(input_date)[0:10]+' 13:00',file_path_hourly)
+             temp = GD.get_wind_speed(str(input_date)[0:10]+' 13:00',file_path_hourly)
+             #temp = GD.get_pcp(str(input_date)[0:10],file_path_daily,date_dictionary)
 
              import pysal
              #print(hourly_dictionary)
@@ -102,10 +153,10 @@ if __name__ == "__main__":
              points_for_weights = []
              temp_list = [] 
             
-             for key,val in pcp.items():
+             for key,val in temp.items():
                  #coord = hourly_dictionary[key]
-                 if key in list(daily_dictionary.keys()):
-                     coord = daily_dictionary[key]
+                 if key in list(hourly_dictionary.keys()): #daily
+                     coord = hourly_dictionary[key]
                      lon = float(coord[1])
                      lat = float(coord[0])
                      Plat, Plon = pyproj.Proj('esri:102001')(lon, lat)
@@ -113,70 +164,87 @@ if __name__ == "__main__":
                      temp_list.append(val)
 
             
+             #get_variogram(points_for_weights,temp_list,'spherical',10,True)
+
+             #import time
+             #time.sleep(60)
              #print(points_for_weights)
                  
-    ##        
-    ##         lag1 = 100 * 1000
-    ##         w1 = pysal.weights.DistanceBand.from_array(points_for_weights,lag1)
-    ##
-    ##         lag2 = 500 * 1000
-    ##         w2 = pysal.weights.DistanceBand.from_array(points_for_weights,lag2)
-    ##
-    ##        
-    ##         filter_out = []
-    ##         filter_in = []
-    ##         filter_temp = [] 
-    ##         for i in range(0,len(points_for_weights)):
-    ##             if len(w1[i]) > 0:
-    ##                filter_out.append(points_for_weights[i])
-    ##                
-    ##             else:
-    ##                filter_in.append(points_for_weights[i])
-    ##                filter_temp.append(temp_list[i])
+            
+             lag1 = 0 * 1000
+             w1 = pysal.weights.DistanceBand.from_array(points_for_weights,lag1)
+
+             lag2 = x * 1000
+             w2 = pysal.weights.DistanceBand.from_array(points_for_weights,lag2)
+
+            
+             filter_out = []
+             filter_in = []
+             filter_temp = [] 
+             for i in range(0,len(points_for_weights)):
+                 if len(w1[i]) > 0:
+                    filter_out.append(points_for_weights[i])
+                    
+                 else:
+                    filter_in.append(points_for_weights[i])
+                    filter_temp.append(temp_list[i])
 
             
              lag = x * 1000         
-             w = pysal.weights.DistanceBand.from_array(points_for_weights,lag,binary=True)
+             #w = pysal.weights.DistanceBand.from_array(points_for_weights,lag,binary=True)
+             w = pysal.weights.DistanceBand.from_array(filter_in,lag,binary=True)
              #w = pysal.Kernel(points_for_weights,bandwidth = 15.0)
              
-             #print('Points inside spatial lag:' +str(len(w[0])))
+             print('Points inside spatial lag:' +str(len(w[0])))
              #print(str(len(w[1])))
 
              #calculate n (total number of pairs)
              
              count = 0
-             for i in range(0,len(points_for_weights)):
+##             for i in range(0,len(points_for_weights)):
+##                 num_p = len(w[i])
+##                 count += num_p
+             for i in range(0,len(filter_in)):
                  num_p = len(w[i])
                  count += num_p
-
             
             
              num_pairs.append(count)
              print('Num pairs in class: '+str(count))
              print('Morans I:') 
 
-             mi = pysal.Moran(temp_list, w, two_tailed=False)
-             print("%.3f"%mi.I)
+             #mi = pysal.Moran(temp_list, w, two_tailed=False)
+             try: 
+                 mi = pysal.Moran(filter_temp, w, two_tailed=False)
+                 print("%.3f"%mi.I)
 
-             print('p:')
-             print("%.5f"%mi.p_norm)
+                 print('p:')
+                 print("%.5f"%mi.p_norm)
 
-             #Calculate ref value
-             ref = -1/(count-1)
+                 #Calculate ref value
+                 ref2 =  mi.EI
+                 ref = -1/(count-1)
 
-             ref_list.append(ref)
-             print('Ref: '+str(ref))
+                 ref_list.append(ref2)
+                 print('Ref: '+str(ref))
+                 print('Ref-2: '+str(ref2))
 
-             if float(mi.I) > ref and float(mi.I < 1):
-                 pos_autocorrelation.append('Yes')
-                 print('Yes')
-             else:
+                 if float(mi.I) > ref2 and float(mi.p_norm) < 0.05: #and float(mi.I < 1):
+                     pos_autocorrelation.append(1)
+                     print('Yes')
+                 else:
+                     pos_autocorrelation.append(0)
+                     print('No') 
+
+                 mi_list.append(mi.I)
+                 p_list.append(mi.p_norm)
+                 date.append(input_date)
+             except:
+                 mi_list.append(np.nan)
+                 p_list.append(np.nan)
+                 date.append(np.nan)
+                 ref_list.append(ref)
                  pos_autocorrelation.append('No')
-                 print('No') 
-
-             mi_list.append(mi.I)
-             p_list.append(mi.p_norm)
-             date.append(input_date)
 
         df = pd.DataFrame()
         df['Date'] = date
@@ -185,8 +253,8 @@ if __name__ == "__main__":
         df['p'] = p_list
         df['Ref'] = ref_list
         df['Pos_Autocorrelation'] = pos_autocorrelation
-        df['Num_Pairs'] = num_pairs
         
         print(df)
+        out_dir = 'C:/Users/clara/Documents/Earth_Space_Revisions/Moran/wind/'
+        df.to_csv(out_dir + str(x)+'wind_new_overall.csv') 
 
-        df.to_csv(str(x)+'km_pcp.txt',sep=',') 
