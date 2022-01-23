@@ -3,7 +3,7 @@
 """
 Summary
 -------
-Spatial interpolation functions for mogp interpolation using the scikit-learn package.
+Spatial interpolation functions for mogp interpolation using the mogptk package.
 
 Requires installation of IPython if it is not already installed 
 References
